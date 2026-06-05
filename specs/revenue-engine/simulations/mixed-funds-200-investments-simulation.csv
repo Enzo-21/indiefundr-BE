@@ -1,0 +1,300 @@
+step,event,fund,return_percent,label,amount_usdt,pool_available,treasury_surplus,protected_withdrawable,notes
+1,subscription,Aggressive Alpha,40,Investment1,25,25.00,3.33,21.67,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+2,subscription,Stable Yield,10,Investment2,25,50.00,9.16,40.84,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+3,subscription,Balanced Growth,15,Investment3,25,75.00,14.58,60.42,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+4,payout,Aggressive Alpha,40,Payment to Investment1,35,40.00,14.58,25.42,Triad payout 35 USDT (40%); head 1 unlocked by 2 and 3; fund Aggressive Alpha
+5,subscription,Aggressive Alpha,40,Investment4,25,65.00,17.91,47.09,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+6,subscription,Balanced Growth,15,Investment5,25,90.00,23.33,66.67,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+7,payout,Stable Yield,10,Payment to Investment2,27.5,62.50,23.33,39.17,Triad payout 27.5 USDT (10%); head 2 unlocked by 4 and 5; fund Stable Yield
+8,subscription,Growth Partners,25,Investment6,25,87.50,27.91,59.59,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+9,subscription,Aggressive Alpha,40,Investment7,25,112.50,31.24,81.26,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+10,surplus_payout,Balanced Growth,15,Payment to Investment5 (surplus),28.75,83.75,2.49,81.26,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+11,payout,Balanced Growth,15,Payment to Investment3,28.75,55.00,2.49,52.51,Triad payout 28.75 USDT (15%); head 3 unlocked by 6 and 7; fund Balanced Growth
+12,subscription,Stable Yield,10,Investment8,25,80.00,8.32,71.68,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+13,subscription,Aggressive Alpha,40,Investment9,25,105.00,11.65,93.35,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+14,payout,Aggressive Alpha,40,Payment to Investment4,35,70.00,11.65,58.35,Triad payout 35 USDT (40%); head 4 unlocked by 8 and 9; fund Aggressive Alpha
+15,subscription,Capital Shield,6,Investment10,25,95.00,17.82,77.18,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+16,subscription,Aggressive Alpha,40,Investment11,25,120.00,21.15,98.85,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+17,subscription,Balanced Growth,15,Investment12,25,145.00,26.57,118.43,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+18,subscription,Aggressive Alpha,40,Investment13,25,170.00,29.90,140.10,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+19,payout,Growth Partners,25,Payment to Investment6,31.25,138.75,29.90,108.85,Triad payout 31.25 USDT (25%); head 6 unlocked by 12 and 13; fund Growth Partners
+20,subscription,Stable Yield,10,Investment14,25,163.75,35.73,128.02,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+21,surplus_payout,Aggressive Alpha,40,Payment to Investment7 (surplus),35,128.75,0.73,128.02,Surplus ≥ 35; pool −35 and surplus −35
+22,subscription,Capital Shield,6,Investment15,25,153.75,6.90,146.85,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+23,subscription,Aggressive Alpha,40,Investment16,25,178.75,10.23,168.52,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+24,subscription,Aggressive Alpha,40,Investment17,25,203.75,13.56,190.19,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+25,payout,Stable Yield,10,Payment to Investment8,27.5,176.25,13.56,162.69,Triad payout 27.5 USDT (10%); head 8 unlocked by 16 and 17; fund Stable Yield
+26,subscription,Capital Shield,6,Investment18,25,201.25,19.73,181.52,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+27,subscription,Capital Shield,6,Investment19,25,226.25,25.90,200.35,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+28,payout,Aggressive Alpha,40,Payment to Investment9,35,191.25,25.90,165.35,Triad payout 35 USDT (40%); head 9 unlocked by 18 and 19; fund Aggressive Alpha
+29,subscription,Stable Yield,10,Investment20,25,216.25,31.73,184.52,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+30,surplus_payout,Capital Shield,6,Payment to Investment10 (surplus),26.5,189.75,5.23,184.52,Surplus ≥ 26.5; pool −26.5 and surplus −26.5
+31,subscription,Balanced Growth,15,Investment21,25,214.75,10.65,204.10,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+32,subscription,Stable Yield,10,Investment22,25,239.75,16.48,223.27,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+33,subscription,Capital Shield,6,Investment23,25,264.75,22.65,242.10,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+34,payout,Aggressive Alpha,40,Payment to Investment11,35,229.75,22.65,207.10,Triad payout 35 USDT (40%); head 11 unlocked by 22 and 23; fund Aggressive Alpha
+35,subscription,Capital Shield,6,Investment24,25,254.75,28.82,225.93,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+36,surplus_payout,Balanced Growth,15,Payment to Investment12 (surplus),28.75,226.00,0.07,225.93,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+37,subscription,Growth Partners,25,Investment25,25,251.00,4.65,246.35,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+38,subscription,Growth Partners,25,Investment26,25,276.00,9.23,266.77,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+39,subscription,Balanced Growth,15,Investment27,25,301.00,14.65,286.35,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+40,payout,Aggressive Alpha,40,Payment to Investment13,35,266.00,14.65,251.35,Triad payout 35 USDT (40%); head 13 unlocked by 26 and 27; fund Aggressive Alpha
+41,subscription,Growth Partners,25,Investment28,25,291.00,19.23,271.77,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+42,subscription,Aggressive Alpha,40,Investment29,25,316.00,22.56,293.44,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+43,payout,Stable Yield,10,Payment to Investment14,27.5,288.50,22.56,265.94,Triad payout 27.5 USDT (10%); head 14 unlocked by 28 and 29; fund Stable Yield
+44,subscription,Balanced Growth,15,Investment30,25,313.50,27.98,285.52,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+45,surplus_payout,Capital Shield,6,Payment to Investment15 (surplus),26.5,287.00,1.48,285.52,Surplus ≥ 26.5; pool −26.5 and surplus −26.5
+46,subscription,Capital Shield,6,Investment31,25,312.00,7.65,304.35,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+47,subscription,Balanced Growth,15,Investment32,25,337.00,13.07,323.93,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+48,subscription,Growth Partners,25,Investment33,25,362.00,17.65,344.35,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+49,payout,Aggressive Alpha,40,Payment to Investment16,35,327.00,17.65,309.35,Triad payout 35 USDT (40%); head 16 unlocked by 32 and 33; fund Aggressive Alpha
+50,subscription,Aggressive Alpha,40,Investment34,25,352.00,20.98,331.02,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+51,subscription,Stable Yield,10,Investment35,25,377.00,26.81,350.19,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+52,payout,Aggressive Alpha,40,Payment to Investment17,35,342.00,26.81,315.19,Triad payout 35 USDT (40%); head 17 unlocked by 34 and 35; fund Aggressive Alpha
+53,surplus_payout,Capital Shield,6,Payment to Investment18 (surplus),26.5,315.50,0.31,315.19,Surplus ≥ 26.5; pool −26.5 and surplus −26.5
+54,subscription,Aggressive Alpha,40,Investment36,25,340.50,3.64,336.86,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+55,subscription,Capital Shield,6,Investment37,25,365.50,9.81,355.69,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+56,subscription,Capital Shield,6,Investment38,25,390.50,15.98,374.52,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+57,subscription,Aggressive Alpha,40,Investment39,25,415.50,19.31,396.19,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+58,payout,Capital Shield,6,Payment to Investment19,26.5,389.00,19.31,369.69,Triad payout 26.5 USDT (6%); head 19 unlocked by 38 and 39; fund Capital Shield
+59,subscription,Aggressive Alpha,40,Investment40,25,414.00,22.64,391.36,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+60,subscription,Capital Shield,6,Investment41,25,439.00,28.81,410.19,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+61,surplus_payout,Stable Yield,10,Payment to Investment20 (surplus),27.5,411.50,1.31,410.19,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+62,subscription,Capital Shield,6,Investment42,25,436.50,7.48,429.02,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+63,subscription,Stable Yield,10,Investment43,25,461.50,13.31,448.19,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+64,payout,Balanced Growth,15,Payment to Investment21,28.75,432.75,13.31,419.44,Triad payout 28.75 USDT (15%); head 21 unlocked by 42 and 43; fund Balanced Growth
+65,subscription,Balanced Growth,15,Investment44,25,457.75,18.73,439.02,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+66,subscription,Aggressive Alpha,40,Investment45,25,482.75,22.06,460.69,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+67,payout,Stable Yield,10,Payment to Investment22,27.5,455.25,22.06,433.19,Triad payout 27.5 USDT (10%); head 22 unlocked by 44 and 45; fund Stable Yield
+68,subscription,Capital Shield,6,Investment46,25,480.25,28.23,452.02,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+69,surplus_payout,Capital Shield,6,Payment to Investment23 (surplus),26.5,453.75,1.73,452.02,Surplus ≥ 26.5; pool −26.5 and surplus −26.5
+70,subscription,Stable Yield,10,Investment47,25,478.75,7.56,471.19,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+71,subscription,Growth Partners,25,Investment48,25,503.75,12.14,491.61,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+72,subscription,Stable Yield,10,Investment49,25,528.75,17.97,510.78,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+73,payout,Capital Shield,6,Payment to Investment24,26.5,502.25,17.97,484.28,Triad payout 26.5 USDT (6%); head 24 unlocked by 48 and 49; fund Capital Shield
+74,subscription,Stable Yield,10,Investment50,25,527.25,23.80,503.45,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+75,subscription,Stable Yield,10,Investment51,25,552.25,29.63,522.62,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+76,payout,Growth Partners,25,Payment to Investment25,31.25,521.00,29.63,491.37,Triad payout 31.25 USDT (25%); head 25 unlocked by 50 and 51; fund Growth Partners
+77,subscription,Stable Yield,10,Investment52,25,546.00,35.46,510.54,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+78,surplus_payout,Growth Partners,25,Payment to Investment26 (surplus),31.25,514.75,4.21,510.54,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+79,subscription,Stable Yield,10,Investment53,25,539.75,10.04,529.71,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+80,subscription,Capital Shield,6,Investment54,25,564.75,16.21,548.54,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+81,subscription,Growth Partners,25,Investment55,25,589.75,20.79,568.96,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+82,payout,Balanced Growth,15,Payment to Investment27,28.75,561.00,20.79,540.21,Triad payout 28.75 USDT (15%); head 27 unlocked by 54 and 55; fund Balanced Growth
+83,subscription,Growth Partners,25,Investment56,25,586.00,25.37,560.63,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+84,subscription,Balanced Growth,15,Investment57,25,611.00,30.79,580.21,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+85,payout,Growth Partners,25,Payment to Investment28,31.25,579.75,30.79,548.96,Triad payout 31.25 USDT (25%); head 28 unlocked by 56 and 57; fund Growth Partners
+86,subscription,Growth Partners,25,Investment58,25,604.75,35.37,569.38,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+87,surplus_payout,Aggressive Alpha,40,Payment to Investment29 (surplus),35,569.75,0.37,569.38,Surplus ≥ 35; pool −35 and surplus −35
+88,subscription,Aggressive Alpha,40,Investment59,25,594.75,3.70,591.05,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+89,subscription,Aggressive Alpha,40,Investment60,25,619.75,7.03,612.72,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+90,subscription,Capital Shield,6,Investment61,25,644.75,13.20,631.55,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+91,payout,Balanced Growth,15,Payment to Investment30,28.75,616.00,13.20,602.80,Triad payout 28.75 USDT (15%); head 30 unlocked by 60 and 61; fund Balanced Growth
+92,subscription,Aggressive Alpha,40,Investment62,25,641.00,16.53,624.47,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+93,subscription,Stable Yield,10,Investment63,25,666.00,22.36,643.64,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+94,payout,Capital Shield,6,Payment to Investment31,26.5,639.50,22.36,617.14,Triad payout 26.5 USDT (6%); head 31 unlocked by 62 and 63; fund Capital Shield
+95,subscription,Growth Partners,25,Investment64,25,664.50,26.94,637.56,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+96,subscription,Aggressive Alpha,40,Investment65,25,689.50,30.27,659.23,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+97,surplus_payout,Balanced Growth,15,Payment to Investment32 (surplus),28.75,660.75,1.52,659.23,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+98,subscription,Growth Partners,25,Investment66,25,685.75,6.10,679.65,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+99,subscription,Stable Yield,10,Investment67,25,710.75,11.93,698.82,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+100,payout,Growth Partners,25,Payment to Investment33,31.25,679.50,11.93,667.57,Triad payout 31.25 USDT (25%); head 33 unlocked by 66 and 67; fund Growth Partners
+101,subscription,Aggressive Alpha,40,Investment68,25,704.50,15.26,689.24,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+102,subscription,Balanced Growth,15,Investment69,25,729.50,20.68,708.82,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+103,payout,Aggressive Alpha,40,Payment to Investment34,35,694.50,20.68,673.82,Triad payout 35 USDT (40%); head 34 unlocked by 68 and 69; fund Aggressive Alpha
+104,subscription,Growth Partners,25,Investment70,25,719.50,25.26,694.24,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+105,subscription,Growth Partners,25,Investment71,25,744.50,29.84,714.66,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+106,surplus_payout,Stable Yield,10,Payment to Investment35 (surplus),27.5,717.00,2.34,714.66,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+107,subscription,Growth Partners,25,Investment72,25,742.00,6.92,735.08,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+108,subscription,Balanced Growth,15,Investment73,25,767.00,12.34,754.66,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+109,payout,Aggressive Alpha,40,Payment to Investment36,35,732.00,12.34,719.66,Triad payout 35 USDT (40%); head 36 unlocked by 72 and 73; fund Aggressive Alpha
+110,subscription,Growth Partners,25,Investment74,25,757.00,16.92,740.08,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+111,subscription,Balanced Growth,15,Investment75,25,782.00,22.34,759.66,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+112,payout,Capital Shield,6,Payment to Investment37,26.5,755.50,22.34,733.16,Triad payout 26.5 USDT (6%); head 37 unlocked by 74 and 75; fund Capital Shield
+113,subscription,Stable Yield,10,Investment76,25,780.50,28.17,752.33,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+114,surplus_payout,Capital Shield,6,Payment to Investment38 (surplus),26.5,754.00,1.67,752.33,Surplus ≥ 26.5; pool −26.5 and surplus −26.5
+115,subscription,Growth Partners,25,Investment77,25,779.00,6.25,772.75,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+116,subscription,Stable Yield,10,Investment78,25,804.00,12.08,791.92,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+117,subscription,Aggressive Alpha,40,Investment79,25,829.00,15.41,813.59,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+118,payout,Aggressive Alpha,40,Payment to Investment39,35,794.00,15.41,778.59,Triad payout 35 USDT (40%); head 39 unlocked by 78 and 79; fund Aggressive Alpha
+119,subscription,Growth Partners,25,Investment80,25,819.00,19.99,799.01,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+120,subscription,Aggressive Alpha,40,Investment81,25,844.00,23.32,820.68,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+121,payout,Aggressive Alpha,40,Payment to Investment40,35,809.00,23.32,785.68,Triad payout 35 USDT (40%); head 40 unlocked by 80 and 81; fund Aggressive Alpha
+122,subscription,Growth Partners,25,Investment82,25,834.00,27.90,806.10,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+123,surplus_payout,Capital Shield,6,Payment to Investment41 (surplus),26.5,807.50,1.40,806.10,Surplus ≥ 26.5; pool −26.5 and surplus −26.5
+124,subscription,Balanced Growth,15,Investment83,25,832.50,6.82,825.68,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+125,subscription,Capital Shield,6,Investment84,25,857.50,12.99,844.51,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+126,subscription,Stable Yield,10,Investment85,25,882.50,18.82,863.68,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+127,payout,Capital Shield,6,Payment to Investment42,26.5,856.00,18.82,837.18,Triad payout 26.5 USDT (6%); head 42 unlocked by 84 and 85; fund Capital Shield
+128,subscription,Aggressive Alpha,40,Investment86,25,881.00,22.15,858.85,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+129,subscription,Capital Shield,6,Investment87,25,906.00,28.32,877.68,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+130,surplus_payout,Stable Yield,10,Payment to Investment43 (surplus),27.5,878.50,0.82,877.68,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+131,subscription,Growth Partners,25,Investment88,25,903.50,5.40,898.10,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+132,subscription,Balanced Growth,15,Investment89,25,928.50,10.82,917.68,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+133,payout,Balanced Growth,15,Payment to Investment44,28.75,899.75,10.82,888.93,Triad payout 28.75 USDT (15%); head 44 unlocked by 88 and 89; fund Balanced Growth
+134,subscription,Growth Partners,25,Investment90,25,924.75,15.40,909.35,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+135,subscription,Balanced Growth,15,Investment91,25,949.75,20.82,928.93,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+136,payout,Aggressive Alpha,40,Payment to Investment45,35,914.75,20.82,893.93,Triad payout 35 USDT (40%); head 45 unlocked by 90 and 91; fund Aggressive Alpha
+137,subscription,Aggressive Alpha,40,Investment92,25,939.75,24.15,915.60,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+138,subscription,Balanced Growth,15,Investment93,25,964.75,29.57,935.18,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+139,surplus_payout,Capital Shield,6,Payment to Investment46 (surplus),26.5,938.25,3.07,935.18,Surplus ≥ 26.5; pool −26.5 and surplus −26.5
+140,subscription,Stable Yield,10,Investment94,25,963.25,8.90,954.35,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+141,subscription,Capital Shield,6,Investment95,25,988.25,15.07,973.18,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+142,payout,Stable Yield,10,Payment to Investment47,27.5,960.75,15.07,945.68,Triad payout 27.5 USDT (10%); head 47 unlocked by 94 and 95; fund Stable Yield
+143,subscription,Aggressive Alpha,40,Investment96,25,985.75,18.40,967.35,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+144,subscription,Balanced Growth,15,Investment97,25,1010.75,23.82,986.93,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+145,payout,Growth Partners,25,Payment to Investment48,31.25,979.50,23.82,955.68,Triad payout 31.25 USDT (25%); head 48 unlocked by 96 and 97; fund Growth Partners
+146,subscription,Stable Yield,10,Investment98,25,1004.50,29.65,974.85,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+147,surplus_payout,Stable Yield,10,Payment to Investment49 (surplus),27.5,977.00,2.15,974.85,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+148,subscription,Aggressive Alpha,40,Investment99,25,1002.00,5.48,996.52,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+149,subscription,Balanced Growth,15,Investment100,25,1027.00,10.90,1016.10,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+150,subscription,Capital Shield,6,Investment101,25,1052.00,17.07,1034.93,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+151,payout,Stable Yield,10,Payment to Investment50,27.5,1024.50,17.07,1007.43,Triad payout 27.5 USDT (10%); head 50 unlocked by 100 and 101; fund Stable Yield
+152,subscription,Aggressive Alpha,40,Investment102,25,1049.50,20.40,1029.10,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+153,subscription,Growth Partners,25,Investment103,25,1074.50,24.98,1049.52,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+154,payout,Stable Yield,10,Payment to Investment51,27.5,1047.00,24.98,1022.02,Triad payout 27.5 USDT (10%); head 51 unlocked by 102 and 103; fund Stable Yield
+155,subscription,Growth Partners,25,Investment104,25,1072.00,29.56,1042.44,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+156,surplus_payout,Stable Yield,10,Payment to Investment52 (surplus),27.5,1044.50,2.06,1042.44,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+157,subscription,Aggressive Alpha,40,Investment105,25,1069.50,5.39,1064.11,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+158,subscription,Capital Shield,6,Investment106,25,1094.50,11.56,1082.94,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+159,subscription,Growth Partners,25,Investment107,25,1119.50,16.14,1103.36,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+160,payout,Stable Yield,10,Payment to Investment53,27.5,1092.00,16.14,1075.86,Triad payout 27.5 USDT (10%); head 53 unlocked by 106 and 107; fund Stable Yield
+161,subscription,Aggressive Alpha,40,Investment108,25,1117.00,19.47,1097.53,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+162,subscription,Growth Partners,25,Investment109,25,1142.00,24.05,1117.95,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+163,payout,Capital Shield,6,Payment to Investment54,26.5,1115.50,24.05,1091.45,Triad payout 26.5 USDT (6%); head 54 unlocked by 108 and 109; fund Capital Shield
+164,subscription,Growth Partners,25,Investment110,25,1140.50,28.63,1111.87,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+165,subscription,Growth Partners,25,Investment111,25,1165.50,33.21,1132.29,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+166,surplus_payout,Growth Partners,25,Payment to Investment55 (surplus),31.25,1134.25,1.96,1132.29,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+167,subscription,Aggressive Alpha,40,Investment112,25,1159.25,5.29,1153.96,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+168,subscription,Balanced Growth,15,Investment113,25,1184.25,10.71,1173.54,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+169,payout,Growth Partners,25,Payment to Investment56,31.25,1153.00,10.71,1142.29,Triad payout 31.25 USDT (25%); head 56 unlocked by 112 and 113; fund Growth Partners
+170,subscription,Aggressive Alpha,40,Investment114,25,1178.00,14.04,1163.96,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+171,subscription,Aggressive Alpha,40,Investment115,25,1203.00,17.37,1185.63,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+172,payout,Balanced Growth,15,Payment to Investment57,28.75,1174.25,17.37,1156.88,Triad payout 28.75 USDT (15%); head 57 unlocked by 114 and 115; fund Balanced Growth
+173,subscription,Growth Partners,25,Investment116,25,1199.25,21.95,1177.30,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+174,subscription,Balanced Growth,15,Investment117,25,1224.25,27.37,1196.88,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+175,payout,Growth Partners,25,Payment to Investment58,31.25,1193.00,27.37,1165.63,Triad payout 31.25 USDT (25%); head 58 unlocked by 116 and 117; fund Growth Partners
+176,subscription,Growth Partners,25,Investment118,25,1218.00,31.95,1186.05,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+177,subscription,Balanced Growth,15,Investment119,25,1243.00,37.37,1205.63,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+178,surplus_payout,Aggressive Alpha,40,Payment to Investment59 (surplus),35,1208.00,2.37,1205.63,Surplus ≥ 35; pool −35 and surplus −35
+179,subscription,Aggressive Alpha,40,Investment120,25,1233.00,5.70,1227.30,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+180,subscription,Capital Shield,6,Investment121,25,1258.00,11.87,1246.13,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+181,payout,Aggressive Alpha,40,Payment to Investment60,35,1223.00,11.87,1211.13,Triad payout 35 USDT (40%); head 60 unlocked by 120 and 121; fund Aggressive Alpha
+182,subscription,Growth Partners,25,Investment122,25,1248.00,16.45,1231.55,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+183,subscription,Balanced Growth,15,Investment123,25,1273.00,21.87,1251.13,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+184,payout,Capital Shield,6,Payment to Investment61,26.5,1246.50,21.87,1224.63,Triad payout 26.5 USDT (6%); head 61 unlocked by 122 and 123; fund Capital Shield
+185,subscription,Stable Yield,10,Investment124,25,1271.50,27.70,1243.80,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+186,subscription,Stable Yield,10,Investment125,25,1296.50,33.53,1262.97,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+187,payout,Aggressive Alpha,40,Payment to Investment62,35,1261.50,33.53,1227.97,Triad payout 35 USDT (40%); head 62 unlocked by 124 and 125; fund Aggressive Alpha
+188,surplus_payout,Stable Yield,10,Payment to Investment63 (surplus),27.5,1234.00,6.03,1227.97,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+189,subscription,Capital Shield,6,Investment126,25,1259.00,12.20,1246.80,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+190,subscription,Stable Yield,10,Investment127,25,1284.00,18.03,1265.97,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+191,subscription,Balanced Growth,15,Investment128,25,1309.00,23.45,1285.55,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+192,subscription,Capital Shield,6,Investment129,25,1334.00,29.62,1304.38,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+193,payout,Growth Partners,25,Payment to Investment64,31.25,1302.75,29.62,1273.13,Triad payout 31.25 USDT (25%); head 64 unlocked by 128 and 129; fund Growth Partners
+194,subscription,Stable Yield,10,Investment130,25,1327.75,35.45,1292.30,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+195,surplus_payout,Aggressive Alpha,40,Payment to Investment65 (surplus),35,1292.75,0.45,1292.30,Surplus ≥ 35; pool −35 and surplus −35
+196,subscription,Aggressive Alpha,40,Investment131,25,1317.75,3.78,1313.97,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+197,subscription,Stable Yield,10,Investment132,25,1342.75,9.61,1333.14,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+198,subscription,Stable Yield,10,Investment133,25,1367.75,15.44,1352.31,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+199,payout,Growth Partners,25,Payment to Investment66,31.25,1336.50,15.44,1321.06,Triad payout 31.25 USDT (25%); head 66 unlocked by 132 and 133; fund Growth Partners
+200,subscription,Aggressive Alpha,40,Investment134,25,1361.50,18.77,1342.73,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+201,subscription,Balanced Growth,15,Investment135,25,1386.50,24.19,1362.31,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+202,payout,Stable Yield,10,Payment to Investment67,27.5,1359.00,24.19,1334.81,Triad payout 27.5 USDT (10%); head 67 unlocked by 134 and 135; fund Stable Yield
+203,subscription,Growth Partners,25,Investment136,25,1384.00,28.77,1355.23,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+204,subscription,Stable Yield,10,Investment137,25,1409.00,34.60,1374.40,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+205,payout,Aggressive Alpha,40,Payment to Investment68,35,1374.00,34.60,1339.40,Triad payout 35 USDT (40%); head 68 unlocked by 136 and 137; fund Aggressive Alpha
+206,surplus_payout,Balanced Growth,15,Payment to Investment69 (surplus),28.75,1345.25,5.85,1339.40,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+207,subscription,Capital Shield,6,Investment138,25,1370.25,12.02,1358.23,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+208,subscription,Growth Partners,25,Investment139,25,1395.25,16.60,1378.65,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+209,subscription,Stable Yield,10,Investment140,25,1420.25,22.43,1397.82,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+210,subscription,Growth Partners,25,Investment141,25,1445.25,27.01,1418.24,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+211,payout,Growth Partners,25,Payment to Investment70,31.25,1414.00,27.01,1386.99,Triad payout 31.25 USDT (25%); head 70 unlocked by 140 and 141; fund Growth Partners
+212,subscription,Growth Partners,25,Investment142,25,1439.00,31.59,1407.41,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+213,surplus_payout,Growth Partners,25,Payment to Investment71 (surplus),31.25,1407.75,0.34,1407.41,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+214,subscription,Balanced Growth,15,Investment143,25,1432.75,5.76,1426.99,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+215,subscription,Growth Partners,25,Investment144,25,1457.75,10.34,1447.41,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+216,subscription,Stable Yield,10,Investment145,25,1482.75,16.17,1466.58,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+217,payout,Growth Partners,25,Payment to Investment72,31.25,1451.50,16.17,1435.33,Triad payout 31.25 USDT (25%); head 72 unlocked by 144 and 145; fund Growth Partners
+218,subscription,Stable Yield,10,Investment146,25,1476.50,22.00,1454.50,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+219,subscription,Balanced Growth,15,Investment147,25,1501.50,27.42,1474.08,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+220,payout,Balanced Growth,15,Payment to Investment73,28.75,1472.75,27.42,1445.33,Triad payout 28.75 USDT (15%); head 73 unlocked by 146 and 147; fund Balanced Growth
+221,subscription,Balanced Growth,15,Investment148,25,1497.75,32.84,1464.91,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+222,surplus_payout,Growth Partners,25,Payment to Investment74 (surplus),31.25,1466.50,1.59,1464.91,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+223,subscription,Aggressive Alpha,40,Investment149,25,1491.50,4.92,1486.58,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+224,subscription,Balanced Growth,15,Investment150,25,1516.50,10.34,1506.16,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+225,subscription,Balanced Growth,15,Investment151,25,1541.50,15.76,1525.74,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+226,payout,Balanced Growth,15,Payment to Investment75,28.75,1512.75,15.76,1496.99,Triad payout 28.75 USDT (15%); head 75 unlocked by 150 and 151; fund Balanced Growth
+227,subscription,Aggressive Alpha,40,Investment152,25,1537.75,19.09,1518.66,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+228,subscription,Aggressive Alpha,40,Investment153,25,1562.75,22.42,1540.33,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+229,payout,Stable Yield,10,Payment to Investment76,27.5,1535.25,22.42,1512.83,Triad payout 27.5 USDT (10%); head 76 unlocked by 152 and 153; fund Stable Yield
+230,subscription,Capital Shield,6,Investment154,25,1560.25,28.59,1531.66,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+231,subscription,Stable Yield,10,Investment155,25,1585.25,34.42,1550.83,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+232,surplus_payout,Growth Partners,25,Payment to Investment77 (surplus),31.25,1554.00,3.17,1550.83,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+233,subscription,Balanced Growth,15,Investment156,25,1579.00,8.59,1570.41,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+234,subscription,Aggressive Alpha,40,Investment157,25,1604.00,11.92,1592.08,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+235,payout,Stable Yield,10,Payment to Investment78,27.5,1576.50,11.92,1564.58,Triad payout 27.5 USDT (10%); head 78 unlocked by 156 and 157; fund Stable Yield
+236,subscription,Capital Shield,6,Investment158,25,1601.50,18.09,1583.41,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+237,subscription,Balanced Growth,15,Investment159,25,1626.50,23.51,1602.99,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+238,payout,Aggressive Alpha,40,Payment to Investment79,35,1591.50,23.51,1567.99,Triad payout 35 USDT (40%); head 79 unlocked by 158 and 159; fund Aggressive Alpha
+239,subscription,Capital Shield,6,Investment160,25,1616.50,29.68,1586.82,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+240,subscription,Stable Yield,10,Investment161,25,1641.50,35.51,1605.99,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+241,surplus_payout,Growth Partners,25,Payment to Investment80 (surplus),31.25,1610.25,4.26,1605.99,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+242,subscription,Capital Shield,6,Investment162,25,1635.25,10.43,1624.82,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+243,subscription,Capital Shield,6,Investment163,25,1660.25,16.60,1643.65,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+244,payout,Aggressive Alpha,40,Payment to Investment81,35,1625.25,16.60,1608.65,Triad payout 35 USDT (40%); head 81 unlocked by 162 and 163; fund Aggressive Alpha
+245,subscription,Balanced Growth,15,Investment164,25,1650.25,22.02,1628.23,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+246,subscription,Stable Yield,10,Investment165,25,1675.25,27.85,1647.40,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+247,payout,Growth Partners,25,Payment to Investment82,31.25,1644.00,27.85,1616.15,Triad payout 31.25 USDT (25%); head 82 unlocked by 164 and 165; fund Growth Partners
+248,subscription,Balanced Growth,15,Investment166,25,1669.00,33.27,1635.73,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+249,surplus_payout,Balanced Growth,15,Payment to Investment83 (surplus),28.75,1640.25,4.52,1635.73,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+250,subscription,Stable Yield,10,Investment167,25,1665.25,10.35,1654.90,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+251,subscription,Stable Yield,10,Investment168,25,1690.25,16.18,1674.07,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+252,subscription,Capital Shield,6,Investment169,25,1715.25,22.35,1692.90,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+253,payout,Capital Shield,6,Payment to Investment84,26.5,1688.75,22.35,1666.40,Triad payout 26.5 USDT (6%); head 84 unlocked by 168 and 169; fund Capital Shield
+254,subscription,Balanced Growth,15,Investment170,25,1713.75,27.77,1685.98,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+255,surplus_payout,Stable Yield,10,Payment to Investment85 (surplus),27.5,1686.25,0.27,1685.98,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+256,subscription,Capital Shield,6,Investment171,25,1711.25,6.44,1704.81,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+257,subscription,Aggressive Alpha,40,Investment172,25,1736.25,9.77,1726.48,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+258,subscription,Balanced Growth,15,Investment173,25,1761.25,15.19,1746.06,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+259,payout,Aggressive Alpha,40,Payment to Investment86,35,1726.25,15.19,1711.06,Triad payout 35 USDT (40%); head 86 unlocked by 172 and 173; fund Aggressive Alpha
+260,subscription,Capital Shield,6,Investment174,25,1751.25,21.36,1729.89,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+261,subscription,Growth Partners,25,Investment175,25,1776.25,25.94,1750.31,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+262,payout,Capital Shield,6,Payment to Investment87,26.5,1749.75,25.94,1723.81,Triad payout 26.5 USDT (6%); head 87 unlocked by 174 and 175; fund Capital Shield
+263,subscription,Balanced Growth,15,Investment176,25,1774.75,31.36,1743.39,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+264,surplus_payout,Growth Partners,25,Payment to Investment88 (surplus),31.25,1743.50,0.11,1743.39,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+265,subscription,Balanced Growth,15,Investment177,25,1768.50,5.53,1762.97,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+266,subscription,Capital Shield,6,Investment178,25,1793.50,11.70,1781.80,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+267,subscription,Growth Partners,25,Investment179,25,1818.50,16.28,1802.22,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+268,payout,Balanced Growth,15,Payment to Investment89,28.75,1789.75,16.28,1773.47,Triad payout 28.75 USDT (15%); head 89 unlocked by 178 and 179; fund Balanced Growth
+269,subscription,Balanced Growth,15,Investment180,25,1814.75,21.70,1793.05,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+270,subscription,Aggressive Alpha,40,Investment181,25,1839.75,25.03,1814.72,+3.33 surplus on subscribe (Aggressive Alpha; triad surplus 10÷3)
+271,payout,Growth Partners,25,Payment to Investment90,31.25,1808.50,25.03,1783.47,Triad payout 31.25 USDT (25%); head 90 unlocked by 180 and 181; fund Growth Partners
+272,subscription,Capital Shield,6,Investment182,25,1833.50,31.20,1802.30,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+273,surplus_payout,Balanced Growth,15,Payment to Investment91 (surplus),28.75,1804.75,2.45,1802.30,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+274,subscription,Growth Partners,25,Investment183,25,1829.75,7.03,1822.72,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+275,subscription,Stable Yield,10,Investment184,25,1854.75,12.86,1841.89,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+276,subscription,Capital Shield,6,Investment185,25,1879.75,19.03,1860.72,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+277,payout,Aggressive Alpha,40,Payment to Investment92,35,1844.75,19.03,1825.72,Triad payout 35 USDT (40%); head 92 unlocked by 184 and 185; fund Aggressive Alpha
+278,subscription,Capital Shield,6,Investment186,25,1869.75,25.20,1844.55,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+279,subscription,Growth Partners,25,Investment187,25,1894.75,29.78,1864.97,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+280,surplus_payout,Balanced Growth,15,Payment to Investment93 (surplus),28.75,1866.00,1.03,1864.97,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+281,subscription,Capital Shield,6,Investment188,25,1891.00,7.20,1883.80,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+282,subscription,Stable Yield,10,Investment189,25,1916.00,13.03,1902.97,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+283,payout,Stable Yield,10,Payment to Investment94,27.5,1888.50,13.03,1875.47,Triad payout 27.5 USDT (10%); head 94 unlocked by 188 and 189; fund Stable Yield
+284,subscription,Capital Shield,6,Investment190,25,1913.50,19.20,1894.30,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+285,subscription,Capital Shield,6,Investment191,25,1938.50,25.37,1913.13,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+286,payout,Capital Shield,6,Payment to Investment95,26.5,1912.00,25.37,1886.63,Triad payout 26.5 USDT (6%); head 95 unlocked by 190 and 191; fund Capital Shield
+287,subscription,Capital Shield,6,Investment192,25,1937.00,31.54,1905.46,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+288,subscription,Growth Partners,25,Investment193,25,1962.00,36.12,1925.88,+4.58 surplus on subscribe (Growth Partners; triad surplus 13.75÷3)
+289,surplus_payout,Aggressive Alpha,40,Payment to Investment96 (surplus),35,1927.00,1.12,1925.88,Surplus ≥ 35; pool −35 and surplus −35
+290,subscription,Capital Shield,6,Investment194,25,1952.00,7.29,1944.71,+6.17 surplus on subscribe (Capital Shield; triad surplus 18.5÷3)
+291,subscription,Balanced Growth,15,Investment195,25,1977.00,12.71,1964.29,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+292,payout,Balanced Growth,15,Payment to Investment97,28.75,1948.25,12.71,1935.54,Triad payout 28.75 USDT (15%); head 97 unlocked by 194 and 195; fund Balanced Growth
+293,subscription,Stable Yield,10,Investment196,25,1973.25,18.54,1954.71,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+294,subscription,Stable Yield,10,Investment197,25,1998.25,24.37,1973.88,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+295,payout,Stable Yield,10,Payment to Investment98,27.5,1970.75,24.37,1946.38,Triad payout 27.5 USDT (10%); head 98 unlocked by 196 and 197; fund Stable Yield
+296,subscription,Balanced Growth,15,Investment198,25,1995.75,29.79,1965.96,+5.42 surplus on subscribe (Balanced Growth; triad surplus 16.25÷3)
+297,subscription,Stable Yield,10,Investment199,25,2020.75,35.62,1985.13,+5.83 surplus on subscribe (Stable Yield; triad surplus 17.5÷3)
+298,surplus_payout,Aggressive Alpha,40,Payment to Investment99 (surplus),35,1985.75,0.62,1985.13,Surplus ≥ 35; pool −35 and surplus −35
+299,subscription,Growth Partners,25,Investment200,25,2010.75,5.20,2005.55,+4.58 surplus on subscribe (Growth Partners); head 100 needs 200 and 201 for triad unlock

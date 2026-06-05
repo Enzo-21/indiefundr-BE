@@ -1,0 +1,150 @@
+step,event,fund,return_percent,label,amount_usdt,pool_available,treasury_surplus,protected_withdrawable,notes
+1,subscription,Balanced Growth,15,Investment1,25,25.00,5.42,19.58,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+2,subscription,Balanced Growth,15,Investment2,25,50.00,10.84,39.16,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+3,subscription,Balanced Growth,15,Investment3,25,75.00,16.26,58.74,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+4,payout,Balanced Growth,15,Payment to Investment1,28.75,46.25,16.26,29.99,Triad payout 28.75 USDT (15% return); head 1 unlocked by 2 and 3; no surplus on payout
+5,subscription,Balanced Growth,15,Investment4,25,71.25,21.68,49.57,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+6,subscription,Balanced Growth,15,Investment5,25,96.25,27.10,69.15,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+7,payout,Balanced Growth,15,Payment to Investment2,28.75,67.50,27.10,40.40,Triad payout 28.75 USDT (15% return); head 2 unlocked by 4 and 5; no surplus on payout
+8,subscription,Balanced Growth,15,Investment6,25,92.50,32.52,59.98,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+9,surplus_payout,Balanced Growth,15,Payment to Investment5 (surplus),28.75,63.75,3.77,59.98,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+10,subscription,Balanced Growth,15,Investment7,25,88.75,9.19,79.56,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+11,payout,Balanced Growth,15,Payment to Investment3,28.75,60.00,9.19,50.81,Triad payout 28.75 USDT (15% return); head 3 unlocked by 6 and 7; no surplus on payout
+12,subscription,Balanced Growth,15,Investment8,25,85.00,14.61,70.39,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+13,subscription,Balanced Growth,15,Investment9,25,110.00,20.03,89.97,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+14,payout,Balanced Growth,15,Payment to Investment4,28.75,81.25,20.03,61.22,Triad payout 28.75 USDT (15% return); head 4 unlocked by 8 and 9; no surplus on payout
+15,subscription,Balanced Growth,15,Investment10,25,106.25,25.45,80.80,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+16,subscription,Balanced Growth,15,Investment11,25,131.25,30.87,100.38,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+17,surplus_payout,Balanced Growth,15,Payment to Investment6 (surplus),28.75,102.50,2.12,100.38,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+18,subscription,Balanced Growth,15,Investment12,25,127.50,7.54,119.96,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+19,subscription,Balanced Growth,15,Investment13,25,152.50,12.96,139.54,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+20,subscription,Balanced Growth,15,Investment14,25,177.50,18.38,159.12,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+21,subscription,Balanced Growth,15,Investment15,25,202.50,23.80,178.70,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+22,payout,Balanced Growth,15,Payment to Investment7,28.75,173.75,23.80,149.95,Triad payout 28.75 USDT (15% return); head 7 unlocked by 14 and 15; no surplus on payout
+23,subscription,Balanced Growth,15,Investment16,25,198.75,29.22,169.53,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+24,surplus_payout,Balanced Growth,15,Payment to Investment8 (surplus),28.75,170.00,0.47,169.53,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+25,subscription,Balanced Growth,15,Investment17,25,195.00,5.89,189.11,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+26,subscription,Balanced Growth,15,Investment18,25,220.00,11.31,208.69,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+27,subscription,Balanced Growth,15,Investment19,25,245.00,16.73,228.27,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+28,payout,Balanced Growth,15,Payment to Investment9,28.75,216.25,16.73,199.52,Triad payout 28.75 USDT (15% return); head 9 unlocked by 18 and 19; no surplus on payout
+29,subscription,Balanced Growth,15,Investment20,25,241.25,22.15,219.10,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+30,subscription,Balanced Growth,15,Investment21,25,266.25,27.57,238.68,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+31,payout,Balanced Growth,15,Payment to Investment10,28.75,237.50,27.57,209.93,Triad payout 28.75 USDT (15% return); head 10 unlocked by 20 and 21; no surplus on payout
+32,subscription,Balanced Growth,15,Investment22,25,262.50,32.99,229.51,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+33,surplus_payout,Balanced Growth,15,Payment to Investment11 (surplus),28.75,233.75,4.24,229.51,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+34,subscription,Balanced Growth,15,Investment23,25,258.75,9.66,249.09,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+35,subscription,Balanced Growth,15,Investment24,25,283.75,15.08,268.67,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+36,subscription,Balanced Growth,15,Investment25,25,308.75,20.50,288.25,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+37,payout,Balanced Growth,15,Payment to Investment12,28.75,280.00,20.50,259.50,Triad payout 28.75 USDT (15% return); head 12 unlocked by 24 and 25; no surplus on payout
+38,subscription,Balanced Growth,15,Investment26,25,305.00,25.92,279.08,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+39,subscription,Balanced Growth,15,Investment27,25,330.00,31.34,298.66,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+40,surplus_payout,Balanced Growth,15,Payment to Investment13 (surplus),28.75,301.25,2.59,298.66,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+41,subscription,Balanced Growth,15,Investment28,25,326.25,8.01,318.24,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+42,subscription,Balanced Growth,15,Investment29,25,351.25,13.43,337.82,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+43,payout,Balanced Growth,15,Payment to Investment14,28.75,322.50,13.43,309.07,Triad payout 28.75 USDT (15% return); head 14 unlocked by 28 and 29; no surplus on payout
+44,subscription,Balanced Growth,15,Investment30,25,347.50,18.85,328.65,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+45,subscription,Balanced Growth,15,Investment31,25,372.50,24.27,348.23,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+46,payout,Balanced Growth,15,Payment to Investment15,28.75,343.75,24.27,319.48,Triad payout 28.75 USDT (15% return); head 15 unlocked by 30 and 31; no surplus on payout
+47,subscription,Balanced Growth,15,Investment32,25,368.75,29.69,339.06,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+48,surplus_payout,Balanced Growth,15,Payment to Investment16 (surplus),28.75,340.00,0.94,339.06,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+49,subscription,Balanced Growth,15,Investment33,25,365.00,6.36,358.64,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+50,subscription,Balanced Growth,15,Investment34,25,390.00,11.78,378.22,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+51,subscription,Balanced Growth,15,Investment35,25,415.00,17.20,397.80,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+52,payout,Balanced Growth,15,Payment to Investment17,28.75,386.25,17.20,369.05,Triad payout 28.75 USDT (15% return); head 17 unlocked by 34 and 35; no surplus on payout
+53,subscription,Balanced Growth,15,Investment36,25,411.25,22.62,388.63,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+54,subscription,Balanced Growth,15,Investment37,25,436.25,28.04,408.21,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+55,payout,Balanced Growth,15,Payment to Investment18,28.75,407.50,28.04,379.46,Triad payout 28.75 USDT (15% return); head 18 unlocked by 36 and 37; no surplus on payout
+56,subscription,Balanced Growth,15,Investment38,25,432.50,33.46,399.04,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+57,surplus_payout,Balanced Growth,15,Payment to Investment19 (surplus),28.75,403.75,4.71,399.04,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+58,subscription,Balanced Growth,15,Investment39,25,428.75,10.13,418.62,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+59,subscription,Balanced Growth,15,Investment40,25,453.75,15.55,438.20,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+60,subscription,Balanced Growth,15,Investment41,25,478.75,20.97,457.78,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+61,payout,Balanced Growth,15,Payment to Investment20,28.75,450.00,20.97,429.03,Triad payout 28.75 USDT (15% return); head 20 unlocked by 40 and 41; no surplus on payout
+62,subscription,Balanced Growth,15,Investment42,25,475.00,26.39,448.61,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+63,subscription,Balanced Growth,15,Investment43,25,500.00,31.81,468.19,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+64,surplus_payout,Balanced Growth,15,Payment to Investment21 (surplus),28.75,471.25,3.06,468.19,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+65,subscription,Balanced Growth,15,Investment44,25,496.25,8.48,487.77,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+66,subscription,Balanced Growth,15,Investment45,25,521.25,13.90,507.35,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+67,payout,Balanced Growth,15,Payment to Investment22,28.75,492.50,13.90,478.60,Triad payout 28.75 USDT (15% return); head 22 unlocked by 44 and 45; no surplus on payout
+68,subscription,Balanced Growth,15,Investment46,25,517.50,19.32,498.18,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+69,subscription,Balanced Growth,15,Investment47,25,542.50,24.74,517.76,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+70,payout,Balanced Growth,15,Payment to Investment23,28.75,513.75,24.74,489.01,Triad payout 28.75 USDT (15% return); head 23 unlocked by 46 and 47; no surplus on payout
+71,subscription,Balanced Growth,15,Investment48,25,538.75,30.16,508.59,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+72,surplus_payout,Balanced Growth,15,Payment to Investment24 (surplus),28.75,510.00,1.41,508.59,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+73,subscription,Balanced Growth,15,Investment49,25,535.00,6.83,528.17,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+74,subscription,Balanced Growth,15,Investment50,25,560.00,12.25,547.75,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+75,subscription,Balanced Growth,15,Investment51,25,585.00,17.67,567.33,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+76,payout,Balanced Growth,15,Payment to Investment25,28.75,556.25,17.67,538.58,Triad payout 28.75 USDT (15% return); head 25 unlocked by 50 and 51; no surplus on payout
+77,subscription,Balanced Growth,15,Investment52,25,581.25,23.09,558.16,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+78,subscription,Balanced Growth,15,Investment53,25,606.25,28.51,577.74,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+79,payout,Balanced Growth,15,Payment to Investment26,28.75,577.50,28.51,548.99,Triad payout 28.75 USDT (15% return); head 26 unlocked by 52 and 53; no surplus on payout
+80,subscription,Balanced Growth,15,Investment54,25,602.50,33.93,568.57,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+81,surplus_payout,Balanced Growth,15,Payment to Investment27 (surplus),28.75,573.75,5.18,568.57,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+82,subscription,Balanced Growth,15,Investment55,25,598.75,10.60,588.15,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+83,subscription,Balanced Growth,15,Investment56,25,623.75,16.02,607.73,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+84,subscription,Balanced Growth,15,Investment57,25,648.75,21.44,627.31,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+85,payout,Balanced Growth,15,Payment to Investment28,28.75,620.00,21.44,598.56,Triad payout 28.75 USDT (15% return); head 28 unlocked by 56 and 57; no surplus on payout
+86,subscription,Balanced Growth,15,Investment58,25,645.00,26.86,618.14,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+87,subscription,Balanced Growth,15,Investment59,25,670.00,32.28,637.72,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+88,surplus_payout,Balanced Growth,15,Payment to Investment29 (surplus),28.75,641.25,3.53,637.72,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+89,subscription,Balanced Growth,15,Investment60,25,666.25,8.95,657.30,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+90,subscription,Balanced Growth,15,Investment61,25,691.25,14.37,676.88,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+91,payout,Balanced Growth,15,Payment to Investment30,28.75,662.50,14.37,648.13,Triad payout 28.75 USDT (15% return); head 30 unlocked by 60 and 61; no surplus on payout
+92,subscription,Balanced Growth,15,Investment62,25,687.50,19.79,667.71,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+93,subscription,Balanced Growth,15,Investment63,25,712.50,25.21,687.29,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+94,payout,Balanced Growth,15,Payment to Investment31,28.75,683.75,25.21,658.54,Triad payout 28.75 USDT (15% return); head 31 unlocked by 62 and 63; no surplus on payout
+95,subscription,Balanced Growth,15,Investment64,25,708.75,30.63,678.12,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+96,surplus_payout,Balanced Growth,15,Payment to Investment32 (surplus),28.75,680.00,1.88,678.12,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+97,subscription,Balanced Growth,15,Investment65,25,705.00,7.30,697.70,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+98,subscription,Balanced Growth,15,Investment66,25,730.00,12.72,717.28,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+99,subscription,Balanced Growth,15,Investment67,25,755.00,18.14,736.86,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+100,payout,Balanced Growth,15,Payment to Investment33,28.75,726.25,18.14,708.11,Triad payout 28.75 USDT (15% return); head 33 unlocked by 66 and 67; no surplus on payout
+101,subscription,Balanced Growth,15,Investment68,25,751.25,23.56,727.69,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+102,subscription,Balanced Growth,15,Investment69,25,776.25,28.98,747.27,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+103,surplus_payout,Balanced Growth,15,Payment to Investment34 (surplus),28.75,747.50,0.23,747.27,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+104,subscription,Balanced Growth,15,Investment70,25,772.50,5.65,766.85,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+105,subscription,Balanced Growth,15,Investment71,25,797.50,11.07,786.43,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+106,payout,Balanced Growth,15,Payment to Investment35,28.75,768.75,11.07,757.68,Triad payout 28.75 USDT (15% return); head 35 unlocked by 70 and 71; no surplus on payout
+107,subscription,Balanced Growth,15,Investment72,25,793.75,16.49,777.26,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+108,subscription,Balanced Growth,15,Investment73,25,818.75,21.91,796.84,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+109,payout,Balanced Growth,15,Payment to Investment36,28.75,790.00,21.91,768.09,Triad payout 28.75 USDT (15% return); head 36 unlocked by 72 and 73; no surplus on payout
+110,subscription,Balanced Growth,15,Investment74,25,815.00,27.33,787.67,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+111,subscription,Balanced Growth,15,Investment75,25,840.00,32.75,807.25,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+112,surplus_payout,Balanced Growth,15,Payment to Investment37 (surplus),28.75,811.25,4.00,807.25,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+113,subscription,Balanced Growth,15,Investment76,25,836.25,9.42,826.83,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+114,subscription,Balanced Growth,15,Investment77,25,861.25,14.84,846.41,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+115,payout,Balanced Growth,15,Payment to Investment38,28.75,832.50,14.84,817.66,Triad payout 28.75 USDT (15% return); head 38 unlocked by 76 and 77; no surplus on payout
+116,subscription,Balanced Growth,15,Investment78,25,857.50,20.26,837.24,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+117,subscription,Balanced Growth,15,Investment79,25,882.50,25.68,856.82,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+118,payout,Balanced Growth,15,Payment to Investment39,28.75,853.75,25.68,828.07,Triad payout 28.75 USDT (15% return); head 39 unlocked by 78 and 79; no surplus on payout
+119,subscription,Balanced Growth,15,Investment80,25,878.75,31.10,847.65,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+120,surplus_payout,Balanced Growth,15,Payment to Investment40 (surplus),28.75,850.00,2.35,847.65,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+121,subscription,Balanced Growth,15,Investment81,25,875.00,7.77,867.23,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+122,subscription,Balanced Growth,15,Investment82,25,900.00,13.19,886.81,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+123,subscription,Balanced Growth,15,Investment83,25,925.00,18.61,906.39,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+124,payout,Balanced Growth,15,Payment to Investment41,28.75,896.25,18.61,877.64,Triad payout 28.75 USDT (15% return); head 41 unlocked by 82 and 83; no surplus on payout
+125,subscription,Balanced Growth,15,Investment84,25,921.25,24.03,897.22,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+126,subscription,Balanced Growth,15,Investment85,25,946.25,29.45,916.80,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+127,surplus_payout,Balanced Growth,15,Payment to Investment42 (surplus),28.75,917.50,0.70,916.80,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+128,subscription,Balanced Growth,15,Investment86,25,942.50,6.12,936.38,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+129,subscription,Balanced Growth,15,Investment87,25,967.50,11.54,955.96,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+130,payout,Balanced Growth,15,Payment to Investment43,28.75,938.75,11.54,927.21,Triad payout 28.75 USDT (15% return); head 43 unlocked by 86 and 87; no surplus on payout
+131,subscription,Balanced Growth,15,Investment88,25,963.75,16.96,946.79,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+132,subscription,Balanced Growth,15,Investment89,25,988.75,22.38,966.37,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+133,payout,Balanced Growth,15,Payment to Investment44,28.75,960.00,22.38,937.62,Triad payout 28.75 USDT (15% return); head 44 unlocked by 88 and 89; no surplus on payout
+134,subscription,Balanced Growth,15,Investment90,25,985.00,27.80,957.20,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+135,subscription,Balanced Growth,15,Investment91,25,1010.00,33.22,976.78,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+136,surplus_payout,Balanced Growth,15,Payment to Investment45 (surplus),28.75,981.25,4.47,976.78,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+137,subscription,Balanced Growth,15,Investment92,25,1006.25,9.89,996.36,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+138,subscription,Balanced Growth,15,Investment93,25,1031.25,15.31,1015.94,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+139,payout,Balanced Growth,15,Payment to Investment46,28.75,1002.50,15.31,987.19,Triad payout 28.75 USDT (15% return); head 46 unlocked by 92 and 93; no surplus on payout
+140,subscription,Balanced Growth,15,Investment94,25,1027.50,20.73,1006.77,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+141,subscription,Balanced Growth,15,Investment95,25,1052.50,26.15,1026.35,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+142,payout,Balanced Growth,15,Payment to Investment47,28.75,1023.75,26.15,997.60,Triad payout 28.75 USDT (15% return); head 47 unlocked by 94 and 95; no surplus on payout
+143,subscription,Balanced Growth,15,Investment96,25,1048.75,31.57,1017.18,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+144,surplus_payout,Balanced Growth,15,Payment to Investment48 (surplus),28.75,1020.00,2.82,1017.18,Surplus ≥ 28.75; pool −28.75 and surplus −28.75
+145,subscription,Balanced Growth,15,Investment97,25,1045.00,8.24,1036.76,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+146,subscription,Balanced Growth,15,Investment98,25,1070.00,13.66,1056.34,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+147,subscription,Balanced Growth,15,Investment99,25,1095.00,19.08,1075.92,+5.42 surplus on subscribe (triad surplus 16.25÷3)
+148,payout,Balanced Growth,15,Payment to Investment49,28.75,1066.25,19.08,1047.17,Triad payout 28.75 USDT (15% return); head 49 unlocked by 98 and 99; no surplus on payout
+149,subscription,Balanced Growth,15,Investment100,25,1091.25,24.50,1066.75,+5.42 surplus on subscribe (triad surplus 16.25÷3); Investment50 needs 100 and 101 for triad unlock

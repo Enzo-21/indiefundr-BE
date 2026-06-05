@@ -1,0 +1,1 @@
+export const AUTOPILOT_INTER_PAYOUT_DELAY_SEC = 10;

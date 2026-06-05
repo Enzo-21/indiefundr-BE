@@ -1,0 +1,524 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum InvestmentStatus {
+  pending
+  active
+  matured
+  redeeming
+  redeemed
+  failed
+}
+
+enum InvestmentPayabilityStatus {
+  not_matured
+  pending_liquidity
+  payable
+}
+
+enum PurchaseOrderStatus {
+  queued
+  processing
+  completed
+  failed
+}
+
+enum PurchaseOrderFulfillmentMode {
+  automatic
+  manual
+}
+
+enum PurchaseOrderStep {
+  validate
+  trx_topup
+  trx_confirm
+  usdt_transfer
+  usdt_confirm
+  done
+  awaiting_trx
+  awaiting_usdt
+  awaiting_review
+}
+
+enum PurchaseOrderType {
+  subscribe_fund
+}
+
+enum WithdrawalOrderStatus {
+  queued
+  processing
+  completed
+  failed
+}
+
+enum WithdrawalOrderStep {
+  awaiting_trx
+  awaiting_usdt
+  awaiting_review
+  done
+}
+
+enum TreasuryEventType {
+  subscribe_inflow
+  payout_outflow
+  surplus_credit
+  surplus_draw
+  app_withdrawal
+  ledger_adjustment
+  external_deposit_inflow
+}
+
+enum FeeSponsorshipStatus {
+  topped_up
+  purchase_ok
+  recovered
+  loss
+}
+
+type ProfileSocial {
+  twitter   String?
+  facebook  String?
+  instagram String?
+}
+
+model User {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  email           String
+  password        String?
+  date            DateTime @default(now())
+  firstTime       Boolean  @default(true)
+  hasVerifiedMail Boolean  @default(false)
+  device          String?
+  isPro           Boolean  @default(false)
+
+  wallets           Wallet[]            @relation("UserWallets")
+  profiles          Profile[]
+  photos            Photo[]
+  investments       Investment[]
+  purchaseOrders    PurchaseOrder[]
+  withdrawalOrders  WithdrawalOrder[]
+  failedInvestments FailedInvestment[]
+  otpVerifications  OtpVerification[]
+  refreshSessions   RefreshSession[]
+  feeSponsorships   FeeSponsorship[]
+
+  @@map("users")
+}
+
+model Profile {
+  id       String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String?        @map("user") @db.ObjectId
+  bio      String
+  phone    String?
+  province String
+  city     String
+  services String[]
+  category String
+  social          ProfileSocial?
+  embeddedPhotos  Json?          @map("photos")
+  date            DateTime       @default(now())
+
+  user   User?   @relation(fields: [userId], references: [id])
+  photos Photo[]
+
+  @@map("profiles")
+}
+
+model Photo {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String? @map("user") @db.ObjectId
+  profileId String? @map("profile") @db.ObjectId
+  imageURL  String?
+  public_id String?
+
+  user    User?    @relation(fields: [userId], references: [id])
+  profile Profile? @relation(fields: [profileId], references: [id])
+
+  @@map("photos")
+}
+
+model Wallet {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String?  @map("user") @db.ObjectId
+  name         String   @default("IndieFundr wallet")
+  address      String
+  privateKey   String
+  isCustom     Boolean  @default(false)
+  isMainWallet Boolean  @default(false)
+  color        String   @default("rgb(114, 232, 12)")
+  date         DateTime @default(now())
+  activatedAt     DateTime?
+  activationTxId  String?
+  onChainUsdtCached    Float?
+  onChainUsdtCachedAt  DateTime?
+  pendingInboundCached Float?
+  activitySyncedAt     DateTime?
+  chainSyncedThroughAt DateTime?
+  chainSyncBackfillComplete Boolean @default(false)
+
+  user              User?              @relation("UserWallets", fields: [userId], references: [id])
+  investments       Investment[]
+  purchaseOrders    PurchaseOrder[]
+  withdrawalOrders  WithdrawalOrder[]
+  failedInvestments FailedInvestment[]
+  feeSponsorships   FeeSponsorship[]
+  walletActivities  WalletActivity[]
+  chainTransfers    WalletChainTransfer[]
+
+  @@unique([userId, address])
+  @@map("wallets")
+}
+
+model WalletActivity {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @map("user") @db.ObjectId
+  walletId    String   @map("wallet") @db.ObjectId
+  kind        String
+  entityId    String?
+  txId        String?
+  type        String
+  amountUsdt  Float
+  status      String
+  label       String
+  detail      String?
+  occurredAt  DateTime
+  tronscanUrl String?
+  chainFinal  Boolean  @default(false)
+  pendingTapInfo Json?
+  updatedAt   DateTime @updatedAt
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([walletId, occurredAt(sort: Desc)])
+  @@index([userId, walletId])
+  @@map("walletactivities")
+}
+
+model WalletChainTransfer {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  walletId     String   @map("wallet") @db.ObjectId
+  txId         String
+  type         String
+  amountUsdt   Float
+  status       String
+  chainDate    DateTime
+  statusFinal  Boolean  @default(false)
+  memo         String?
+  raw          Json?
+  updatedAt    DateTime @updatedAt
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@unique([walletId, txId])
+  @@index([walletId, chainDate(sort: Desc)])
+  @@map("walletchaintransfers")
+}
+
+model Investment {
+  id                    String                     @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String                     @map("user") @db.ObjectId
+  walletId              String                     @map("wallet") @db.ObjectId
+  fundId                String
+  amountUsdt            Float
+  returnPercent90d      Float
+  projectedPayoutUsdt   Float
+  status                InvestmentStatus           @default(pending)
+  purchaseOrderId       String?                    @map("purchaseOrder") @db.ObjectId
+  transaction           Json?
+  redemptionTransaction Json?
+  subscribedAt          DateTime?
+  maturesAt             DateTime?
+  redeemedAt            DateTime?
+  payabilityStatus      InvestmentPayabilityStatus @default(not_matured)
+  payoutEligibleAt      DateTime?
+  markedPayableAt       DateTime?
+  payoutUnlockedAt      DateTime?
+  autoPayoutAt          DateTime?
+  payoutUnlockingInvestmentIds String[] @default([])
+  payoutUnlockingUserIds       String[] @default([])
+  payoutReason          String?
+  payoutTriggeredBy     String?
+  payoutFailureReason   String?
+  globalQueueRank       Int?
+  newSubscribersNeeded  Int?
+  chainMemo             String?
+  date                  DateTime                   @default(now())
+
+  user          User           @relation(fields: [userId], references: [id])
+  wallet        Wallet         @relation(fields: [walletId], references: [id])
+  purchaseOrder PurchaseOrder? @relation("InvestmentToOrder", fields: [purchaseOrderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  purchaseOrdersFromInvestment PurchaseOrder[] @relation("OrderToInvestment")
+  treasuryEvents TreasuryEvent[]
+
+  @@index([userId, fundId, status])
+  @@index([status, maturesAt])
+  @@index([payabilityStatus, payoutEligibleAt])
+  @@map("investments")
+}
+
+model PurchaseOrder {
+  id              String              @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String              @map("user") @db.ObjectId
+  walletId        String              @map("wallet") @db.ObjectId
+  type            PurchaseOrderType   @default(subscribe_fund)
+  fundId          String
+  costUsdt        Float
+  status          PurchaseOrderStatus @default(queued)
+  step            PurchaseOrderStep   @default(validate)
+  fulfillmentMode PurchaseOrderFulfillmentMode @default(automatic)
+  reservedUsdt    Float
+  adminTrxTopUpTxId String?
+  adminUsdtTxId     String?
+  adminSettledAt    DateTime?
+  adminSettledBy    String?
+  adminNotes        String?
+  estimatedTrx    Float?
+  sponsoredTrx    Float               @default(0)
+  sponsorRound    Int                 @default(0)
+  recoveredTrx    Float               @default(0)
+  trxBefore       Float               @default(0)
+  trxAfterUsdt    Float?
+  topUpTxId       String?
+  topUpTxIds      String[]            @default([])
+  usdtTxId        String?
+  failedUsdtTxIds String[]            @default([])
+  sweepTxId       String?
+  investmentId    String?             @map("investment") @db.ObjectId
+  subscribeInflowRecordedAt DateTime?
+  failureReason   String?
+  device          String?
+  date            DateTime            @default(now())
+  updatedAt       DateTime            @default(now())
+  paymentChainOutcome   String?
+  paymentChainTxId      String?
+  paymentChainCheckedAt DateTime?
+  paymentChainFinal     Boolean             @default(false)
+  chainMemo             String?
+  usdtBroadcastJson     Json?
+
+  user         User         @relation(fields: [userId], references: [id])
+  wallet       Wallet       @relation(fields: [walletId], references: [id])
+  investment   Investment?  @relation("OrderToInvestment", fields: [investmentId], references: [id])
+  investments  Investment[] @relation("InvestmentToOrder")
+  treasuryEvents TreasuryEvent[]
+
+  @@index([userId, status])
+  @@index([status, updatedAt])
+  @@map("purchaseorders")
+}
+
+model WithdrawalOrder {
+  id                   String                @id @default(auto()) @map("_id") @db.ObjectId
+  userId               String                @map("user") @db.ObjectId
+  walletId             String                @map("wallet") @db.ObjectId
+  amountUsdt           Float
+  reservedUsdt         Float
+  destinationAddress   String
+  status               WithdrawalOrderStatus @default(queued)
+  step                 WithdrawalOrderStep   @default(awaiting_trx)
+  adminTrxTopUpTxId    String?
+  adminUsdtTxId        String?
+  usdtTxId             String?
+  adminSettledAt       DateTime?
+  adminSettledBy       String?
+  adminNotes           String?
+  estimatedTrx         Float?
+  failureReason        String?
+  paymentChainOutcome  String?
+  paymentChainTxId     String?
+  paymentChainCheckedAt DateTime?
+  paymentChainFinal    Boolean               @default(false)
+  chainMemo            String?
+  date                 DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([userId, status])
+  @@index([walletId, status])
+  @@map("withdrawalorders")
+}
+
+model FailedInvestment {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String?  @map("user") @db.ObjectId
+  walletId    String?  @map("wallet") @db.ObjectId
+  fundId      String
+  amountUsdt  Float
+  transaction Json?
+  date        DateTime @default(now())
+
+  user   User?   @relation(fields: [userId], references: [id])
+  wallet Wallet? @relation(fields: [walletId], references: [id])
+
+  @@map("failedinvestments")
+}
+
+model OtpVerification {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String?   @map("user") @db.ObjectId
+  otpCode   String?
+  createdAt DateTime?
+  expiresAt DateTime?
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("otpverifications")
+}
+
+model RefreshSession {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String    @map("user") @db.ObjectId
+  tokenHash    String    @unique
+  familyId     String
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?   @map("replacedBy") @db.ObjectId
+  userAgent    String?
+  lastUsedAt   DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+
+  user             User             @relation(fields: [userId], references: [id])
+  replacedBy       RefreshSession?  @relation("SessionReplacement", fields: [replacedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replacedSessions RefreshSession[] @relation("SessionReplacement")
+
+  @@index([userId])
+  @@index([familyId])
+  @@map("refreshsessions")
+}
+
+model FeeSponsorship {
+  id           String               @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String               @map("user") @db.ObjectId
+  walletId     String               @map("wallet") @db.ObjectId
+  seedId       String?              @map("seed") @db.ObjectId
+  estimatedTrx Float
+  sponsoredTrx Float                @default(0)
+  recoveredTrx Float                @default(0)
+  trxBefore    Float                @default(0)
+  topUpTxId    String?
+  sweepTxId    String?
+  usdtTxId     String?
+  status       FeeSponsorshipStatus @default(topped_up)
+  date         DateTime             @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([userId, date(sort: Desc)])
+  @@map("feesponsorships")
+}
+
+model TreasuryLedger {
+  id                       String   @id @default("global") @map("_id")
+  poolAvailable            Float    @default(0)
+  treasurySurplus          Float    @default(0)
+  protectedRevenueCredited Float    @default(0)
+  protectedRevenueWithdrawn Float   @default(0)
+  subscriberSlotsCredited  Float    @default(0)
+  subscriberSlotsConsumed  Float    @default(0)
+  activePayoutInvestmentId String?  @db.ObjectId
+  activePayoutStartedAt    DateTime?
+  activePayoutTrigger      String?
+  activePayoutLockExpiresAt DateTime?
+  version                  Int      @default(0)
+  updatedAt                DateTime @default(now())
+
+  @@map("treasuryledgers")
+}
+
+model TreasuryEvent {
+  id                      String            @id @default(auto()) @map("_id") @db.ObjectId
+  type                    TreasuryEventType
+  amountUsdt              Float
+  investmentId            String?           @map("investment") @db.ObjectId
+  purchaseOrderId         String?           @map("purchaseOrder") @db.ObjectId
+  withdrawalId            String?           @map("withdrawal") @db.ObjectId
+  poolAfter               Float?
+  surplusAfter            Float?
+  protectedCreditedAfter  Float?
+  protectedWithdrawnAfter Float?
+  meta                    Json?
+  createdAt               DateTime          @default(now())
+
+  investment    Investment?           @relation(fields: [investmentId], references: [id])
+  purchaseOrder PurchaseOrder?        @relation(fields: [purchaseOrderId], references: [id])
+  withdrawal    AppRevenueWithdrawal? @relation(fields: [withdrawalId], references: [id])
+
+  @@index([createdAt(sort: Desc)])
+  @@map("treasuryevents")
+}
+
+model AppRevenueWithdrawal {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  amountUsdt    Float
+  slotsConsumed Float
+  txRef         String?  @unique
+  note          String?
+  createdBy     String   @default("admin")
+  createdAt     DateTime @default(now())
+
+  treasuryEvents TreasuryEvent[]
+
+  @@map("apprevenuewithdrawals")
+}
+
+model AdminOnChainTransaction {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  identityKey          String   @unique
+  txId                 String
+  token                String   @default("USDT")
+  amountUsdt           Float
+  status               String
+  direction            String
+  category             String
+  classificationSource String?
+  fromAddress          String
+  toAddress            String
+  fromWalletId         String?  @db.ObjectId
+  toWalletId           String?  @db.ObjectId
+  fromUserId           String?  @db.ObjectId
+  toUserId             String?  @db.ObjectId
+  fromUserEmail        String?
+  toUserEmail          String?
+  detail               String?
+  tronscanUrl          String?
+  raw                  Json?
+  chainDate            DateTime
+  firstSeenAt          DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  /** Admin override for treasury outbound classification (treasury_app_withdrawal | treasury_outflow_untracked). */
+  adminCategoryOverride String?
+  adminOverrideBy       String?
+  adminOverrideNote     String?
+  adminOverriddenAt     DateTime?
+  /** When external treasury pool inflow was recorded on the internal ledger. */
+  poolInflowRecordedAt  DateTime?
+  /** When admin marked this external inflow as surplus (payout buffer). */
+  adminSurplusMarkedAt  DateTime?
+  adminSurplusMarkedBy  String?
+
+  @@index([chainDate(sort: Desc)])
+  @@index([txId])
+  @@index([category, chainDate(sort: Desc)])
+  @@map("adminonchaintransactions")
+}
+
+model AdminLoginOtp {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String
+  otpCode   String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@map("adminloginotps")
+}

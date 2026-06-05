@@ -1,0 +1,151 @@
+step,event,fund,return_percent,label,amount_usdt,pool_available,treasury_surplus,protected_withdrawable,notes
+1,subscription,Stable Yield,10,Investment1,25,25.00,5.83,19.17,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+2,subscription,Stable Yield,10,Investment2,25,50.00,11.66,38.34,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+3,subscription,Stable Yield,10,Investment3,25,75.00,17.49,57.51,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+4,payout,Stable Yield,10,Payment to Investment1,27.5,47.50,17.49,30.01,Triad payout 27.5 USDT (10% return); head 1 unlocked by 2 and 3; no surplus on payout
+5,subscription,Stable Yield,10,Investment4,25,72.50,23.32,49.18,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+6,subscription,Stable Yield,10,Investment5,25,97.50,29.15,68.35,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+7,surplus_payout,Stable Yield,10,Payment to Investment5 (surplus),27.5,70.00,1.65,68.35,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+8,payout,Stable Yield,10,Payment to Investment2,27.5,42.50,1.65,40.85,Triad payout 27.5 USDT (10% return); head 2 unlocked by 4 and 5; no surplus on payout
+9,subscription,Stable Yield,10,Investment6,25,67.50,7.48,60.02,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+10,subscription,Stable Yield,10,Investment7,25,92.50,13.31,79.19,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+11,payout,Stable Yield,10,Payment to Investment3,27.5,65.00,13.31,51.69,Triad payout 27.5 USDT (10% return); head 3 unlocked by 6 and 7; no surplus on payout
+12,subscription,Stable Yield,10,Investment8,25,90.00,19.14,70.86,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+13,subscription,Stable Yield,10,Investment9,25,115.00,24.97,90.03,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+14,payout,Stable Yield,10,Payment to Investment4,27.5,87.50,24.97,62.53,Triad payout 27.5 USDT (10% return); head 4 unlocked by 8 and 9; no surplus on payout
+15,subscription,Stable Yield,10,Investment10,25,112.50,30.80,81.70,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+16,surplus_payout,Stable Yield,10,Payment to Investment6 (surplus),27.5,85.00,3.30,81.70,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+17,subscription,Stable Yield,10,Investment11,25,110.00,9.13,100.87,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+18,subscription,Stable Yield,10,Investment12,25,135.00,14.96,120.04,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+19,subscription,Stable Yield,10,Investment13,25,160.00,20.79,139.21,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+20,subscription,Stable Yield,10,Investment14,25,185.00,26.62,158.38,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+21,subscription,Stable Yield,10,Investment15,25,210.00,32.45,177.55,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+22,surplus_payout,Stable Yield,10,Payment to Investment7 (surplus),27.5,182.50,4.95,177.55,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+23,subscription,Stable Yield,10,Investment16,25,207.50,10.78,196.72,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+24,subscription,Stable Yield,10,Investment17,25,232.50,16.61,215.89,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+25,payout,Stable Yield,10,Payment to Investment8,27.5,205.00,16.61,188.39,Triad payout 27.5 USDT (10% return); head 8 unlocked by 16 and 17; no surplus on payout
+26,subscription,Stable Yield,10,Investment18,25,230.00,22.44,207.56,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+27,subscription,Stable Yield,10,Investment19,25,255.00,28.27,226.73,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+28,surplus_payout,Stable Yield,10,Payment to Investment9 (surplus),27.5,227.50,0.77,226.73,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+29,subscription,Stable Yield,10,Investment20,25,252.50,6.60,245.90,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+30,subscription,Stable Yield,10,Investment21,25,277.50,12.43,265.07,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+31,payout,Stable Yield,10,Payment to Investment10,27.5,250.00,12.43,237.57,Triad payout 27.5 USDT (10% return); head 10 unlocked by 20 and 21; no surplus on payout
+32,subscription,Stable Yield,10,Investment22,25,275.00,18.26,256.74,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+33,subscription,Stable Yield,10,Investment23,25,300.00,24.09,275.91,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+34,payout,Stable Yield,10,Payment to Investment11,27.5,272.50,24.09,248.41,Triad payout 27.5 USDT (10% return); head 11 unlocked by 22 and 23; no surplus on payout
+35,subscription,Stable Yield,10,Investment24,25,297.50,29.92,267.58,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+36,surplus_payout,Stable Yield,10,Payment to Investment12 (surplus),27.5,270.00,2.42,267.58,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+37,subscription,Stable Yield,10,Investment25,25,295.00,8.25,286.75,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+38,subscription,Stable Yield,10,Investment26,25,320.00,14.08,305.92,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+39,subscription,Stable Yield,10,Investment27,25,345.00,19.91,325.09,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+40,payout,Stable Yield,10,Payment to Investment13,27.5,317.50,19.91,297.59,Triad payout 27.5 USDT (10% return); head 13 unlocked by 26 and 27; no surplus on payout
+41,subscription,Stable Yield,10,Investment28,25,342.50,25.74,316.76,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+42,subscription,Stable Yield,10,Investment29,25,367.50,31.57,335.93,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+43,surplus_payout,Stable Yield,10,Payment to Investment14 (surplus),27.5,340.00,4.07,335.93,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+44,subscription,Stable Yield,10,Investment30,25,365.00,9.90,355.10,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+45,subscription,Stable Yield,10,Investment31,25,390.00,15.73,374.27,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+46,payout,Stable Yield,10,Payment to Investment15,27.5,362.50,15.73,346.77,Triad payout 27.5 USDT (10% return); head 15 unlocked by 30 and 31; no surplus on payout
+47,subscription,Stable Yield,10,Investment32,25,387.50,21.56,365.94,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+48,subscription,Stable Yield,10,Investment33,25,412.50,27.39,385.11,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+49,payout,Stable Yield,10,Payment to Investment16,27.5,385.00,27.39,357.61,Triad payout 27.5 USDT (10% return); head 16 unlocked by 32 and 33; no surplus on payout
+50,subscription,Stable Yield,10,Investment34,25,410.00,33.22,376.78,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+51,surplus_payout,Stable Yield,10,Payment to Investment17 (surplus),27.5,382.50,5.72,376.78,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+52,subscription,Stable Yield,10,Investment35,25,407.50,11.55,395.95,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+53,subscription,Stable Yield,10,Investment36,25,432.50,17.38,415.12,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+54,subscription,Stable Yield,10,Investment37,25,457.50,23.21,434.29,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+55,payout,Stable Yield,10,Payment to Investment18,27.5,430.00,23.21,406.79,Triad payout 27.5 USDT (10% return); head 18 unlocked by 36 and 37; no surplus on payout
+56,subscription,Stable Yield,10,Investment38,25,455.00,29.04,425.96,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+57,surplus_payout,Stable Yield,10,Payment to Investment19 (surplus),27.5,427.50,1.54,425.96,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+58,subscription,Stable Yield,10,Investment39,25,452.50,7.37,445.13,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+59,subscription,Stable Yield,10,Investment40,25,477.50,13.20,464.30,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+60,subscription,Stable Yield,10,Investment41,25,502.50,19.03,483.47,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+61,payout,Stable Yield,10,Payment to Investment20,27.5,475.00,19.03,455.97,Triad payout 27.5 USDT (10% return); head 20 unlocked by 40 and 41; no surplus on payout
+62,subscription,Stable Yield,10,Investment42,25,500.00,24.86,475.14,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+63,subscription,Stable Yield,10,Investment43,25,525.00,30.69,494.31,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+64,surplus_payout,Stable Yield,10,Payment to Investment21 (surplus),27.5,497.50,3.19,494.31,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+65,subscription,Stable Yield,10,Investment44,25,522.50,9.02,513.48,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+66,subscription,Stable Yield,10,Investment45,25,547.50,14.85,532.65,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+67,payout,Stable Yield,10,Payment to Investment22,27.5,520.00,14.85,505.15,Triad payout 27.5 USDT (10% return); head 22 unlocked by 44 and 45; no surplus on payout
+68,subscription,Stable Yield,10,Investment46,25,545.00,20.68,524.32,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+69,subscription,Stable Yield,10,Investment47,25,570.00,26.51,543.49,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+70,payout,Stable Yield,10,Payment to Investment23,27.5,542.50,26.51,515.99,Triad payout 27.5 USDT (10% return); head 23 unlocked by 46 and 47; no surplus on payout
+71,subscription,Stable Yield,10,Investment48,25,567.50,32.34,535.16,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+72,surplus_payout,Stable Yield,10,Payment to Investment24 (surplus),27.5,540.00,4.84,535.16,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+73,subscription,Stable Yield,10,Investment49,25,565.00,10.67,554.33,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+74,subscription,Stable Yield,10,Investment50,25,590.00,16.50,573.50,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+75,subscription,Stable Yield,10,Investment51,25,615.00,22.33,592.67,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+76,payout,Stable Yield,10,Payment to Investment25,27.5,587.50,22.33,565.17,Triad payout 27.5 USDT (10% return); head 25 unlocked by 50 and 51; no surplus on payout
+77,subscription,Stable Yield,10,Investment52,25,612.50,28.16,584.34,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+78,surplus_payout,Stable Yield,10,Payment to Investment26 (surplus),27.5,585.00,0.66,584.34,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+79,subscription,Stable Yield,10,Investment53,25,610.00,6.49,603.51,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+80,subscription,Stable Yield,10,Investment54,25,635.00,12.32,622.68,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+81,subscription,Stable Yield,10,Investment55,25,660.00,18.15,641.85,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+82,payout,Stable Yield,10,Payment to Investment27,27.5,632.50,18.15,614.35,Triad payout 27.5 USDT (10% return); head 27 unlocked by 54 and 55; no surplus on payout
+83,subscription,Stable Yield,10,Investment56,25,657.50,23.98,633.52,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+84,subscription,Stable Yield,10,Investment57,25,682.50,29.81,652.69,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+85,surplus_payout,Stable Yield,10,Payment to Investment28 (surplus),27.5,655.00,2.31,652.69,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+86,subscription,Stable Yield,10,Investment58,25,680.00,8.14,671.86,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+87,subscription,Stable Yield,10,Investment59,25,705.00,13.97,691.03,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+88,payout,Stable Yield,10,Payment to Investment29,27.5,677.50,13.97,663.53,Triad payout 27.5 USDT (10% return); head 29 unlocked by 58 and 59; no surplus on payout
+89,subscription,Stable Yield,10,Investment60,25,702.50,19.80,682.70,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+90,subscription,Stable Yield,10,Investment61,25,727.50,25.63,701.87,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+91,payout,Stable Yield,10,Payment to Investment30,27.5,700.00,25.63,674.37,Triad payout 27.5 USDT (10% return); head 30 unlocked by 60 and 61; no surplus on payout
+92,subscription,Stable Yield,10,Investment62,25,725.00,31.46,693.54,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+93,surplus_payout,Stable Yield,10,Payment to Investment31 (surplus),27.5,697.50,3.96,693.54,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+94,subscription,Stable Yield,10,Investment63,25,722.50,9.79,712.71,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+95,subscription,Stable Yield,10,Investment64,25,747.50,15.62,731.88,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+96,subscription,Stable Yield,10,Investment65,25,772.50,21.45,751.05,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+97,payout,Stable Yield,10,Payment to Investment32,27.5,745.00,21.45,723.55,Triad payout 27.5 USDT (10% return); head 32 unlocked by 64 and 65; no surplus on payout
+98,subscription,Stable Yield,10,Investment66,25,770.00,27.28,742.72,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+99,subscription,Stable Yield,10,Investment67,25,795.00,33.11,761.89,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+100,surplus_payout,Stable Yield,10,Payment to Investment33 (surplus),27.5,767.50,5.61,761.89,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+101,subscription,Stable Yield,10,Investment68,25,792.50,11.44,781.06,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+102,subscription,Stable Yield,10,Investment69,25,817.50,17.27,800.23,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+103,payout,Stable Yield,10,Payment to Investment34,27.5,790.00,17.27,772.73,Triad payout 27.5 USDT (10% return); head 34 unlocked by 68 and 69; no surplus on payout
+104,subscription,Stable Yield,10,Investment70,25,815.00,23.10,791.90,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+105,subscription,Stable Yield,10,Investment71,25,840.00,28.93,811.07,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+106,surplus_payout,Stable Yield,10,Payment to Investment35 (surplus),27.5,812.50,1.43,811.07,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+107,subscription,Stable Yield,10,Investment72,25,837.50,7.26,830.24,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+108,subscription,Stable Yield,10,Investment73,25,862.50,13.09,849.41,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+109,payout,Stable Yield,10,Payment to Investment36,27.5,835.00,13.09,821.91,Triad payout 27.5 USDT (10% return); head 36 unlocked by 72 and 73; no surplus on payout
+110,subscription,Stable Yield,10,Investment74,25,860.00,18.92,841.08,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+111,subscription,Stable Yield,10,Investment75,25,885.00,24.75,860.25,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+112,payout,Stable Yield,10,Payment to Investment37,27.5,857.50,24.75,832.75,Triad payout 27.5 USDT (10% return); head 37 unlocked by 74 and 75; no surplus on payout
+113,subscription,Stable Yield,10,Investment76,25,882.50,30.58,851.92,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+114,surplus_payout,Stable Yield,10,Payment to Investment38 (surplus),27.5,855.00,3.08,851.92,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+115,subscription,Stable Yield,10,Investment77,25,880.00,8.91,871.09,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+116,subscription,Stable Yield,10,Investment78,25,905.00,14.74,890.26,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+117,subscription,Stable Yield,10,Investment79,25,930.00,20.57,909.43,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+118,payout,Stable Yield,10,Payment to Investment39,27.5,902.50,20.57,881.93,Triad payout 27.5 USDT (10% return); head 39 unlocked by 78 and 79; no surplus on payout
+119,subscription,Stable Yield,10,Investment80,25,927.50,26.40,901.10,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+120,subscription,Stable Yield,10,Investment81,25,952.50,32.23,920.27,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+121,surplus_payout,Stable Yield,10,Payment to Investment40 (surplus),27.5,925.00,4.73,920.27,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+122,subscription,Stable Yield,10,Investment82,25,950.00,10.56,939.44,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+123,subscription,Stable Yield,10,Investment83,25,975.00,16.39,958.61,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+124,payout,Stable Yield,10,Payment to Investment41,27.5,947.50,16.39,931.11,Triad payout 27.5 USDT (10% return); head 41 unlocked by 82 and 83; no surplus on payout
+125,subscription,Stable Yield,10,Investment84,25,972.50,22.22,950.28,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+126,subscription,Stable Yield,10,Investment85,25,997.50,28.05,969.45,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+127,surplus_payout,Stable Yield,10,Payment to Investment42 (surplus),27.5,970.00,0.55,969.45,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+128,subscription,Stable Yield,10,Investment86,25,995.00,6.38,988.62,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+129,subscription,Stable Yield,10,Investment87,25,1020.00,12.21,1007.79,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+130,payout,Stable Yield,10,Payment to Investment43,27.5,992.50,12.21,980.29,Triad payout 27.5 USDT (10% return); head 43 unlocked by 86 and 87; no surplus on payout
+131,subscription,Stable Yield,10,Investment88,25,1017.50,18.04,999.46,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+132,subscription,Stable Yield,10,Investment89,25,1042.50,23.87,1018.63,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+133,payout,Stable Yield,10,Payment to Investment44,27.5,1015.00,23.87,991.13,Triad payout 27.5 USDT (10% return); head 44 unlocked by 88 and 89; no surplus on payout
+134,subscription,Stable Yield,10,Investment90,25,1040.00,29.70,1010.30,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+135,surplus_payout,Stable Yield,10,Payment to Investment45 (surplus),27.5,1012.50,2.20,1010.30,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+136,subscription,Stable Yield,10,Investment91,25,1037.50,8.03,1029.47,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+137,subscription,Stable Yield,10,Investment92,25,1062.50,13.86,1048.64,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+138,subscription,Stable Yield,10,Investment93,25,1087.50,19.69,1067.81,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+139,payout,Stable Yield,10,Payment to Investment46,27.5,1060.00,19.69,1040.31,Triad payout 27.5 USDT (10% return); head 46 unlocked by 92 and 93; no surplus on payout
+140,subscription,Stable Yield,10,Investment94,25,1085.00,25.52,1059.48,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+141,subscription,Stable Yield,10,Investment95,25,1110.00,31.35,1078.65,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+142,surplus_payout,Stable Yield,10,Payment to Investment47 (surplus),27.5,1082.50,3.85,1078.65,Surplus ≥ 27.5; pool −27.5 and surplus −27.5
+143,subscription,Stable Yield,10,Investment96,25,1107.50,9.68,1097.82,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+144,subscription,Stable Yield,10,Investment97,25,1132.50,15.51,1116.99,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+145,payout,Stable Yield,10,Payment to Investment48,27.5,1105.00,15.51,1089.49,Triad payout 27.5 USDT (10% return); head 48 unlocked by 96 and 97; no surplus on payout
+146,subscription,Stable Yield,10,Investment98,25,1130.00,21.34,1108.66,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+147,subscription,Stable Yield,10,Investment99,25,1155.00,27.17,1127.83,+5.83 surplus on subscribe (triad surplus 17.5÷3)
+148,payout,Stable Yield,10,Payment to Investment49,27.5,1127.50,27.17,1100.33,Triad payout 27.5 USDT (10% return); head 49 unlocked by 98 and 99; no surplus on payout
+149,subscription,Stable Yield,10,Investment100,25,1152.50,33.00,1119.50,+5.83 surplus on subscribe (triad surplus 17.5÷3); Investment50 needs 100 and 101 for triad unlock
+150,surplus_payout,Stable Yield,10,Payment to Investment50 (surplus),27.5,1125.00,5.50,1119.50,Surplus ≥ 27.5; pool −27.5 and surplus −27.5

@@ -1,0 +1,150 @@
+step,event,fund,return_percent,label,amount_usdt,pool_available,treasury_surplus,protected_withdrawable,notes
+1,subscription,Growth Partners,25,Investment1,25,25.00,4.58,20.42,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+2,subscription,Growth Partners,25,Investment2,25,50.00,9.16,40.84,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+3,subscription,Growth Partners,25,Investment3,25,75.00,13.74,61.26,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+4,payout,Growth Partners,25,Payment to Investment1,31.25,43.75,13.74,30.01,Triad payout 31.25 USDT (25% return); head 1 unlocked by 2 and 3; no surplus on payout
+5,subscription,Growth Partners,25,Investment4,25,68.75,18.32,50.43,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+6,subscription,Growth Partners,25,Investment5,25,93.75,22.90,70.85,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+7,payout,Growth Partners,25,Payment to Investment2,31.25,62.50,22.90,39.60,Triad payout 31.25 USDT (25% return); head 2 unlocked by 4 and 5; no surplus on payout
+8,subscription,Growth Partners,25,Investment6,25,87.50,27.48,60.02,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+9,subscription,Growth Partners,25,Investment7,25,112.50,32.06,80.44,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+10,surplus_payout,Growth Partners,25,Payment to Investment5 (surplus),31.25,81.25,0.81,80.44,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+11,payout,Growth Partners,25,Payment to Investment3,31.25,50.00,0.81,49.19,Triad payout 31.25 USDT (25% return); head 3 unlocked by 6 and 7; no surplus on payout
+12,subscription,Growth Partners,25,Investment8,25,75.00,5.39,69.61,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+13,subscription,Growth Partners,25,Investment9,25,100.00,9.97,90.03,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+14,payout,Growth Partners,25,Payment to Investment4,31.25,68.75,9.97,58.78,Triad payout 31.25 USDT (25% return); head 4 unlocked by 8 and 9; no surplus on payout
+15,subscription,Growth Partners,25,Investment10,25,93.75,14.55,79.20,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+16,subscription,Growth Partners,25,Investment11,25,118.75,19.13,99.62,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+17,subscription,Growth Partners,25,Investment12,25,143.75,23.71,120.04,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+18,subscription,Growth Partners,25,Investment13,25,168.75,28.29,140.46,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+19,payout,Growth Partners,25,Payment to Investment6,31.25,137.50,28.29,109.21,Triad payout 31.25 USDT (25% return); head 6 unlocked by 12 and 13; no surplus on payout
+20,subscription,Growth Partners,25,Investment14,25,162.50,32.87,129.63,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+21,surplus_payout,Growth Partners,25,Payment to Investment7 (surplus),31.25,131.25,1.62,129.63,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+22,subscription,Growth Partners,25,Investment15,25,156.25,6.20,150.05,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+23,subscription,Growth Partners,25,Investment16,25,181.25,10.78,170.47,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+24,subscription,Growth Partners,25,Investment17,25,206.25,15.36,190.89,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+25,payout,Growth Partners,25,Payment to Investment8,31.25,175.00,15.36,159.64,Triad payout 31.25 USDT (25% return); head 8 unlocked by 16 and 17; no surplus on payout
+26,subscription,Growth Partners,25,Investment18,25,200.00,19.94,180.06,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+27,subscription,Growth Partners,25,Investment19,25,225.00,24.52,200.48,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+28,payout,Growth Partners,25,Payment to Investment9,31.25,193.75,24.52,169.23,Triad payout 31.25 USDT (25% return); head 9 unlocked by 18 and 19; no surplus on payout
+29,subscription,Growth Partners,25,Investment20,25,218.75,29.10,189.65,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+30,subscription,Growth Partners,25,Investment21,25,243.75,33.68,210.07,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+31,surplus_payout,Growth Partners,25,Payment to Investment10 (surplus),31.25,212.50,2.43,210.07,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+32,subscription,Growth Partners,25,Investment22,25,237.50,7.01,230.49,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+33,subscription,Growth Partners,25,Investment23,25,262.50,11.59,250.91,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+34,payout,Growth Partners,25,Payment to Investment11,31.25,231.25,11.59,219.66,Triad payout 31.25 USDT (25% return); head 11 unlocked by 22 and 23; no surplus on payout
+35,subscription,Growth Partners,25,Investment24,25,256.25,16.17,240.08,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+36,subscription,Growth Partners,25,Investment25,25,281.25,20.75,260.50,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+37,payout,Growth Partners,25,Payment to Investment12,31.25,250.00,20.75,229.25,Triad payout 31.25 USDT (25% return); head 12 unlocked by 24 and 25; no surplus on payout
+38,subscription,Growth Partners,25,Investment26,25,275.00,25.33,249.67,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+39,subscription,Growth Partners,25,Investment27,25,300.00,29.91,270.09,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+40,payout,Growth Partners,25,Payment to Investment13,31.25,268.75,29.91,238.84,Triad payout 31.25 USDT (25% return); head 13 unlocked by 26 and 27; no surplus on payout
+41,subscription,Growth Partners,25,Investment28,25,293.75,34.49,259.26,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+42,surplus_payout,Growth Partners,25,Payment to Investment14 (surplus),31.25,262.50,3.24,259.26,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+43,subscription,Growth Partners,25,Investment29,25,287.50,7.82,279.68,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+44,subscription,Growth Partners,25,Investment30,25,312.50,12.40,300.10,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+45,subscription,Growth Partners,25,Investment31,25,337.50,16.98,320.52,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+46,payout,Growth Partners,25,Payment to Investment15,31.25,306.25,16.98,289.27,Triad payout 31.25 USDT (25% return); head 15 unlocked by 30 and 31; no surplus on payout
+47,subscription,Growth Partners,25,Investment32,25,331.25,21.56,309.69,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+48,subscription,Growth Partners,25,Investment33,25,356.25,26.14,330.11,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+49,payout,Growth Partners,25,Payment to Investment16,31.25,325.00,26.14,298.86,Triad payout 31.25 USDT (25% return); head 16 unlocked by 32 and 33; no surplus on payout
+50,subscription,Growth Partners,25,Investment34,25,350.00,30.72,319.28,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+51,subscription,Growth Partners,25,Investment35,25,375.00,35.30,339.70,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+52,surplus_payout,Growth Partners,25,Payment to Investment17 (surplus),31.25,343.75,4.05,339.70,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+53,subscription,Growth Partners,25,Investment36,25,368.75,8.63,360.12,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+54,subscription,Growth Partners,25,Investment37,25,393.75,13.21,380.54,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+55,payout,Growth Partners,25,Payment to Investment18,31.25,362.50,13.21,349.29,Triad payout 31.25 USDT (25% return); head 18 unlocked by 36 and 37; no surplus on payout
+56,subscription,Growth Partners,25,Investment38,25,387.50,17.79,369.71,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+57,subscription,Growth Partners,25,Investment39,25,412.50,22.37,390.13,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+58,payout,Growth Partners,25,Payment to Investment19,31.25,381.25,22.37,358.88,Triad payout 31.25 USDT (25% return); head 19 unlocked by 38 and 39; no surplus on payout
+59,subscription,Growth Partners,25,Investment40,25,406.25,26.95,379.30,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+60,subscription,Growth Partners,25,Investment41,25,431.25,31.53,399.72,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+61,surplus_payout,Growth Partners,25,Payment to Investment20 (surplus),31.25,400.00,0.28,399.72,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+62,subscription,Growth Partners,25,Investment42,25,425.00,4.86,420.14,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+63,subscription,Growth Partners,25,Investment43,25,450.00,9.44,440.56,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+64,payout,Growth Partners,25,Payment to Investment21,31.25,418.75,9.44,409.31,Triad payout 31.25 USDT (25% return); head 21 unlocked by 42 and 43; no surplus on payout
+65,subscription,Growth Partners,25,Investment44,25,443.75,14.02,429.73,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+66,subscription,Growth Partners,25,Investment45,25,468.75,18.60,450.15,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+67,payout,Growth Partners,25,Payment to Investment22,31.25,437.50,18.60,418.90,Triad payout 31.25 USDT (25% return); head 22 unlocked by 44 and 45; no surplus on payout
+68,subscription,Growth Partners,25,Investment46,25,462.50,23.18,439.32,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+69,subscription,Growth Partners,25,Investment47,25,487.50,27.76,459.74,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+70,payout,Growth Partners,25,Payment to Investment23,31.25,456.25,27.76,428.49,Triad payout 31.25 USDT (25% return); head 23 unlocked by 46 and 47; no surplus on payout
+71,subscription,Growth Partners,25,Investment48,25,481.25,32.34,448.91,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+72,surplus_payout,Growth Partners,25,Payment to Investment24 (surplus),31.25,450.00,1.09,448.91,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+73,subscription,Growth Partners,25,Investment49,25,475.00,5.67,469.33,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+74,subscription,Growth Partners,25,Investment50,25,500.00,10.25,489.75,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+75,subscription,Growth Partners,25,Investment51,25,525.00,14.83,510.17,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+76,payout,Growth Partners,25,Payment to Investment25,31.25,493.75,14.83,478.92,Triad payout 31.25 USDT (25% return); head 25 unlocked by 50 and 51; no surplus on payout
+77,subscription,Growth Partners,25,Investment52,25,518.75,19.41,499.34,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+78,subscription,Growth Partners,25,Investment53,25,543.75,23.99,519.76,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+79,payout,Growth Partners,25,Payment to Investment26,31.25,512.50,23.99,488.51,Triad payout 31.25 USDT (25% return); head 26 unlocked by 52 and 53; no surplus on payout
+80,subscription,Growth Partners,25,Investment54,25,537.50,28.57,508.93,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+81,subscription,Growth Partners,25,Investment55,25,562.50,33.15,529.35,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+82,surplus_payout,Growth Partners,25,Payment to Investment27 (surplus),31.25,531.25,1.90,529.35,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+83,subscription,Growth Partners,25,Investment56,25,556.25,6.48,549.77,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+84,subscription,Growth Partners,25,Investment57,25,581.25,11.06,570.19,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+85,payout,Growth Partners,25,Payment to Investment28,31.25,550.00,11.06,538.94,Triad payout 31.25 USDT (25% return); head 28 unlocked by 56 and 57; no surplus on payout
+86,subscription,Growth Partners,25,Investment58,25,575.00,15.64,559.36,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+87,subscription,Growth Partners,25,Investment59,25,600.00,20.22,579.78,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+88,payout,Growth Partners,25,Payment to Investment29,31.25,568.75,20.22,548.53,Triad payout 31.25 USDT (25% return); head 29 unlocked by 58 and 59; no surplus on payout
+89,subscription,Growth Partners,25,Investment60,25,593.75,24.80,568.95,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+90,subscription,Growth Partners,25,Investment61,25,618.75,29.38,589.37,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+91,payout,Growth Partners,25,Payment to Investment30,31.25,587.50,29.38,558.12,Triad payout 31.25 USDT (25% return); head 30 unlocked by 60 and 61; no surplus on payout
+92,subscription,Growth Partners,25,Investment62,25,612.50,33.96,578.54,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+93,surplus_payout,Growth Partners,25,Payment to Investment31 (surplus),31.25,581.25,2.71,578.54,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+94,subscription,Growth Partners,25,Investment63,25,606.25,7.29,598.96,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+95,subscription,Growth Partners,25,Investment64,25,631.25,11.87,619.38,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+96,subscription,Growth Partners,25,Investment65,25,656.25,16.45,639.80,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+97,payout,Growth Partners,25,Payment to Investment32,31.25,625.00,16.45,608.55,Triad payout 31.25 USDT (25% return); head 32 unlocked by 64 and 65; no surplus on payout
+98,subscription,Growth Partners,25,Investment66,25,650.00,21.03,628.97,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+99,subscription,Growth Partners,25,Investment67,25,675.00,25.61,649.39,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+100,payout,Growth Partners,25,Payment to Investment33,31.25,643.75,25.61,618.14,Triad payout 31.25 USDT (25% return); head 33 unlocked by 66 and 67; no surplus on payout
+101,subscription,Growth Partners,25,Investment68,25,668.75,30.19,638.56,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+102,subscription,Growth Partners,25,Investment69,25,693.75,34.77,658.98,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+103,surplus_payout,Growth Partners,25,Payment to Investment34 (surplus),31.25,662.50,3.52,658.98,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+104,subscription,Growth Partners,25,Investment70,25,687.50,8.10,679.40,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+105,subscription,Growth Partners,25,Investment71,25,712.50,12.68,699.82,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+106,payout,Growth Partners,25,Payment to Investment35,31.25,681.25,12.68,668.57,Triad payout 31.25 USDT (25% return); head 35 unlocked by 70 and 71; no surplus on payout
+107,subscription,Growth Partners,25,Investment72,25,706.25,17.26,688.99,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+108,subscription,Growth Partners,25,Investment73,25,731.25,21.84,709.41,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+109,payout,Growth Partners,25,Payment to Investment36,31.25,700.00,21.84,678.16,Triad payout 31.25 USDT (25% return); head 36 unlocked by 72 and 73; no surplus on payout
+110,subscription,Growth Partners,25,Investment74,25,725.00,26.42,698.58,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+111,subscription,Growth Partners,25,Investment75,25,750.00,31.00,719.00,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+112,payout,Growth Partners,25,Payment to Investment37,31.25,718.75,31.00,687.75,Triad payout 31.25 USDT (25% return); head 37 unlocked by 74 and 75; no surplus on payout
+113,subscription,Growth Partners,25,Investment76,25,743.75,35.58,708.17,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+114,surplus_payout,Growth Partners,25,Payment to Investment38 (surplus),31.25,712.50,4.33,708.17,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+115,subscription,Growth Partners,25,Investment77,25,737.50,8.91,728.59,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+116,subscription,Growth Partners,25,Investment78,25,762.50,13.49,749.01,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+117,subscription,Growth Partners,25,Investment79,25,787.50,18.07,769.43,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+118,payout,Growth Partners,25,Payment to Investment39,31.25,756.25,18.07,738.18,Triad payout 31.25 USDT (25% return); head 39 unlocked by 78 and 79; no surplus on payout
+119,subscription,Growth Partners,25,Investment80,25,781.25,22.65,758.60,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+120,subscription,Growth Partners,25,Investment81,25,806.25,27.23,779.02,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+121,payout,Growth Partners,25,Payment to Investment40,31.25,775.00,27.23,747.77,Triad payout 31.25 USDT (25% return); head 40 unlocked by 80 and 81; no surplus on payout
+122,subscription,Growth Partners,25,Investment82,25,800.00,31.81,768.19,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+123,surplus_payout,Growth Partners,25,Payment to Investment41 (surplus),31.25,768.75,0.56,768.19,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+124,subscription,Growth Partners,25,Investment83,25,793.75,5.14,788.61,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+125,subscription,Growth Partners,25,Investment84,25,818.75,9.72,809.03,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+126,subscription,Growth Partners,25,Investment85,25,843.75,14.30,829.45,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+127,payout,Growth Partners,25,Payment to Investment42,31.25,812.50,14.30,798.20,Triad payout 31.25 USDT (25% return); head 42 unlocked by 84 and 85; no surplus on payout
+128,subscription,Growth Partners,25,Investment86,25,837.50,18.88,818.62,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+129,subscription,Growth Partners,25,Investment87,25,862.50,23.46,839.04,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+130,payout,Growth Partners,25,Payment to Investment43,31.25,831.25,23.46,807.79,Triad payout 31.25 USDT (25% return); head 43 unlocked by 86 and 87; no surplus on payout
+131,subscription,Growth Partners,25,Investment88,25,856.25,28.04,828.21,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+132,subscription,Growth Partners,25,Investment89,25,881.25,32.62,848.63,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+133,surplus_payout,Growth Partners,25,Payment to Investment44 (surplus),31.25,850.00,1.37,848.63,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+134,subscription,Growth Partners,25,Investment90,25,875.00,5.95,869.05,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+135,subscription,Growth Partners,25,Investment91,25,900.00,10.53,889.47,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+136,payout,Growth Partners,25,Payment to Investment45,31.25,868.75,10.53,858.22,Triad payout 31.25 USDT (25% return); head 45 unlocked by 90 and 91; no surplus on payout
+137,subscription,Growth Partners,25,Investment92,25,893.75,15.11,878.64,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+138,subscription,Growth Partners,25,Investment93,25,918.75,19.69,899.06,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+139,payout,Growth Partners,25,Payment to Investment46,31.25,887.50,19.69,867.81,Triad payout 31.25 USDT (25% return); head 46 unlocked by 92 and 93; no surplus on payout
+140,subscription,Growth Partners,25,Investment94,25,912.50,24.27,888.23,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+141,subscription,Growth Partners,25,Investment95,25,937.50,28.85,908.65,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+142,payout,Growth Partners,25,Payment to Investment47,31.25,906.25,28.85,877.40,Triad payout 31.25 USDT (25% return); head 47 unlocked by 94 and 95; no surplus on payout
+143,subscription,Growth Partners,25,Investment96,25,931.25,33.43,897.82,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+144,surplus_payout,Growth Partners,25,Payment to Investment48 (surplus),31.25,900.00,2.18,897.82,Surplus ≥ 31.25; pool −31.25 and surplus −31.25
+145,subscription,Growth Partners,25,Investment97,25,925.00,6.76,918.24,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+146,subscription,Growth Partners,25,Investment98,25,950.00,11.34,938.66,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+147,subscription,Growth Partners,25,Investment99,25,975.00,15.92,959.08,+4.58 surplus on subscribe (triad surplus 13.75÷3)
+148,payout,Growth Partners,25,Payment to Investment49,31.25,943.75,15.92,927.83,Triad payout 31.25 USDT (25% return); head 49 unlocked by 98 and 99; no surplus on payout
+149,subscription,Growth Partners,25,Investment100,25,968.75,20.50,948.25,+4.58 surplus on subscribe (triad surplus 13.75÷3); Investment50 needs 100 and 101 for triad unlock
