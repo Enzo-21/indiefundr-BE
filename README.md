@@ -13,7 +13,32 @@ npm run prisma:generate
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Health check: `GET /api/health` → `API Running Correctly`.
+Open [http://localhost:3000](http://localhost:3000) for the marketing landing, admin, and API. Health check: `GET /api/health` → `API Running Correctly`.
+
+**Phone on the same Wi‑Fi:** use the Network URL Next prints (e.g. `http://192.168.x.x:3000`). Dev mode allows LAN IPv4 origins automatically (`allowedDevOrigins` in `next.config.ts`); no manual IP edits when DHCP changes.
+
+### Marketing landing + Expo web app
+
+The landing page lives at `/` on the Next.js server. The React Native app (Expo) is linked separately — it is not embedded in this repo’s backend.
+
+```bash
+# Terminal 1 — API, admin, and marketing landing
+cd backend && npm run dev          # http://localhost:3000
+
+# Terminal 2 — Expo web (the “app”)
+cd frontend && npm run web         # http://localhost:8081
+```
+
+Configure in `backend/.env`:
+
+- `APP_WEB_URL=http://localhost:8081` — where middleware redirects the app subdomain (Expo web in dev).
+- `MARKETING_DOMAIN=localhost:3000` — apex host used to detect `app.{domain}` in production.
+
+**Development:** On `localhost`, landing CTAs use `http://app.localhost:3000` (middleware → `APP_WEB_URL`). On a LAN IP (e.g. phone on `http://192.168.x.x:3000`), CTAs use `http://192.168.x.x:3000/__open-app`, which redirects to Expo on the same IP (`http://192.168.x.x:8081` by default). You can also open `http://localhost:8081` directly.
+
+**Production:** Set `APP_WEB_URL=https://app.yourdomain.com` and `MARKETING_DOMAIN=yourdomain.com`. Build with `cd frontend && npm run build:web`, deploy `frontend/dist/` to the `app` subdomain; DNS apex points at this Next.js host.
+
+**Mobile web:** Phones visiting `app.{domain}` see native install instructions (TestFlight on iOS, APK on Android). Desktop browsers use the full web app. Store badges on the landing page open the same flows in a modal. See [docs/NATIVE_MOBILE_DISTRIBUTION.md](docs/NATIVE_MOBILE_DISTRIBUTION.md).
 
 ## Database (Prisma)
 

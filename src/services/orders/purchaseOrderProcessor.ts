@@ -20,8 +20,10 @@ import {
 import { fieldIsNullOrUnset } from "@/lib/prisma/mongoFieldFilters";
 import { prisma } from "@/lib/prisma";
 import { INVESTMENT_OPEN_STATUSES } from "@/services/investments/constants";
-import { sendExpoPush } from "@/services/orders/pushNotify";
+import { sendPushNotification } from "@/services/orders/pushNotify";
 import { onSubscribeCompleted } from "@/services/revenueEngine/onSubscribeCompleted";
+import { applyPendingReferralCode } from "@/services/referrals/applyPendingReferralCode";
+import { releaseDeferredReferralRewardsOnInviterFirstInvestment } from "@/services/referrals/referralRewardEngine";
 import * as feeSponsorship from "@/services/tron/feeSponsorship";
 import * as tron from "@/services/tron/client";
 import { cleanupRedundantFailedInvestments } from "@/services/orders/purchaseOrderChainMaintenance";
@@ -226,7 +228,7 @@ export async function failOrder(
     }
   }
 
-  await sendExpoPush(order.device, "Investment failed", reason, {
+  await sendPushNotification(order.device, "Investment failed", reason, {
     type: "SUBSCRIBE_FUND_ERROR",
   });
 
@@ -430,9 +432,31 @@ export async function completeOrder(order: PurchaseOrder): Promise<void> {
     }
   }
 
+  try {
+    await applyPendingReferralCode(updatedInvestment.userId, updatedInvestment.id);
+  } catch (referralErr) {
+    const message =
+      referralErr instanceof Error ? referralErr.message : String(referralErr);
+    console.error("[referral] applyPendingReferralCode failed:", message);
+  }
+
+  try {
+    await releaseDeferredReferralRewardsOnInviterFirstInvestment(
+      updatedInvestment.userId,
+      updatedInvestment.id
+    );
+  } catch (referralErr) {
+    const message =
+      referralErr instanceof Error ? referralErr.message : String(referralErr);
+    console.error(
+      "[referral] releaseDeferredReferralRewardsOnInviterFirstInvestment failed:",
+      message
+    );
+  }
+
   const fundName = fund?.name || order.fundId;
 
-  await sendExpoPush(
+  await sendPushNotification(
     order.device,
     "Investment confirmed",
     `Your position in ${fundName} is now active for 90 days.`,

@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   dedupeFundActivityRows,
+  orphanWalletActivityDeleteWhere,
   shouldShowPurchaseOrderAsFailed,
   walletActivityRecordToTx,
 } from "./walletActivityMaterializer";
+import { REFERRAL_WALLET_ACTIVITY_KINDS } from "@/services/referrals/referralWalletActivity";
 import { PurchaseOrderStatus } from "@prisma/client";
 
 describe("dedupeFundActivityRows", () => {
@@ -75,6 +77,22 @@ describe("shouldShowPurchaseOrderAsFailed", () => {
   });
 });
 
+describe("orphanWalletActivityDeleteWhere", () => {
+  it("excludes referral wallet activity kinds when pruning orphans", () => {
+    const where = orphanWalletActivityDeleteWhere("wallet1", ["kept1"]);
+    assert.deepEqual(where.kind, { notIn: [...REFERRAL_WALLET_ACTIVITY_KINDS] });
+    assert.deepEqual(where.id, { notIn: ["kept1"] });
+    assert.equal(where.walletId, "wallet1");
+  });
+
+  it("still preserves referral rows when no materialized rows were kept", () => {
+    const where = orphanWalletActivityDeleteWhere("wallet1", []);
+    assert.deepEqual(where.kind, { notIn: [...REFERRAL_WALLET_ACTIVITY_KINDS] });
+    assert.equal(where.walletId, "wallet1");
+    assert.equal("id" in where, false);
+  });
+});
+
 describe("walletActivityRecordToTx", () => {
   it("maps investment rows to app activity ids", () => {
     const tx = walletActivityRecordToTx({
@@ -95,6 +113,50 @@ describe("walletActivityRecordToTx", () => {
     assert.equal(tx.id, "investment-inv1");
     assert.equal(tx.source, "app");
     assert.equal(tx.txId, "tx123");
+  });
+
+  it("maps inviter referral pending rows to entityId activity ids", () => {
+    const tx = walletActivityRecordToTx({
+      id: "507f1f77bcf86cd799439098",
+      kind: "referral_bonus_pending",
+      entityId: "referral-inviter-pending:invite1",
+      txId: null,
+      type: "in",
+      amountUsdt: 2,
+      status: "pending",
+      label: "Referral reward",
+      detail: "j***@email.com",
+      occurredAt: new Date("2026-01-03T00:00:00.000Z"),
+      tronscanUrl: null,
+      pendingTapInfo: null,
+    });
+
+    assert.equal(tx.id, "referral-inviter-pending:invite1");
+    assert.equal(tx.label, "Referral reward");
+  });
+
+  it("maps referral pending rows to entityId activity ids", () => {
+    const tx = walletActivityRecordToTx({
+      id: "507f1f77bcf86cd799439099",
+      kind: "referral_bonus_pending",
+      entityId: "referral-pending:user1",
+      txId: null,
+      type: "in",
+      amountUsdt: 2,
+      status: "pending",
+      label: "Referral bonus",
+      detail: "FRIEND99",
+      occurredAt: new Date("2026-01-03T00:00:00.000Z"),
+      tronscanUrl: null,
+      pendingTapInfo: {
+        title: "Referral bonus pending",
+        message: "Unlock after first investment.",
+      },
+    });
+
+    assert.equal(tx.id, "referral-pending:user1");
+    assert.equal(tx.source, "app");
+    assert.equal(tx.status, "pending");
   });
 
   it("maps usdt_transfer rows to chain activity ids", () => {

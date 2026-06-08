@@ -310,3 +310,58 @@ export async function getLedgerSnapshot(): Promise<LedgerSnapshot> {
   const ledger = await getOrCreateLedger();
   return ledgerToSnapshot(ledger);
 }
+
+export async function recordReferralBonusOutflow(
+  amountUsdt: number,
+  meta: Prisma.InputJsonValue = {}
+) {
+  if (amountUsdt <= 0) return getOrCreateLedger();
+
+  const ledger = await getOrCreateLedger();
+  const amount = ledgerTruncateUsdt(amountUsdt);
+  const availableSurplus = ledgerTruncateUsdt(ledger.treasurySurplus);
+  if (availableSurplus < amount) {
+    throw new Error(
+      `Insufficient treasury surplus for referral bonus: need ${amount}, available ${availableSurplus}`
+    );
+  }
+
+  const updated = await prisma.treasuryLedger.update({
+    where: { id: GLOBAL_LEDGER_ID },
+    data: {
+      treasurySurplus: ledgerTruncateUsdt(availableSurplus - amount),
+      version: ledger.version + 1,
+      updatedAt: new Date(),
+    },
+  });
+
+  await appendEvent(TreasuryEventType.referral_bonus_outflow, amount, updated, {
+    meta,
+  });
+
+  return updated;
+}
+
+export async function recordReferralPrincipalRecovery(
+  amountUsdt: number,
+  investmentId: string,
+  meta: Prisma.InputJsonValue = {}
+) {
+  const ledger = await getOrCreateLedger();
+  const amount = ledgerTruncateUsdt(amountUsdt);
+  const updated = await prisma.treasuryLedger.update({
+    where: { id: GLOBAL_LEDGER_ID },
+    data: {
+      poolAvailable: ledgerTruncateUsdt(Math.max(0, ledger.poolAvailable - amount)),
+      version: ledger.version + 1,
+      updatedAt: new Date(),
+    },
+  });
+
+  await appendEvent(TreasuryEventType.referral_principal_recovery, amount, updated, {
+    investmentId,
+    meta,
+  });
+
+  return updated;
+}

@@ -12,11 +12,50 @@ export type InvestmentsServiceResult<T> =
     };
 
 export async function getUserInvestments(userId: string) {
+  const { markMaturedInvestments } = await import("@/services/investments/maturity");
+  const { refreshRecoveryEligibilityForUser } = await import(
+    "@/services/referrals/recoveryEligibility"
+  );
+  await markMaturedInvestments();
+  await refreshRecoveryEligibilityForUser(userId);
+
   const investments = await prisma.investment.findMany({
     where: { userId },
     orderBy: { date: "desc" },
   });
-  return investments.map(enrichInvestment);
+
+  const recoveryIds = investments
+    .filter(
+      (row) =>
+        row.recoveryEligibleAt &&
+        !row.referralRecoveryCompletedAt &&
+        row.status === "matured"
+    )
+    .map((row) => row.id);
+
+  const recoveryLinks =
+    recoveryIds.length > 0
+      ? await prisma.referralRecoveryLink.findMany({
+          where: { investmentId: { in: recoveryIds } },
+          select: { investmentId: true, inviteIds: true },
+        })
+      : [];
+
+  const qualifiedByInvestment = new Map(
+    recoveryLinks.map((link) => [link.investmentId, link.inviteIds.length])
+  );
+
+  const { REFERRAL_RECOVERY_INVITEES_REQUIRED } = await import(
+    "@/lib/config/referralRecovery"
+  );
+  const requiredCount = REFERRAL_RECOVERY_INVITEES_REQUIRED();
+
+  return investments.map((investment) =>
+    enrichInvestment(investment, {
+      recoveryQualifiedCount: qualifiedByInvestment.get(investment.id) ?? null,
+      recoveryRequiredCount: investment.recoveryEligibleAt ? requiredCount : null,
+    })
+  );
 }
 
 export async function redeemInvestment(

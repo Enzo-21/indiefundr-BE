@@ -1,3 +1,4 @@
+import type { ReferralRequisite } from "@/services/referrals/referralRequisites";
 import type { TransactionInsights } from "./transactionInsights";
 
 export type WalletActivityTx = {
@@ -21,6 +22,7 @@ export type WalletActivityTx = {
   withdrawalOrderId?: string | null;
   senderAddress?: string | null;
   recipientAddress?: string | null;
+  referralRequisites?: ReferralRequisite[];
 };
 
 function mergeOnChainFields(

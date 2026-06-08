@@ -26,12 +26,16 @@ export async function GET(request: Request, context: RouteContext) {
         ? Number(limitParam)
         : undefined;
     const cursor = url.searchParams.get("cursor") ?? undefined;
+    const activityScopeParam = url.searchParams.get("activityScope");
+    const activityScope =
+      activityScopeParam === "referral" ? "referral" : undefined;
 
     const result = await getWalletTransactions(authUser.id, walletId, {
       pollSource,
       readMode,
       limit: Number.isFinite(limit) ? limit : undefined,
       cursor,
+      activityScope,
     });
     return toWalletResponse(result, (data) => Response.json(data));
   });

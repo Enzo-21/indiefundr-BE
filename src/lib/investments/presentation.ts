@@ -15,9 +15,13 @@ export function getUserStatusLabel(investment: Investment): string {
   if (status === "active") return "Active";
   if (status === "redeeming") return "Claiming…";
   if (status === "redeemed") return "Redeemed";
+  if (status === "referral_recovered") return "Principal recovered";
   if (status === "failed") return "Failed";
 
   if (status === "matured") {
+    if (investment.recoveryEligibleAt) {
+      return "Recover via invites";
+    }
     if (investment.payabilityStatus === "payable") {
       return "Awaiting admin payout";
     }

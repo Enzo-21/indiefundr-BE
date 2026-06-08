@@ -140,6 +140,8 @@ Reference CSVs under [`simulations/`](simulations/) (columns: `event`, `fund`, `
 | [capital-shield-100-investments-simulation.csv](simulations/capital-shield-100-investments-simulation.csv) | 100 Capital Shield only |
 | [mixed-funds-200-investments-simulation.csv](simulations/mixed-funds-200-investments-simulation.csv) | 200 subs, 40 per fund, shuffled order |
 
+**Related:** Referral recovery draws invitee bonuses from `treasurySurplus` and principal recovery from `poolAvailable`. See the [Referral recovery & Invite & Earn spec](../referral-recovery/README.md) and [`referral-recovery-2-invitees.csv`](../referral-recovery/simulations/referral-recovery-2-invitees.csv).
+
 ---
 
 ## Verification

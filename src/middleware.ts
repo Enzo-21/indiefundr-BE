@@ -1,21 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { ADMIN_SESSION_COOKIE } from "@/lib/auth/adminSessionCookie";
+import {
+  DEV_LAN_APP_OPEN_PATH,
+  isAppSubdomainHost,
+  isDevLocalOrigin,
+  resolveAppRedirectTarget,
+} from "@/lib/marketing/appUrl";
 
 const CORS_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 const CORS_HEADERS =
   "Content-Type, Authorization, x-auth-token, X-IndieFundr-Poll-Source";
-
-function isDevLocalOrigin(origin: string | null): boolean {
-  if (!origin) return false;
-  try {
-    const { hostname, protocol } = new URL(origin);
-    if (protocol !== "http:" && protocol !== "https:") return false;
-    return hostname === "localhost" || hostname === "127.0.0.1";
-  } catch {
-    return false;
-  }
-}
 
 function corsHeadersForRequest(request: NextRequest): Headers {
   const headers = new Headers();
@@ -39,6 +34,34 @@ function withCors(request: NextRequest, response: NextResponse): NextResponse {
     response.headers.set(key, value);
   });
   return response;
+}
+
+function handleAppOpenRedirect(
+  request: NextRequest
+): NextResponse | null {
+  const host = request.headers.get("host");
+  const { pathname, search } = request.nextUrl;
+
+  if (
+    process.env.NODE_ENV !== "production" &&
+    (pathname === DEV_LAN_APP_OPEN_PATH ||
+      pathname === `${DEV_LAN_APP_OPEN_PATH}/`)
+  ) {
+    const target = resolveAppRedirectTarget(host);
+    const destination = new URL(search || "/", `${target}/`);
+    return NextResponse.redirect(destination);
+  }
+
+  if (!isAppSubdomainHost(host)) {
+    return null;
+  }
+
+  const target = resolveAppRedirectTarget(host);
+  const destination = new URL(
+    request.nextUrl.pathname + request.nextUrl.search,
+    target
+  );
+  return NextResponse.redirect(destination);
 }
 
 function handleApiCors(request: NextRequest): NextResponse | null {
@@ -80,6 +103,11 @@ function handleAdminAuth(request: NextRequest): NextResponse | null {
 }
 
 export function middleware(request: NextRequest) {
+  const appRedirect = handleAppOpenRedirect(request);
+  if (appRedirect) {
+    return appRedirect;
+  }
+
   const apiResponse = handleApiCors(request);
   if (apiResponse) {
     return apiResponse;
@@ -94,5 +122,9 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/:path*", "/admin/:path*"],
+  matcher: [
+    "/api/:path*",
+    "/admin/:path*",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };

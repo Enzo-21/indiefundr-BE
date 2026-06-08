@@ -18,6 +18,7 @@ import { failedOrderCoversFailedInvestment } from "@/lib/wallets/failedInvestmen
 import { getEnv } from "@/lib/env";
 import { deriveOrderSettlementPhaseFromDb } from "@/services/orders/orderSettlementView";
 import { prisma } from "@/lib/prisma";
+import { REFERRAL_WALLET_ACTIVITY_KINDS } from "@/services/referrals/referralWalletActivity";
 import * as tron from "@/services/tron/client";
 import type { WalletActivityTx } from "./walletActivityMerge";
 import type { TransactionInsights } from "./transactionInsights";
@@ -574,6 +575,26 @@ function walletActivityEntityKey(row: {
   return `${row.kind}:${row.txId ?? "unknown"}`;
 }
 
+export function orphanWalletActivityDeleteWhere(
+  walletId: string,
+  keptIds: string[]
+) {
+  const preserveReferral = {
+    kind: { notIn: [...REFERRAL_WALLET_ACTIVITY_KINDS] },
+  };
+  if (keptIds.length > 0) {
+    return {
+      walletId,
+      id: { notIn: keptIds },
+      ...preserveReferral,
+    };
+  }
+  return {
+    walletId,
+    ...preserveReferral,
+  };
+}
+
 export async function rebuildWalletActivity(
   userId: string,
   walletId: string,
@@ -627,13 +648,9 @@ export async function rebuildWalletActivity(
     }
   }
 
-  if (keptIds.length > 0) {
-    await prisma.walletActivity.deleteMany({
-      where: { walletId, id: { notIn: keptIds } },
-    });
-  } else {
-    await prisma.walletActivity.deleteMany({ where: { walletId } });
-  }
+  await prisma.walletActivity.deleteMany({
+    where: orphanWalletActivityDeleteWhere(walletId, keptIds),
+  });
 
   await prisma.wallet.update({
     where: { id: walletId },
@@ -666,8 +683,14 @@ export function walletActivityRecordToTx(row: {
     withdrawalOrderId: string;
     senderAddress: string | null;
     recipientAddress: string;
-  } | null
+  } | null,
+  referralRequisites?: import("@/services/referrals/referralRequisites").ReferralRequisite[]
 ): WalletActivityTx {
+  const isReferralKind =
+    row.kind === "referral_bonus_pending" ||
+    row.kind === "referral_bonus_credited" ||
+    row.kind === "referral_principal_recovery";
+
   const idPrefix =
     row.kind === "investment"
       ? "investment"
@@ -684,8 +707,9 @@ export function walletActivityRecordToTx(row: {
                 : "chain";
 
   const entitySuffix = row.entityId ? `-${row.entityId}` : "";
-  const id =
-    row.kind === "usdt_transfer"
+  const id = isReferralKind
+    ? (row.entityId ?? row.id)
+    : row.kind === "usdt_transfer"
       ? `chain-${row.txId ?? row.id}`
       : `${idPrefix}${entitySuffix}`;
 
@@ -715,5 +739,6 @@ export function walletActivityRecordToTx(row: {
     withdrawalOrderId: withdrawalMeta?.withdrawalOrderId ?? null,
     senderAddress: withdrawalMeta?.senderAddress ?? null,
     recipientAddress: withdrawalMeta?.recipientAddress ?? null,
+    referralRequisites,
   };
 }

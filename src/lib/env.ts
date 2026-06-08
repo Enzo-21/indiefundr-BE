@@ -21,6 +21,8 @@ const rawEnvSchema = z.object({
   MAILING_DOMAIN: z.string().default("indiefundr.com"),
   MAILING_LOGO_URL: z.string().default(DEFAULT_MAILING_LOGO_URL),
   FRONTEND_DOMAIN: z.string().default(""),
+  APP_WEB_URL: z.string().default(""),
+  MARKETING_DOMAIN: z.string().default(""),
   ADMIN_API_KEY: z.string().default(""),
   ADMIN_ALLOWED_EMAIL: z.string().default(""),
   BLOCKCHAIN_NETWORK: z.enum(["testnet", "mainnet"]).default("testnet"),
@@ -85,6 +87,12 @@ const rawEnvSchema = z.object({
     .default(10 / 3),
   MIN_PLATFORM_MARGIN_PER_TRIAD_USDT: z.coerce.number().default(40),
   INVESTMENT_TERM: z.string().default(""),
+  REFERRAL_INVITEE_BONUS_USDT: z.coerce.number().default(2),
+  REFERRAL_INVITER_BONUS_USDT: z.coerce.number().default(2),
+  REFERRAL_RECOVERY_PRINCIPAL_USDT: z.coerce.number().default(25),
+  REFERRAL_RECOVERY_INVITEES_REQUIRED: z.coerce.number().default(2),
+  REFERRAL_MONTHLY_SURPLUS_CAP_USDT: z.coerce.number().default(500),
+  SYMPATHY_MODAL_COOLDOWN_DAYS: z.coerce.number().default(7),
 });
 
 export type Env = ReturnType<typeof buildEnv>;
@@ -106,6 +114,8 @@ function buildEnv(raw: z.infer<typeof rawEnvSchema>) {
     mailingDomain: raw.MAILING_DOMAIN,
     mailingLogoUrl: raw.MAILING_LOGO_URL,
     frontendDomain: raw.FRONTEND_DOMAIN,
+    appWebUrl: raw.APP_WEB_URL?.trim() || "",
+    marketingDomain: raw.MARKETING_DOMAIN?.trim() || "",
     adminApiKey: raw.ADMIN_API_KEY,
     adminAllowedEmail: raw.ADMIN_ALLOWED_EMAIL.trim().toLowerCase(),
     blockchainNetwork: raw.BLOCKCHAIN_NETWORK,
@@ -167,6 +177,12 @@ function buildEnv(raw: z.infer<typeof rawEnvSchema>) {
       raw.PAYOUT_LIQUIDITY_RESERVE_PER_SUBSCRIBER_USDT,
     minPlatformMarginPerTriadUsdt: raw.MIN_PLATFORM_MARGIN_PER_TRIAD_USDT,
     investmentTerm: raw.INVESTMENT_TERM,
+    referralInviteeBonusUsdt: raw.REFERRAL_INVITEE_BONUS_USDT,
+    referralInviterBonusUsdt: raw.REFERRAL_INVITER_BONUS_USDT,
+    referralRecoveryPrincipalUsdt: raw.REFERRAL_RECOVERY_PRINCIPAL_USDT,
+    referralRecoveryInviteesRequired: raw.REFERRAL_RECOVERY_INVITEES_REQUIRED,
+    referralMonthlySurplusCapUsdt: raw.REFERRAL_MONTHLY_SURPLUS_CAP_USDT,
+    sympathyModalCooldownDays: raw.SYMPATHY_MODAL_COOLDOWN_DAYS,
   };
 }
 

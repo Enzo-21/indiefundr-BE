@@ -12,6 +12,7 @@ import {
 import { walletActivityRecordToTx } from "./walletActivityMaterializer";
 import { hydrateActivityInsightsBatch } from "./hydrateActivityInsights";
 import { hydrateActivityOnChainLinksBatch } from "./hydrateActivityOnChainLinks";
+import { hydrateReferralRequisitesBatch } from "./hydrateReferralRequisites";
 import { hydrateWithdrawalActivityMetaBatch } from "./hydrateWithdrawalActivityMeta";
 import type { TransactionInsights } from "./transactionInsights";
 import type { WalletOnChainLinks } from "./walletOnChainLinks";
@@ -22,6 +23,21 @@ import {
 
 const RAW_BATCH_SIZE = 25;
 const MAX_RAW_SCAN_ROWS = 500;
+
+export const REFERRAL_ACTIVITY_KINDS = [
+  "referral_bonus_pending",
+  "referral_bonus_credited",
+  "referral_principal_recovery",
+] as const;
+
+export type WalletActivityScope = "all" | "referral";
+
+export function buildActivityScopeFilter(scope: WalletActivityScope | undefined) {
+  if (scope === "referral") {
+    return { kind: { in: [...REFERRAL_ACTIVITY_KINDS] } };
+  }
+  return {};
+}
 
 export function buildSuccessPaymentTxIdsForTest(
   walletOrders: Array<{
@@ -73,7 +89,8 @@ export function rowToVisibleTx(
       senderAddress: string | null;
       recipientAddress: string;
     }
-  > = new Map()
+  > = new Map(),
+  referralRequisitesByRow: Map<string, import("@/services/referrals/referralRequisites").ReferralRequisite[]> = new Map()
 ): WalletActivityTx | null {
   if (
     row.status === "failed" &&
@@ -86,7 +103,16 @@ export function rowToVisibleTx(
   const insights = rowKey ? insightsByRow.get(rowKey) : undefined;
   const onChain = rowKey ? onChainByRow.get(rowKey) : undefined;
   const withdrawalMeta = rowKey ? withdrawalMetaByRow.get(rowKey) : undefined;
-  return walletActivityRecordToTx(row, insights, onChain, withdrawalMeta);
+  const referralRequisites = rowKey
+    ? referralRequisitesByRow.get(rowKey)
+    : undefined;
+  return walletActivityRecordToTx(
+    row,
+    insights,
+    onChain,
+    withdrawalMeta,
+    referralRequisites
+  );
 }
 
 export async function loadPaginatedDbWalletActivity(
@@ -94,7 +120,10 @@ export async function loadPaginatedDbWalletActivity(
   walletId: string,
   limit: number,
   cursor?: string | null,
-  options?: { successPaymentTxIds?: Set<string> }
+  options?: {
+    successPaymentTxIds?: Set<string>;
+    activityScope?: WalletActivityScope;
+  }
 ): Promise<{
   transactions: WalletActivityTx[];
   nextCursor: string | null;
@@ -115,6 +144,7 @@ export async function loadPaginatedDbWalletActivity(
     successPaymentTxIds = buildSuccessPaymentTxIdsForTest(walletOrders);
   }
 
+  const scopeFilter = buildActivityScopeFilter(options?.activityScope);
   const merged = new Map<string, WalletActivityTx>();
   const txSourceRow = new Map<string, WalletActivity>();
   let cursorFilter = buildCursorFilter(cursor);
@@ -128,6 +158,7 @@ export async function loadPaginatedDbWalletActivity(
       where: {
         userId,
         walletId,
+        ...scopeFilter,
         ...cursorFilter,
       },
       orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
@@ -143,11 +174,13 @@ export async function loadPaginatedDbWalletActivity(
       break;
     }
 
-    const [insightsByRow, onChainByRow, withdrawalMetaByRow] = await Promise.all([
-      hydrateActivityInsightsBatch(userId, batchRows),
-      hydrateActivityOnChainLinksBatch(userId, batchRows),
-      hydrateWithdrawalActivityMetaBatch(userId, batchRows),
-    ]);
+    const [insightsByRow, onChainByRow, withdrawalMetaByRow, referralRequisitesByRow] =
+      await Promise.all([
+        hydrateActivityInsightsBatch(userId, batchRows),
+        hydrateActivityOnChainLinksBatch(userId, batchRows),
+        hydrateWithdrawalActivityMetaBatch(userId, batchRows),
+        hydrateReferralRequisitesBatch(userId, batchRows),
+      ]);
 
     let stoppedEarly = false;
     for (let i = 0; i < batchRows.length; i++) {
@@ -158,7 +191,8 @@ export async function loadPaginatedDbWalletActivity(
         successPaymentTxIds,
         insightsByRow,
         onChainByRow,
-        withdrawalMetaByRow
+        withdrawalMetaByRow,
+        referralRequisitesByRow
       );
       if (tx) {
         mergeWalletActivityTransaction(merged, tx);

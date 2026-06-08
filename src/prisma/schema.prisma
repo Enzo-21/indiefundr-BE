@@ -13,6 +13,7 @@ enum InvestmentStatus {
   matured
   redeeming
   redeemed
+  referral_recovered
   failed
 }
 
@@ -72,6 +73,30 @@ enum TreasuryEventType {
   app_withdrawal
   ledger_adjustment
   external_deposit_inflow
+  referral_bonus_outflow
+  referral_principal_recovery
+}
+
+enum ReferralInviteStatus {
+  pending_signup
+  signed_up
+  qualified
+  attributed_late
+  expired
+  voided
+}
+
+enum ReferralRewardRole {
+  inviter_bonus
+  invitee_bonus
+  principal_recovery
+}
+
+enum ReferralRewardStatus {
+  pending
+  credited
+  failed
+  voided
 }
 
 enum FeeSponsorshipStatus {
@@ -108,6 +133,16 @@ model User {
   otpVerifications  OtpVerification[]
   refreshSessions   RefreshSession[]
   feeSponsorships   FeeSponsorship[]
+
+  pendingReferralCode       ReferralCode?  @relation("UserPendingReferralCode", fields: [pendingReferralCodeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pendingReferralCodeId     String?        @db.ObjectId
+  referredByInvite          ReferralInvite? @relation("UserReferredByInvite", fields: [referredByInviteId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  referredByInviteId        String?        @unique @db.ObjectId
+  sympathyModalDismissedAt  DateTime?
+
+  referralCode         ReferralCode?
+  invitesSent          ReferralInvite[] @relation("InviterUser")
+  invitesReceived      ReferralInvite[] @relation("InviteeUser")
 
   @@map("users")
 }
@@ -249,9 +284,13 @@ model Investment {
   globalQueueRank       Int?
   newSubscribersNeeded  Int?
   chainMemo             String?
+  recoveryEligibleAt    DateTime?
+  sympathyNotifiedAt    DateTime?
+  referralRecoveryCompletedAt DateTime?
   date                  DateTime                   @default(now())
 
   user          User           @relation(fields: [userId], references: [id])
+  referralRecoveryLink ReferralRecoveryLink?
   wallet        Wallet         @relation(fields: [walletId], references: [id])
   purchaseOrder PurchaseOrder? @relation("InvestmentToOrder", fields: [purchaseOrderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   purchaseOrdersFromInvestment PurchaseOrder[] @relation("OrderToInvestment")
@@ -521,4 +560,68 @@ model AdminLoginOtp {
 
   @@index([email])
   @@map("adminloginotps")
+}
+
+model ReferralCode {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @unique @db.ObjectId
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  owner           User             @relation(fields: [userId], references: [id])
+  pendingForUsers User[]           @relation("UserPendingReferralCode")
+  invites         ReferralInvite[]
+
+  @@map("referralcodes")
+}
+
+model ReferralInvite {
+  id             String               @id @default(auto()) @map("_id") @db.ObjectId
+  inviterUserId  String               @db.ObjectId
+  inviteeUserId  String               @unique @db.ObjectId
+  referralCodeId String               @db.ObjectId
+  status         ReferralInviteStatus @default(signed_up)
+  qualifiedAt    DateTime?
+  redeemedAt     DateTime             @default(now())
+  createdAt      DateTime             @default(now())
+
+  inviter      User             @relation("InviterUser", fields: [inviterUserId], references: [id])
+  invitee      User             @relation("InviteeUser", fields: [inviteeUserId], references: [id])
+  referralCode ReferralCode     @relation(fields: [referralCodeId], references: [id])
+  rewards      ReferralReward[]
+  referredUser User?            @relation("UserReferredByInvite")
+
+  @@index([inviterUserId])
+  @@map("referralinvites")
+}
+
+model ReferralReward {
+  id               String             @id @default(auto()) @map("_id") @db.ObjectId
+  referralInviteId String             @db.ObjectId
+  role             ReferralRewardRole
+  amountUsdt       Float
+  status           ReferralRewardStatus @default(pending)
+  investmentId     String?            @db.ObjectId
+  treasuryEventId  String?            @db.ObjectId
+  createdAt        DateTime           @default(now())
+  creditedAt       DateTime?
+
+  referralInvite ReferralInvite @relation(fields: [referralInviteId], references: [id])
+
+  @@index([referralInviteId])
+  @@map("referralrewards")
+}
+
+model ReferralRecoveryLink {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  investmentId String    @unique @db.ObjectId
+  inviterUserId String   @db.ObjectId
+  inviteIds    String[]  @default([])
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  investment Investment @relation(fields: [investmentId], references: [id])
+
+  @@index([inviterUserId])
+  @@map("referralrecoverylinks")
 }

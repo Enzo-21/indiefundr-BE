@@ -29,6 +29,9 @@ export type EnrichedInvestmentJson = {
   fundName: string;
   statusLabel: string;
   canClaim: boolean;
+  recoveryEligibleAt: string | null;
+  recoveryQualifiedCount: number | null;
+  recoveryRequiredCount: number | null;
   fund: {
     id: string;
     name: string;
@@ -38,7 +41,15 @@ export type EnrichedInvestmentJson = {
   } | null;
 };
 
-export function enrichInvestment(investment: Investment): EnrichedInvestmentJson {
+export type EnrichInvestmentOptions = {
+  recoveryQualifiedCount?: number | null;
+  recoveryRequiredCount?: number | null;
+};
+
+export function enrichInvestment(
+  investment: Investment,
+  options: EnrichInvestmentOptions = {}
+): EnrichedInvestmentJson {
   const fund = getFundById(investment.fundId);
   return {
     _id: investment.id,
@@ -64,6 +75,9 @@ export function enrichInvestment(investment: Investment): EnrichedInvestmentJson
     fundName: fund?.name || investment.fundId,
     statusLabel: getUserStatusLabel(investment),
     canClaim: canUserClaim(investment),
+    recoveryEligibleAt: investment.recoveryEligibleAt?.toISOString() ?? null,
+    recoveryQualifiedCount: options.recoveryQualifiedCount ?? null,
+    recoveryRequiredCount: options.recoveryRequiredCount ?? null,
     fund: fund
       ? {
           id: fund.id,

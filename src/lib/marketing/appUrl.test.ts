@@ -1,0 +1,87 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import {
+  DEV_LAN_APP_OPEN_PATH,
+  getAppOpenUrl,
+  getAppWebUrlFromEnv,
+  isAppSubdomainHost,
+  isDevLocalOrigin,
+  isPrivateLanIpv4,
+  resolveAppRedirectTarget,
+} from "./appUrl";
+
+describe("appUrl", () => {
+  it("defaults app web url to localhost:8081", () => {
+    assert.equal(getAppWebUrlFromEnv({}), "http://localhost:8081");
+  });
+
+  it("detects app.localhost as app subdomain", () => {
+    assert.equal(isAppSubdomainHost("app.localhost:3000"), true);
+    assert.equal(isAppSubdomainHost("localhost:3000"), false);
+  });
+
+  it("detects app marketing domain in production config", () => {
+    const prev = process.env.MARKETING_DOMAIN;
+    process.env.MARKETING_DOMAIN = "indiefundr.com";
+    try {
+      assert.equal(isAppSubdomainHost("app.indiefundr.com"), true);
+    } finally {
+      if (prev === undefined) {
+        delete process.env.MARKETING_DOMAIN;
+      } else {
+        process.env.MARKETING_DOMAIN = prev;
+      }
+    }
+  });
+
+  it("allows app.localhost in dev CORS origins", () => {
+    assert.equal(isDevLocalOrigin("http://app.localhost:3000"), true);
+    assert.equal(isDevLocalOrigin("http://localhost:8081"), true);
+  });
+
+  it("allows LAN IP origins in dev CORS", () => {
+    assert.equal(isDevLocalOrigin("http://192.168.0.23:3000"), true);
+    assert.equal(isDevLocalOrigin("http://192.168.0.23:8081"), true);
+  });
+
+  it("returns app.localhost open url in development", () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "development";
+    assert.equal(getAppOpenUrl(), "http://app.localhost:3000");
+    process.env.NODE_ENV = prev;
+  });
+
+  it("returns LAN open path when request host is a private IP", () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "development";
+    assert.equal(
+      getAppOpenUrl({ host: "192.168.0.23:3000" }),
+      `http://192.168.0.23:3000${DEV_LAN_APP_OPEN_PATH}`
+    );
+    process.env.NODE_ENV = prev;
+  });
+
+  it("resolves Expo redirect to the same LAN IP in development", () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "development";
+    assert.equal(
+      resolveAppRedirectTarget("192.168.0.23:3000", {
+        APP_WEB_URL: "http://localhost:8081",
+      }),
+      "http://192.168.0.23:8081"
+    );
+    assert.equal(
+      resolveAppRedirectTarget("app.localhost:3000", {
+        APP_WEB_URL: "http://localhost:8081",
+      }),
+      "http://localhost:8081"
+    );
+    process.env.NODE_ENV = prev;
+  });
+
+  it("detects private LAN IPv4 addresses", () => {
+    assert.equal(isPrivateLanIpv4("192.168.0.23"), true);
+    assert.equal(isPrivateLanIpv4("10.0.0.5"), true);
+    assert.equal(isPrivateLanIpv4("localhost"), false);
+  });
+});

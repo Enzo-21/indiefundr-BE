@@ -1,0 +1,8 @@
+step,event,fund,return_percent,label,amount_usdt,pool_available,treasury_surplus,protected_withdrawable,referral_bonus_outflow,referral_principal_recovery,notes
+0,baseline,Aggressive Alpha,40,Recovery-eligible head (unpaid matured),0,40.00,9.99,30.01,0.00,0.00,Investment H matured; no triad unlock; FIFO blocked (surplus < 35); inviter recovery mode active
+1,subscription,Aggressive Alpha,40,Referral invitee A (first invest),25,65.00,13.32,51.68,0.00,0.00,+25 pool; +3.33 surplus (S_sub Aggressive Alpha)
+2,referral_bonus_outflow,Aggressive Alpha,40,Invitee A bonus,2,65.00,11.32,53.68,2.00,0.00,treasurySurplus −2; referral_bonus_outflow (invitee)
+3,subscription,Aggressive Alpha,40,Referral invitee B (first invest),25,90.00,14.65,75.35,2.00,0.00,+25 pool; +3.33 surplus
+4,referral_bonus_outflow,Aggressive Alpha,40,Invitee B bonus,2,90.00,12.65,77.35,4.00,0.00,treasurySurplus −2; referral_bonus_outflow (invitee); 2/2 qualified
+5,referral_principal_recovery,Aggressive Alpha,40,Inviter principal recovery,25,65.00,12.65,52.35,4.00,25.00,pool −25; Investment H → referral_recovered; projected earnings forfeited
+6,summary,Aggressive Alpha,40,Net from 2 invitees,0,65.00,12.65,52.35,4.00,25.00,Surplus net +2.66 (6.66 in − 4 out); pool net +25 (50 subs − 25 principal); bonuses funded from surplus only

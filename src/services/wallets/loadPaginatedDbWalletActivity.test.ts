@@ -2,13 +2,27 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { PurchaseOrderStatus } from "@prisma/client";
 import {
+  buildActivityScopeFilter,
   buildSuccessPaymentTxIdsForTest,
   finalizePaginatedActivityResult,
   pickPaginationRowFromPage,
+  REFERRAL_ACTIVITY_KINDS,
   rowToVisibleTx,
 } from "./loadPaginatedDbWalletActivity";
 import type { WalletActivity } from "@prisma/client";
 import type { WalletActivityTx } from "./walletActivityMerge";
+
+describe("buildActivityScopeFilter", () => {
+  it("returns referral kinds filter when scope is referral", () => {
+    const filter = buildActivityScopeFilter("referral");
+    assert.deepEqual(filter, { kind: { in: [...REFERRAL_ACTIVITY_KINDS] } });
+  });
+
+  it("returns empty filter for all or undefined scope", () => {
+    assert.deepEqual(buildActivityScopeFilter("all"), {});
+    assert.deepEqual(buildActivityScopeFilter(undefined), {});
+  });
+});
 
 describe("loadPaginatedDbWalletActivity visibility", () => {
   const baseRow = {

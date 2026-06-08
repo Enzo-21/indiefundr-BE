@@ -395,6 +395,7 @@ export type GetWalletTransactionsOptions = {
   readMode?: "db" | "chain";
   limit?: number;
   cursor?: string;
+  activityScope?: "all" | "referral";
 };
 
 function buildWalletActivitySyncMeta(
@@ -494,6 +495,7 @@ export async function getWalletTransactions(
     readMode,
     limit: limitOption,
     cursor,
+    activityScope,
   }: GetWalletTransactionsOptions = {}
 ): Promise<WalletServiceResult<WalletTransactionsPayload>> {
   if (!isValidObjectId(walletId)) {
@@ -559,7 +561,7 @@ export async function getWalletTransactions(
         wallet.id,
         pageLimit,
         cursor,
-        { successPaymentTxIds }
+        { successPaymentTxIds, activityScope }
       );
 
     const syncMeta = buildWalletActivitySyncMeta(wallet);
