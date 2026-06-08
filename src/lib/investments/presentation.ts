@@ -1,4 +1,4 @@
-import type { Investment } from "@prisma/client";
+import { InvestmentStatus, type Investment } from "@prisma/client";
 
 /** Legacy rows may have payoutEligibleAt; new rows rely on payabilityStatus. */
 export function isPastPayoutEligible(investment: Investment): boolean {
@@ -11,14 +11,14 @@ export function isPastPayoutEligible(investment: Investment): boolean {
 export function getUserStatusLabel(investment: Investment): string {
   const status = investment.status;
 
-  if (status === "pending") return "Processing";
-  if (status === "active") return "Active";
-  if (status === "redeeming") return "Claiming…";
-  if (status === "redeemed") return "Redeemed";
-  if (status === "referral_recovered") return "Principal recovered";
-  if (status === "failed") return "Failed";
+  if (status === InvestmentStatus.pending) return "Processing";
+  if (status === InvestmentStatus.active) return "Active";
+  if (status === InvestmentStatus.redeeming) return "Claiming…";
+  if (status === InvestmentStatus.redeemed) return "Redeemed";
+  if (status === InvestmentStatus.referral_recovered) return "Principal recovered";
+  if (status === InvestmentStatus.failed) return "Failed";
 
-  if (status === "matured") {
+  if (status === InvestmentStatus.matured) {
     if (investment.recoveryEligibleAt) {
       return "Recover via invites";
     }
