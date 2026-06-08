@@ -6,7 +6,7 @@ Production backend for IndieFundr, migrated from [`backend-legacy`](../backend-l
 
 ```bash
 cp .env.example .env
-# Edit .env — set DATABASE_URL (same MongoDB Atlas URI as legacy MONGO_URI)
+# Edit .env — set DATABASE_URL (MongoDB Atlas connection string)
 
 npm install
 npm run prisma:generate

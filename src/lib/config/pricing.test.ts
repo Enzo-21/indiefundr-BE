@@ -26,7 +26,6 @@ describe("assertEnv", () => {
     const withoutJwt = {
       ...base,
       DATABASE_URL: base.DATABASE_URL || "mongodb://localhost:27017/test",
-      MONGO_URI: base.MONGO_URI || "mongodb://localhost:27017/test",
       JWT_ACCESS_SECRET: "",
       JWT_SECRET: "",
       JWT_REFRESH_SECRET: base.JWT_REFRESH_SECRET || "refresh-secret",

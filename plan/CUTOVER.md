@@ -35,8 +35,7 @@ Set the same logical values in staging and production; only hosts/secrets differ
 |----------|-----------|----------|---------|
 | `EXPO_PUBLIC_API_URL` | Expo | Yes | Next backend base URL (staging/prod host). Local: `auto` or `http://<lan-ip>:3000` |
 | `EXPO_PUBLIC_BLOCKCHAIN_NETWORK` | Expo | Yes | `testnet` or `mainnet` — must match backend `BLOCKCHAIN_NETWORK` |
-| `DATABASE_URL` | backend | Yes | Prisma MongoDB connection (same Atlas DB as legacy `MONGO_URI`) |
-| `MONGO_URI` | backend | Optional | Legacy alias; `DATABASE_URL` preferred |
+| `DATABASE_URL` | backend | Yes | Prisma MongoDB connection string |
 | `JWT_ACCESS_SECRET` | backend | Yes | Access token signing (`x-auth-token`) |
 | `JWT_REFRESH_SECRET` | backend | Yes | Refresh token sessions |
 | `JWT_SECRET` | backend | Optional | Legacy alias for access secret |

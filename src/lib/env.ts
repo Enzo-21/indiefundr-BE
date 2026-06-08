@@ -11,7 +11,6 @@ const envFlag = (value: string | undefined, defaultEnabled = true) => {
 const rawEnvSchema = z.object({
   PORT: z.coerce.number().default(3000),
   DATABASE_URL: z.string().optional(),
-  MONGO_URI: z.string().optional(),
   JWT_SECRET: z.string().optional(),
   JWT_ACCESS_SECRET: z.string().optional(),
   JWT_REFRESH_SECRET: z.string().optional(),
@@ -98,14 +97,13 @@ const rawEnvSchema = z.object({
 export type Env = ReturnType<typeof buildEnv>;
 
 function buildEnv(raw: z.infer<typeof rawEnvSchema>) {
-  const databaseUrl = raw.DATABASE_URL?.trim() || raw.MONGO_URI?.trim() || "";
+  const databaseUrl = raw.DATABASE_URL?.trim() || "";
   const jwtAccessSecret =
     raw.JWT_ACCESS_SECRET?.trim() || raw.JWT_SECRET?.trim() || "";
 
   return {
     port: raw.PORT,
     databaseUrl,
-    mongoUri: raw.MONGO_URI?.trim() || databaseUrl,
     jwtAccessSecret,
     jwtRefreshSecret: raw.JWT_REFRESH_SECRET?.trim() || "",
     accessTokenTtl: raw.ACCESS_TOKEN_TTL,
@@ -217,7 +215,7 @@ export function assertEnv(source?: NodeJS.ProcessEnv): Env {
 
   const missing: string[] = [];
   if (!built.databaseUrl) {
-    missing.push("DATABASE_URL or MONGO_URI (MongoDB connection string)");
+    missing.push("DATABASE_URL (MongoDB connection string)");
   }
   if (!built.jwtAccessSecret) {
     missing.push("JWT_ACCESS_SECRET or JWT_SECRET (JWT access signing secret)");
