@@ -31,6 +31,23 @@ export async function hasCreditedInviteeBonus(
   return Boolean(reward);
 }
 
+export async function hasIssuedInviteeBonus(
+  referralInviteId: string
+): Promise<boolean> {
+  const reward = await prisma.referralReward.findFirst({
+    where: {
+      referralInviteId,
+      role: ReferralRewardRole.invitee_bonus,
+      status: { in: [ReferralRewardStatus.pending, ReferralRewardStatus.credited] },
+    },
+    select: { id: true },
+  });
+  return Boolean(reward);
+}
+
+/** @deprecated Use hasIssuedInviteeBonus for queue idempotency */
+export const hasQueuedOrCreditedInviteeBonus = hasIssuedInviteeBonus;
+
 export async function findDeferredQualifiedInvites(inviterUserId: string) {
   return prisma.referralInvite.findMany({
     where: {

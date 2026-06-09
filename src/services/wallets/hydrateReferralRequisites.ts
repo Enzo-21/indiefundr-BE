@@ -9,6 +9,7 @@ type ActivityRowLike = {
 
 const REFERRAL_KINDS = new Set([
   "referral_bonus_pending",
+  "referral_bonus_processing",
   "referral_bonus_credited",
 ]);
 

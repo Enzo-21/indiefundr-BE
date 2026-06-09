@@ -40,4 +40,21 @@ describe("referral share and inviter-stats response shapes", () => {
     assert.equal("share" in stats, false);
     assert.equal("invites" in stats, false);
   });
+
+  it("recovery payload includes window expiry fields", () => {
+    const recovery = {
+      investmentId: "inv-1",
+      fundName: "Aggressive Alpha",
+      qualifiedCount: 1,
+      requiredCount: 2,
+      principalUsdt: 25,
+      recoveryEligibleAt: "2026-01-01T00:00:00.000Z",
+      recoveryExpiresAt: "2026-01-08T00:00:00.000Z",
+      windowDays: 7,
+    };
+
+    assert.ok(recovery.recoveryEligibleAt);
+    assert.ok(recovery.recoveryExpiresAt);
+    assert.equal(recovery.windowDays, 7);
+  });
 });

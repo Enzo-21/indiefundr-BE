@@ -95,10 +95,42 @@ type ByFundRow = {
   fundId: string;
   fundName: string;
   amountUsdt: number;
+  positionCount: number;
   status: string;
   statusLabel: string;
   percentOfInvested?: number;
 };
+
+const BY_FUND_STATUS_PRIORITY: Record<string, number> = {
+  redeeming: 5,
+  matured: 4,
+  active: 3,
+  pending: 2,
+  processing: 1,
+};
+
+function mergeByFundRow(existing: ByFundRow, incoming: ByFundRow): ByFundRow {
+  const amountUsdt = parseFloat(
+    (existing.amountUsdt + incoming.amountUsdt).toFixed(4)
+  );
+  const positionCount = existing.positionCount + incoming.positionCount;
+  const existingPriority = BY_FUND_STATUS_PRIORITY[existing.status] ?? 0;
+  const incomingPriority = BY_FUND_STATUS_PRIORITY[incoming.status] ?? 0;
+  const dominant =
+    incomingPriority > existingPriority ? incoming : existing;
+
+  return {
+    fundId: existing.fundId,
+    fundName: existing.fundName,
+    amountUsdt,
+    positionCount,
+    status: dominant.status,
+    statusLabel:
+      positionCount > 1
+        ? `${positionCount} positions`
+        : dominant.statusLabel,
+  };
+}
 
 function buildByFundAllocation(
   activeOrders: Array<{
@@ -109,17 +141,23 @@ function buildByFundAllocation(
   investments: Investment[],
   settledInvestedBalance: number
 ): ByFundRow[] {
-  const rows: ByFundRow[] = [];
+  const byFund = new Map<string, ByFundRow>();
   const fundsWithActiveOrder = new Set(activeOrders.map((order) => order.fundId));
+
+  const upsertRow = (row: ByFundRow) => {
+    const existing = byFund.get(row.fundId);
+    byFund.set(row.fundId, existing ? mergeByFundRow(existing, row) : row);
+  };
 
   for (const order of activeOrders) {
     const fund = getFundById(order.fundId);
-    rows.push({
+    upsertRow({
       fundId: order.fundId,
       fundName: fund?.name || order.fundId,
       amountUsdt: parseFloat(
         Number(order.costUsdt || order.reservedUsdt || 0).toFixed(4)
       ),
+      positionCount: 1,
       status: "pending",
       statusLabel: "Processing",
     });
@@ -129,29 +167,31 @@ function buildByFundAllocation(
     if (inv.status === "pending" && fundsWithActiveOrder.has(inv.fundId)) {
       continue;
     }
+    const fund = getFundById(inv.fundId);
+    const base = {
+      fundId: inv.fundId,
+      fundName: fund?.name || inv.fundId,
+      amountUsdt: parseFloat(Number(inv.amountUsdt || 0).toFixed(4)),
+      positionCount: 1,
+    };
+
     if (inv.status === "pending") {
-      const fund = getFundById(inv.fundId);
-      rows.push({
-        fundId: inv.fundId,
-        fundName: fund?.name || inv.fundId,
-        amountUsdt: parseFloat(Number(inv.amountUsdt || 0).toFixed(4)),
+      upsertRow({
+        ...base,
         status: "pending",
         statusLabel: "Processing",
       });
       continue;
     }
 
-    const fund = getFundById(inv.fundId);
-    rows.push({
-      fundId: inv.fundId,
-      fundName: fund?.name || inv.fundId,
-      amountUsdt: parseFloat(Number(inv.amountUsdt || 0).toFixed(4)),
+    upsertRow({
+      ...base,
       status: inv.status,
       statusLabel: getUserStatusLabel(inv),
     });
   }
 
-  rows.sort((a, b) => b.amountUsdt - a.amountUsdt);
+  const rows = [...byFund.values()].sort((a, b) => b.amountUsdt - a.amountUsdt);
 
   return rows.map((row) => ({
     ...row,

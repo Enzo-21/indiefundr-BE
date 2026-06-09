@@ -6,11 +6,14 @@ import { SubscriptionsRefreshButton } from "./SubscriptionsRefreshButton";
 export function SubscriptionsOrderStatusBar({
   pendingInvestmentCount,
   pendingWithdrawalCount,
+  pendingReferralCount = 0,
 }: {
   pendingInvestmentCount: number;
   pendingWithdrawalCount: number;
+  pendingReferralCount?: number;
 }) {
-  const pendingOrderCount = pendingInvestmentCount + pendingWithdrawalCount;
+  const pendingOrderCount =
+    pendingInvestmentCount + pendingWithdrawalCount + pendingReferralCount;
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-md border bg-muted/30 px-4 py-3 text-sm">
@@ -20,11 +23,25 @@ export function SubscriptionsOrderStatusBar({
           {pendingOrderCount}{" "}
           {pendingOrderCount === 1 ? "order" : "orders"}
         </span>
-        {pendingInvestmentCount > 0 && pendingWithdrawalCount > 0 ? (
+        {pendingInvestmentCount > 0 ||
+        pendingWithdrawalCount > 0 ||
+        pendingReferralCount > 0 ? (
           <span className="text-muted-foreground">
             {" "}
-            ({pendingInvestmentCount} investment · {pendingWithdrawalCount}{" "}
-            withdrawal)
+            ({[
+              pendingInvestmentCount > 0
+                ? `${pendingInvestmentCount} investment`
+                : null,
+              pendingWithdrawalCount > 0
+                ? `${pendingWithdrawalCount} withdrawal`
+                : null,
+              pendingReferralCount > 0
+                ? `${pendingReferralCount} referral`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+            )
           </span>
         ) : null}
       </div>

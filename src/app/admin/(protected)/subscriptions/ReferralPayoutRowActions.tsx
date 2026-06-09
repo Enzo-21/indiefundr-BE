@@ -3,25 +3,15 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
-  adminMarkOrderFailed,
-  adminRecordTrxTopUp,
-  adminRecordUsdtPayment,
-} from "@/actions/admin/purchaseOrders";
+  adminBroadcastReferralPayout,
+  adminCompleteReferralPayout,
+  adminMarkReferralPayoutFailed,
+} from "@/actions/admin/referralPayoutOrders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { AdminQueueRow } from "@/services/admin/purchaseOrderFulfillment";
-import { CompleteOrderDialog } from "./CompleteOrderDialog";
-import { ReferralPayoutRowActions } from "./ReferralPayoutRowActions";
-import { WithdrawalRowActions } from "./WithdrawalRowActions";
+import type { AdminReferralPayoutRow } from "@/services/admin/referralPayoutOrderFulfillment";
 
-export function SubscriptionRowActions({ row }: { row: AdminQueueRow }) {
-  if (row.orderType === "referral") {
-    return <ReferralPayoutRowActions row={row} />;
-  }
-  if (row.orderType === "withdraw") {
-    return <WithdrawalRowActions row={row} />;
-  }
-  const [trxTxId, setTrxTxId] = useState(row.topUpTxId ?? "");
+export function ReferralPayoutRowActions({ row }: { row: AdminReferralPayoutRow }) {
   const [usdtTxId, setUsdtTxId] = useState(row.usdtTxId ?? "");
   const [failReason, setFailReason] = useState("");
   const [pending, startTransition] = useTransition();
@@ -39,26 +29,22 @@ export function SubscriptionRowActions({ row }: { row: AdminQueueRow }) {
 
   return (
     <div className="flex min-w-[280px] flex-col gap-2">
-      <CompleteOrderDialog row={row} />
+      <Button
+        size="sm"
+        disabled={pending}
+        onClick={() =>
+          run(async () => {
+            const result = await adminBroadcastReferralPayout(row.orderId);
+            if (result.ok && result.data?.txId) {
+              setUsdtTxId(result.data.txId);
+            }
+            return result;
+          })
+        }
+      >
+        Pay from treasury
+      </Button>
 
-      <div className="flex flex-wrap gap-1">
-        <Input
-          className="h-8 flex-1 min-w-[120px] text-xs"
-          placeholder="TRX top-up tx id"
-          value={trxTxId}
-          onChange={(e) => setTrxTxId(e.target.value)}
-        />
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={pending || !trxTxId.trim()}
-          onClick={() =>
-            run(() => adminRecordTrxTopUp(row.orderId, trxTxId.trim()))
-          }
-        >
-          Save TRX
-        </Button>
-      </div>
       <div className="flex flex-wrap gap-1">
         <Input
           className="h-8 flex-1 min-w-[120px] text-xs"
@@ -71,12 +57,15 @@ export function SubscriptionRowActions({ row }: { row: AdminQueueRow }) {
           variant="outline"
           disabled={pending || !usdtTxId.trim()}
           onClick={() =>
-            run(() => adminRecordUsdtPayment(row.orderId, usdtTxId.trim()))
+            run(() =>
+              adminCompleteReferralPayout(row.orderId, usdtTxId.trim())
+            )
           }
         >
-          Save USDT
+          Complete
         </Button>
       </div>
+
       <div className="flex flex-wrap gap-1">
         <Input
           className="h-8 flex-1 min-w-[100px] text-xs"
@@ -87,20 +76,16 @@ export function SubscriptionRowActions({ row }: { row: AdminQueueRow }) {
         <Button
           size="sm"
           variant="destructive"
-          disabled={pending}
+          disabled={pending || !failReason.trim()}
           onClick={() =>
             run(() =>
-              adminMarkOrderFailed(
-                row.orderId,
-                failReason.trim() || "Declined by admin"
-              )
+              adminMarkReferralPayoutFailed(row.orderId, failReason.trim())
             )
           }
         >
-          Mark failed
+          Fail
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground">Step: {row.step}</p>
     </div>
   );
 }

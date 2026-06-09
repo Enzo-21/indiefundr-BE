@@ -47,6 +47,7 @@ function fundOrFallback(fundId: string): InvestmentFund {
       tagline: "",
       returnPercent90d: 0,
       termDays: 90,
+      maxOpenInvestments: 1,
       riskLevel: "medium",
       riskLabel: "Medium risk",
       destinations: [],

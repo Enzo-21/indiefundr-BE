@@ -54,6 +54,10 @@ export function buildAutopilotOrderCandidateFromRow(
     };
   }
 
+  if (row.orderType === "referral") {
+    throw new Error("Referral payout orders are not supported in order autopilot");
+  }
+
   return {
     ...base,
     orderType: "invest",

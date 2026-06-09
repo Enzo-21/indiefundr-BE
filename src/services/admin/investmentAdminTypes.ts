@@ -1,5 +1,16 @@
 import type { InvestmentStatus } from "@prisma/client";
 import type {
+  AdminInvestmentsPageInfo,
+  AdminInvestmentsView,
+  ListAdminInvestmentsOptions,
+} from "@/services/admin/adminInvestmentListQuery";
+
+export type {
+  AdminInvestmentsPageInfo,
+  AdminInvestmentsView,
+  ListAdminInvestmentsOptions,
+};
+import type {
   InvestmentLedgerEventKind,
   InvestmentLedgerSnapshot,
 } from "@/services/admin/investmentLedgerSnapshots";
@@ -79,17 +90,22 @@ export type AdminInvestmentRow = {
   redemptionTxId: string | null;
 };
 
+export type AdminInvestmentsPayoutAvailability = {
+  unlockedPayoutCount: number;
+  surplusPayoutCount: number;
+};
+
+export type AdminInvestmentsCurrentLedger = {
+  poolAvailable: number;
+  treasurySurplus: number;
+  poolLiquidity: number;
+  protectedRevenueAvailable: number;
+};
+
 export type AdminInvestmentsListResult = {
   rows: AdminInvestmentRow[];
   displayRows: AdminInvestmentDisplayRow[];
-  currentLedger: {
-    poolAvailable: number;
-    treasurySurplus: number;
-    poolLiquidity: number;
-    protectedRevenueAvailable: number;
-  };
-  payoutAvailability: {
-    unlockedPayoutCount: number;
-    surplusPayoutCount: number;
-  };
+  currentLedger: AdminInvestmentsCurrentLedger;
+  payoutAvailability: AdminInvestmentsPayoutAvailability;
+  pageInfo: AdminInvestmentsPageInfo;
 };

@@ -11,7 +11,10 @@ import { prisma } from "@/lib/prisma";
 import { PurchaseOrderFulfillmentMode, PurchaseOrderStep } from "@prisma/client";
 import { buildIndieFundrMemo } from "@/lib/tron/transactionMemo";
 import * as tron from "@/services/tron/client";
-import { INVESTMENT_OPEN_STATUSES } from "@/services/investments/constants";
+import {
+  getInvestmentSlotUsage,
+  slotsFullResponseBody,
+} from "@/lib/config/investmentSlots";
 import {
   getActiveOrderForUser,
   getWalletUsdtAvailability,
@@ -68,23 +71,20 @@ export async function subscribeToFund(
       };
     }
 
-    const existing = await prisma.investment.findFirst({
-      where: {
-        userId,
-        fundId,
-        status: { in: INVESTMENT_OPEN_STATUSES },
-      },
-    });
-    if (existing) {
-      logFundsRejected("subscribe", "existing_investment", {
+    const slotUsage = await getInvestmentSlotUsage(userId, fundId);
+    if (slotUsage.slotsAvailable <= 0) {
+      logFundsRejected("subscribe", "slots_full", {
         ...baseFields,
-        investmentId: existing.id,
-        status: existing.status,
+        openCount: slotUsage.openCount,
+        maxOpenInvestments: slotUsage.maxOpenInvestments,
       });
       return {
         ok: false,
         status: 400,
-        body: { msg: "You already have an investment in this fund" },
+        body: slotsFullResponseBody(
+          slotUsage.openCount,
+          slotUsage.maxOpenInvestments
+        ),
       };
     }
 

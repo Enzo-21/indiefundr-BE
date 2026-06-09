@@ -1,10 +1,6 @@
 import {
-  InvestmentStatus,
-  Prisma,
   ReferralInviteStatus,
-  ReferralRewardRole,
-  ReferralRewardStatus,
-  type Investment,
+  ReferralPayoutOrderKind,
 } from "@prisma/client";
 import {
   REFERRAL_INVITEE_BONUS_USDT,
@@ -12,14 +8,7 @@ import {
   REFERRAL_RECOVERY_INVITEES_REQUIRED,
   REFERRAL_RECOVERY_PRINCIPAL_USDT,
 } from "@/lib/config/referralRecovery";
-import { getEnv } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
-import { getMainWallet } from "@/lib/wallets/helpers";
-import {
-  recordReferralBonusOutflow,
-  recordReferralPrincipalRecovery,
-} from "@/services/revenueEngine/ledger";
-import * as tron from "@/services/tron/client";
 import { getRecoveryContextForInviter } from "./recoveryEligibility";
 import {
   hasCompletedFirstInvestment,
@@ -28,75 +17,28 @@ import {
 import {
   bothPartiesHaveInvested,
   findDeferredQualifiedInvites,
-  hasCreditedInviteeBonus,
+  hasIssuedInviteeBonus,
 } from "./referralPayoutEligibility";
+import { enqueueReferralPayoutOrder } from "./referralPayoutOrderQueue";
 import {
   clearInviterReferralPendingActivity,
   clearReferralPendingActivity,
-  createReferralBonusActivity,
 } from "./referralWalletActivity";
 
-async function creditReferralReward(params: {
-  referralInviteId: string;
-  role: ReferralRewardRole;
-  userId: string;
-  amountUsdt: number;
-  investmentId?: string;
-}) {
-  const wallet = await getMainWallet(params.userId);
-  if (!wallet) {
-    throw new Error("Wallet not found for referral reward");
-  }
-
-  try {
-    await recordReferralBonusOutflow(params.amountUsdt, {
-      role: params.role,
-      referralInviteId: params.referralInviteId,
-      userId: params.userId,
-    });
-  } catch (err) {
-    const reward = await prisma.referralReward.create({
-      data: {
-        referralInviteId: params.referralInviteId,
-        role: params.role,
-        amountUsdt: params.amountUsdt,
-        status: ReferralRewardStatus.pending,
-        investmentId: params.investmentId,
-      },
-    });
-    return reward;
-  }
-
-  const reward = await prisma.referralReward.create({
-    data: {
-      referralInviteId: params.referralInviteId,
-      role: params.role,
-      amountUsdt: params.amountUsdt,
-      status: ReferralRewardStatus.credited,
-      investmentId: params.investmentId,
-      creditedAt: new Date(),
-    },
-  });
-
-  const label =
-    params.role === ReferralRewardRole.invitee_bonus
-      ? "Referral bonus"
-      : "Referral reward";
-
-  await createReferralBonusActivity({
-    userId: params.userId,
-    walletId: wallet.id,
-    rewardId: reward.id,
-    amountUsdt: params.amountUsdt,
-    label,
-  });
-
-  return reward;
+export function shouldUseRecoverySlot(
+  link: { completedAt: Date | null; inviteIds: string[] } | null,
+  inviteId: string,
+  required: number = REFERRAL_RECOVERY_INVITEES_REQUIRED()
+): boolean {
+  const recoveryComplete = Boolean(link?.completedAt);
+  const slotsFull = (link?.inviteIds.length ?? 0) >= required;
+  const alreadyCounted = link?.inviteIds.includes(inviteId) ?? false;
+  return !recoveryComplete && !slotsFull && !alreadyCounted;
 }
 
-async function maybeCompleteRecovery(inviterUserId: string, inviteId: string) {
+async function trackRecoveryInvite(inviterUserId: string, inviteId: string) {
   const ctx = await getRecoveryContextForInviter(inviterUserId);
-  if (ctx.mode !== "recovery" || !ctx.recovery) return;
+  if (ctx.mode !== "recovery" || !ctx.recovery) return null;
 
   const investmentId = ctx.recovery.investmentId;
   let link = await prisma.referralRecoveryLink.findUnique({
@@ -118,73 +60,27 @@ async function maybeCompleteRecovery(inviterUserId: string, inviteId: string) {
     });
   }
 
+  return { link, investmentId };
+}
+
+async function maybeEnqueuePrincipalRecoveryOrder(
+  inviterUserId: string,
+  inviteId: string
+) {
+  const tracked = await trackRecoveryInvite(inviterUserId, inviteId);
+  if (!tracked) return;
+
+  const { link, investmentId } = tracked;
   if (link.inviteIds.length < REFERRAL_RECOVERY_INVITEES_REQUIRED()) return;
   if (link.completedAt) return;
 
-  const investment = await prisma.investment.findUnique({
-    where: { id: investmentId },
-  });
-  if (!investment) return;
-
   const principal = REFERRAL_RECOVERY_PRINCIPAL_USDT();
-  const receiver = await getMainWallet(inviterUserId);
-  const treasuryPk = getEnv().treasuryPrivateKey;
-  if (!receiver || !treasuryPk) {
-    console.error("[referral] Principal recovery skipped: wallet/treasury not configured");
-    return;
-  }
-
-  await recordReferralPrincipalRecovery(principal, investmentId, {
-    inviterUserId,
-    referralRecoveryLinkId: link.id,
-  });
-
-  let redemptionTx: Prisma.InputJsonValue | undefined;
-  try {
-    const signed = await tron.transferUsdt({
-      fromPrivateKey: treasuryPk,
-      toAddress: receiver.address,
-      amount: principal,
-    });
-    redemptionTx = signed as Prisma.InputJsonValue;
-  } catch (err) {
-    console.error("[referral] Principal on-chain transfer failed:", err);
-  }
-
-  await prisma.$transaction([
-    prisma.investment.update({
-      where: { id: investmentId },
-      data: {
-        status: InvestmentStatus.referral_recovered,
-        referralRecoveryCompletedAt: new Date(),
-        recoveryEligibleAt: null,
-        redemptionTransaction: redemptionTx,
-        redeemedAt: new Date(),
-      },
-    }),
-    prisma.referralRecoveryLink.update({
-      where: { id: link.id },
-      data: { completedAt: new Date() },
-    }),
-    prisma.referralReward.create({
-      data: {
-        referralInviteId: inviteId,
-        role: ReferralRewardRole.principal_recovery,
-        amountUsdt: principal,
-        status: ReferralRewardStatus.credited,
-        investmentId,
-        creditedAt: new Date(),
-      },
-    }),
-  ]);
-
-  const wallet = receiver;
-  await createReferralBonusActivity({
+  await enqueueReferralPayoutOrder({
     userId: inviterUserId,
-    walletId: wallet.id,
-    rewardId: `principal-${investmentId}`,
+    referralInviteId: inviteId,
+    kind: ReferralPayoutOrderKind.principal_recovery,
     amountUsdt: principal,
-    label: "Principal recovered",
+    investmentId,
   });
 }
 
@@ -198,7 +94,7 @@ export async function issueReferralRewards(
   if (!invite) return;
   if (invite.status === ReferralInviteStatus.attributed_late) return;
 
-  if (await hasCreditedInviteeBonus(referralInviteId)) {
+  if (await hasIssuedInviteeBonus(referralInviteId)) {
     return;
   }
 
@@ -213,10 +109,10 @@ export async function issueReferralRewards(
   const inviteeBonus = REFERRAL_INVITEE_BONUS_USDT();
   const inviterBonus = REFERRAL_INVITER_BONUS_USDT();
 
-  await creditReferralReward({
-    referralInviteId,
-    role: ReferralRewardRole.invitee_bonus,
+  await enqueueReferralPayoutOrder({
     userId: invite.inviteeUserId,
+    referralInviteId,
+    kind: ReferralPayoutOrderKind.invitee_bonus,
     amountUsdt: inviteeBonus,
     investmentId,
   });
@@ -225,15 +121,26 @@ export async function issueReferralRewards(
   await clearInviterReferralPendingActivity(invite.id);
 
   const recoveryCtx = await getRecoveryContextForInviter(invite.inviterUserId);
-  if (recoveryCtx.mode === "recovery") {
-    await maybeCompleteRecovery(invite.inviterUserId, referralInviteId);
-    return;
+  if (recoveryCtx.mode === "recovery" && recoveryCtx.recovery) {
+    const investmentIdForRecovery = recoveryCtx.recovery.investmentId;
+    const required = REFERRAL_RECOVERY_INVITEES_REQUIRED();
+    const link = await prisma.referralRecoveryLink.findUnique({
+      where: { investmentId: investmentIdForRecovery },
+    });
+
+    if (shouldUseRecoverySlot(link, referralInviteId, required)) {
+      await maybeEnqueuePrincipalRecoveryOrder(
+        invite.inviterUserId,
+        referralInviteId
+      );
+      return;
+    }
   }
 
-  await creditReferralReward({
-    referralInviteId,
-    role: ReferralRewardRole.inviter_bonus,
+  await enqueueReferralPayoutOrder({
     userId: invite.inviterUserId,
+    referralInviteId,
+    kind: ReferralPayoutOrderKind.inviter_bonus,
     amountUsdt: inviterBonus,
     investmentId,
   });
@@ -259,7 +166,7 @@ export async function onReferralQualified(
     });
   }
 
-  if (await hasCreditedInviteeBonus(referralInviteId)) {
+  if (await hasIssuedInviteeBonus(referralInviteId)) {
     return;
   }
 
@@ -286,8 +193,8 @@ export async function releaseDeferredReferralRewardsOnInviterFirstInvestment(
   const invites = await findDeferredQualifiedInvites(inviterUserId);
 
   for (const invite of invites) {
-    const alreadyCredited = await hasCreditedInviteeBonus(invite.id);
-    if (alreadyCredited) {
+    const alreadyIssued = await hasIssuedInviteeBonus(invite.id);
+    if (alreadyIssued) {
       continue;
     }
 

@@ -28,7 +28,7 @@ const badgeVariants = cva(
         payout:
           "border-violet-500/20 bg-violet-500/10 text-violet-800 dark:text-violet-300 [a]:hover:bg-violet-500/20",
         surplus:
-          "border-teal-500/20 bg-teal-500/10 text-teal-800 dark:text-teal-300 [a]:hover:bg-teal-500/20",
+          "border-violet-500/20 bg-violet-500/10 text-violet-800 dark:text-violet-300 [a]:hover:bg-violet-500/20",
         external:
           "border-lime-500/20 bg-lime-500/10 text-lime-800 dark:text-lime-300 [a]:hover:bg-lime-500/20",
         neutral:

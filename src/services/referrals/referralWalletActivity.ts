@@ -4,6 +4,7 @@ import { getMainWallet } from "@/lib/wallets/helpers";
 import {
   REFERRAL_INVITEE_BONUS_USDT,
   REFERRAL_INVITER_BONUS_USDT,
+  REFERRAL_RECOVERY_PRINCIPAL_USDT,
 } from "@/lib/config/referralRecovery";
 
 const PENDING_ENTITY_PREFIX = "referral-pending:";
@@ -11,6 +12,7 @@ const INVITER_PENDING_ENTITY_PREFIX = "referral-inviter-pending:";
 
 export const REFERRAL_WALLET_ACTIVITY_KINDS = [
   "referral_bonus_pending",
+  "referral_bonus_processing",
   "referral_bonus_credited",
   "referral_principal_recovery",
 ] as const;
@@ -194,6 +196,74 @@ export async function clearInviterReferralPendingActivity(inviteId: string) {
     where: {
       kind: "referral_bonus_pending",
       entityId,
+    },
+  });
+}
+
+function buildReferralProcessingTapInfo(amount: number) {
+  const formatted = amount.toFixed(2);
+  return {
+    title: "Referral payout queued",
+    message:
+      `${formatted} USDT is queued for treasury payout. ` +
+      "It will appear in your wallet after the transfer completes.",
+  };
+}
+
+export async function markInviteeReferralProcessingActivity(
+  userId: string,
+  walletId: string
+) {
+  const entityId = `${PENDING_ENTITY_PREFIX}${userId}`;
+  const amount = REFERRAL_INVITEE_BONUS_USDT();
+  await upsertWalletActivityByEntity({
+    userId,
+    walletId,
+    kind: "referral_bonus_processing",
+    entityId,
+    data: {
+      type: "in",
+      amountUsdt: amount,
+      status: "processing",
+      label: "Referral bonus",
+      detail: "Payout queued",
+      pendingTapInfo: buildReferralProcessingTapInfo(amount),
+      occurredAt: new Date(),
+      chainFinal: false,
+    },
+  });
+}
+
+export async function markInviterReferralProcessingActivity(
+  userId: string,
+  walletId: string,
+  inviteKey: string
+) {
+  const entityId = inviteKey.startsWith(INVITER_PENDING_ENTITY_PREFIX)
+    ? inviteKey
+    : inviteKey.startsWith("principal-")
+      ? `referral-principal-processing:${inviteKey}`
+      : `${INVITER_PENDING_ENTITY_PREFIX}${inviteKey}`;
+  const amount = inviteKey.startsWith("principal-")
+    ? REFERRAL_RECOVERY_PRINCIPAL_USDT()
+    : REFERRAL_INVITER_BONUS_USDT();
+
+  await upsertWalletActivityByEntity({
+    userId,
+    walletId,
+    kind: "referral_bonus_processing",
+    entityId,
+    data: {
+      type: "in",
+      amountUsdt: amount,
+      status: "processing",
+      label: inviteKey.startsWith("principal-")
+        ? "Principal recovery"
+        : "Referral reward",
+      detail: "Payout queued",
+      pendingTapInfo: buildReferralProcessingTapInfo(amount),
+      occurredAt: new Date(),
+      chainFinal: false,
     },
   });
 }

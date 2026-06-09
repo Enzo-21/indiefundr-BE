@@ -1,6 +1,8 @@
 "use server";
 
 import { withAdminAction } from "@/actions/_lib/withAdminAction";
+import type { ListAdminInvestmentsOptions } from "@/services/admin/adminInvestmentListQuery";
+import { getAdminPayoutSummary } from "@/services/admin/adminPayoutSummary";
 import {
   getAdminOverviewStats,
   getTronLimiterDiagnostics,
@@ -28,11 +30,14 @@ export async function fetchFundedUsers(limit = 15) {
   return withAdminAction(() => listFundedUsers({ limit }));
 }
 
-export async function fetchAdminInvestments() {
-  return withAdminAction(async () => {
-    await markMaturedInvestments();
-    return listAdminInvestments();
-  });
+export async function fetchAdminInvestments(
+  options: ListAdminInvestmentsOptions = {}
+) {
+  return withAdminAction(() => listAdminInvestments(options));
+}
+
+export async function fetchAdminPayoutSummary() {
+  return withAdminAction(() => getAdminPayoutSummary());
 }
 
 export async function fetchAppWithdrawals() {
@@ -44,7 +49,10 @@ export async function fetchTronLimiterDiagnostics() {
 }
 
 export async function adminPayInvestmentNow(investmentId: string) {
-  const result = await withAdminAction(() => payInvestmentNow(investmentId));
+  const result = await withAdminAction(async () => {
+    await markMaturedInvestments();
+    return payInvestmentNow(investmentId);
+  });
   if (result.ok) {
     revalidatePath("/admin/investments");
     revalidatePath("/admin/treasury");
@@ -54,9 +62,10 @@ export async function adminPayInvestmentNow(investmentId: string) {
 }
 
 export async function adminPayInvestmentWithSurplus(investmentId: string) {
-  const result = await withAdminAction(() =>
-    payInvestmentWithSurplus(investmentId)
-  );
+  const result = await withAdminAction(async () => {
+    await markMaturedInvestments();
+    return payInvestmentWithSurplus(investmentId);
+  });
   if (result.ok) {
     revalidatePath("/admin/investments");
     revalidatePath("/admin/treasury");

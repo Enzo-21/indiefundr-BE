@@ -17,7 +17,7 @@ import {
   withGlobalPayoutLock,
 } from "./payoutLock";
 
-const PAYOUT_CANDIDATE_STATUSES: InvestmentStatus[] = [
+export const PAYOUT_CANDIDATE_STATUSES: InvestmentStatus[] = [
   InvestmentStatus.active,
   InvestmentStatus.matured,
 ];

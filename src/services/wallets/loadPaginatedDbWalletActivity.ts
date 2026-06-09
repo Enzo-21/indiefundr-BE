@@ -26,6 +26,7 @@ const MAX_RAW_SCAN_ROWS = 500;
 
 export const REFERRAL_ACTIVITY_KINDS = [
   "referral_bonus_pending",
+  "referral_bonus_processing",
   "referral_bonus_credited",
   "referral_principal_recovery",
 ] as const;

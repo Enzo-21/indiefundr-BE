@@ -688,6 +688,7 @@ export function walletActivityRecordToTx(row: {
 ): WalletActivityTx {
   const isReferralKind =
     row.kind === "referral_bonus_pending" ||
+    row.kind === "referral_bonus_processing" ||
     row.kind === "referral_bonus_credited" ||
     row.kind === "referral_principal_recovery";
 

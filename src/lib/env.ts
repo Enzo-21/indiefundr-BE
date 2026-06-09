@@ -90,6 +90,7 @@ const rawEnvSchema = z.object({
   REFERRAL_INVITER_BONUS_USDT: z.coerce.number().default(2),
   REFERRAL_RECOVERY_PRINCIPAL_USDT: z.coerce.number().default(25),
   REFERRAL_RECOVERY_INVITEES_REQUIRED: z.coerce.number().default(2),
+  REFERRAL_RECOVERY_WINDOW_DAYS: z.coerce.number().default(7),
   REFERRAL_MONTHLY_SURPLUS_CAP_USDT: z.coerce.number().default(500),
   SYMPATHY_MODAL_COOLDOWN_DAYS: z.coerce.number().default(7),
 });
@@ -179,6 +180,7 @@ function buildEnv(raw: z.infer<typeof rawEnvSchema>) {
     referralInviterBonusUsdt: raw.REFERRAL_INVITER_BONUS_USDT,
     referralRecoveryPrincipalUsdt: raw.REFERRAL_RECOVERY_PRINCIPAL_USDT,
     referralRecoveryInviteesRequired: raw.REFERRAL_RECOVERY_INVITEES_REQUIRED,
+    referralRecoveryWindowDays: raw.REFERRAL_RECOVERY_WINDOW_DAYS,
     referralMonthlySurplusCapUsdt: raw.REFERRAL_MONTHLY_SURPLUS_CAP_USDT,
     sympathyModalCooldownDays: raw.SYMPATHY_MODAL_COOLDOWN_DAYS,
   };

@@ -6,6 +6,7 @@ export type InvestmentFund = {
   tagline: string;
   returnPercent90d: number;
   termDays: number;
+  maxOpenInvestments: number;
   riskLevel: string;
   riskLabel: string;
   destinations: string[];
@@ -31,6 +32,7 @@ const FUND_DEFINITIONS: Omit<InvestmentFund, "termDays">[] = [
     ],
     accentColor: "#c0392b",
     icon: "fire",
+    maxOpenInvestments: 5,
   },
   {
     id: "growth-partners",
@@ -47,6 +49,7 @@ const FUND_DEFINITIONS: Omit<InvestmentFund, "termDays">[] = [
     ],
     accentColor: "#d35400",
     icon: "chart-line",
+    maxOpenInvestments: 5,
   },
   {
     id: "balanced-growth",
@@ -63,6 +66,7 @@ const FUND_DEFINITIONS: Omit<InvestmentFund, "termDays">[] = [
     ],
     accentColor: "#2980b9",
     icon: "balance-scale",
+    maxOpenInvestments: 5,
   },
   {
     id: "stable-yield",
@@ -79,6 +83,7 @@ const FUND_DEFINITIONS: Omit<InvestmentFund, "termDays">[] = [
     ],
     accentColor: "#27ae60",
     icon: "shield-alt",
+    maxOpenInvestments: 5,
   },
   {
     id: "capital-shield",
@@ -95,6 +100,7 @@ const FUND_DEFINITIONS: Omit<InvestmentFund, "termDays">[] = [
     ],
     accentColor: "#16a085",
     icon: "lock",
+    maxOpenInvestments: 5,
   },
 ];
 

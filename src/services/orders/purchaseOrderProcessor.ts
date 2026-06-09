@@ -19,7 +19,11 @@ import {
 } from "@/lib/tron/transactionMemo";
 import { fieldIsNullOrUnset } from "@/lib/prisma/mongoFieldFilters";
 import { prisma } from "@/lib/prisma";
-import { INVESTMENT_OPEN_STATUSES } from "@/services/investments/constants";
+import {
+  createInvestmentIfSlotAvailable,
+  getInvestmentSlotUsage,
+  InvestmentSlotsFullError,
+} from "@/lib/config/investmentSlots";
 import { sendPushNotification } from "@/services/orders/pushNotify";
 import { onSubscribeCompleted } from "@/services/revenueEngine/onSubscribeCompleted";
 import { applyPendingReferralCode } from "@/services/referrals/applyPendingReferralCode";
@@ -950,8 +954,9 @@ async function processUsdtTransfer(
     return processPurchaseOrder(order.id);
   }
 
-  const newInvestment = await prisma.investment.create({
-    data: {
+  let newInvestment;
+  try {
+    newInvestment = await createInvestmentIfSlotAvailable({
       userId: order.userId,
       walletId: order.walletId,
       fundId: order.fundId,
@@ -964,8 +969,18 @@ async function processUsdtTransfer(
       status: InvestmentStatus.pending,
       purchaseOrderId: order.id,
       transaction: signedTransaction as Prisma.InputJsonValue,
-    },
-  });
+    });
+  } catch (err) {
+    if (err instanceof InvestmentSlotsFullError) {
+      await failOrder(order, err.message, {
+        wallet,
+        treasuryAddress,
+        skipChainGate: true,
+      });
+      return;
+    }
+    throw err;
+  }
 
   await prisma.purchaseOrder.update({
     where: { id: order.id },
@@ -1105,19 +1120,20 @@ async function processPurchaseOrderUnlocked(orderId: string): Promise<void> {
   let currentOrder = order;
 
   if (currentOrder.status === PurchaseOrderStatus.queued) {
-    const existing = await prisma.investment.findFirst({
-      where: {
-        userId: currentOrder.userId,
-        fundId: currentOrder.fundId,
-        status: { in: INVESTMENT_OPEN_STATUSES },
-      },
-    });
-    if (existing) {
-      await failOrder(currentOrder, "You already have an investment in this fund", {
-        wallet: walletWithKey,
-        treasuryAddress,
-        skipChainGate: true,
-      });
+    const slotUsage = await getInvestmentSlotUsage(
+      currentOrder.userId,
+      currentOrder.fundId
+    );
+    if (slotUsage.slotsAvailable <= 0) {
+      await failOrder(
+        currentOrder,
+        `Maximum open investments reached for this fund (${slotUsage.openCount}/${slotUsage.maxOpenInvestments})`,
+        {
+          wallet: walletWithKey,
+          treasuryAddress,
+          skipChainGate: true,
+        }
+      );
       return;
     }
 
@@ -1270,8 +1286,9 @@ export async function ensureInvestmentForCompletedUsdt(
     failedRecord = failedCandidates[0] ?? null;
   }
 
-  const investment = await prisma.investment.create({
-    data: {
+  let investment;
+  try {
+    investment = await createInvestmentIfSlotAvailable({
       userId: order.userId,
       walletId: order.walletId,
       fundId: order.fundId,
@@ -1288,8 +1305,13 @@ export async function ensureInvestmentForCompletedUsdt(
         : failedRecord?.transaction != null
           ? { transaction: failedRecord.transaction }
           : {}),
-    },
-  });
+    });
+  } catch (err) {
+    if (err instanceof InvestmentSlotsFullError) {
+      throw new Error(err.message);
+    }
+    throw err;
+  }
 
   if (failedRecord) {
     await prisma.failedInvestment.deleteMany({ where: { id: failedRecord.id } });

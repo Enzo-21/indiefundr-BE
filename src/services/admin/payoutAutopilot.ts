@@ -1,4 +1,4 @@
-import { listAdminInvestments } from "@/services/admin/dashboard";
+import { listAdminPayoutActionRows } from "@/services/admin/dashboard";
 import type { AdminInvestmentRow } from "@/services/admin/investmentAdminTypes";
 import type { InvestmentPayoutMode } from "@/services/admin/investmentPayoutFulfillment";
 
@@ -54,6 +54,6 @@ export async function listAutopilotPayoutCandidates(options: {
   includeNormal: boolean;
   includeSurplus: boolean;
 }): Promise<AutopilotPayoutCandidate[]> {
-  const { rows } = await listAdminInvestments();
+  const rows = await listAdminPayoutActionRows();
   return buildAutopilotPayoutCandidatesFromRows(rows, options);
 }

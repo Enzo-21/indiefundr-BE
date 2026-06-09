@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  InvestmentStatus,
   PurchaseOrderFulfillmentMode,
   PurchaseOrderStatus,
   PurchaseOrderStep,
 } from "@prisma/client";
+import { getMaxOpenInvestmentsForFund } from "@/lib/config/investmentSlots";
 import { resetEnvCache } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { getCurrentPurchaseOrder, subscribeToFund } from "./subscribe";
@@ -155,6 +157,117 @@ describe("subscribeToFund", () => {
       assert.equal(growthOrders, 0);
 
       await prisma.purchaseOrder.delete({ where: { id: reservedOrder.id } });
+      await prisma.wallet.delete({ where: { id: wallet.id } });
+      await prisma.user.delete({ where: { id: user.id } });
+    }
+  );
+
+  it(
+    "returns SLOTS_FULL when open investments reach per-fund cap",
+    { skip: skipDbTests },
+    async () => {
+      const user = await prisma.user.create({
+        data: {
+          name: "Subscribe Slots Full Test",
+          email: `subscribe-slots-${Date.now()}@example.com`,
+        },
+      });
+
+      const wallet = await prisma.wallet.create({
+        data: {
+          userId: user.id,
+          name: "Main",
+          address: "TSubscribeSlotsFullTestAddress123456",
+          privateKey: "test-private-key",
+          isMainWallet: true,
+        },
+      });
+
+      const fundId = "aggressive-alpha";
+      const maxOpen = getMaxOpenInvestmentsForFund(fundId);
+
+      for (let i = 0; i < maxOpen; i++) {
+        await prisma.investment.create({
+          data: {
+            userId: user.id,
+            walletId: wallet.id,
+            fundId,
+            amountUsdt: 25,
+            returnPercent90d: 40,
+            projectedPayoutUsdt: 35,
+            status: InvestmentStatus.active,
+          },
+        });
+      }
+
+      const result = await subscribeToFund(user.id, {
+        fundId,
+        cost: 25,
+      });
+
+      assert.equal(result.ok, false);
+      if (!result.ok) {
+        assert.equal(result.status, 400);
+        const body = result.body as Record<string, unknown>;
+        assert.equal(body.code, "SLOTS_FULL");
+        assert.equal(body.openCount, maxOpen);
+        assert.equal(body.maxOpenInvestments, maxOpen);
+      }
+
+      await prisma.investment.deleteMany({ where: { userId: user.id } });
+      await prisma.wallet.delete({ where: { id: wallet.id } });
+      await prisma.user.delete({ where: { id: user.id } });
+    }
+  );
+
+  it(
+    "allows subscribe when prior position is redeemed",
+    { skip: skipDbTests },
+    async () => {
+      const user = await prisma.user.create({
+        data: {
+          name: "Subscribe Redeemed Slot Test",
+          email: `subscribe-redeemed-${Date.now()}@example.com`,
+        },
+      });
+
+      const wallet = await prisma.wallet.create({
+        data: {
+          userId: user.id,
+          name: "Main",
+          address: "TSubscribeRedeemedSlotTestAddr1234",
+          privateKey: "test-private-key",
+          isMainWallet: true,
+        },
+      });
+
+      const fundId = "balanced-growth";
+      await prisma.investment.create({
+        data: {
+          userId: user.id,
+          walletId: wallet.id,
+          fundId,
+          amountUsdt: 25,
+          returnPercent90d: 15,
+          projectedPayoutUsdt: 28.75,
+          status: InvestmentStatus.redeemed,
+        },
+      });
+
+      const result = await subscribeToFund(user.id, {
+        fundId,
+        cost: 25,
+      });
+
+      assert.notEqual(result.ok, true);
+      if (!result.ok) {
+        assert.notEqual(
+          (result.body as Record<string, unknown>).code,
+          "SLOTS_FULL"
+        );
+      }
+
+      await prisma.investment.deleteMany({ where: { userId: user.id } });
       await prisma.wallet.delete({ where: { id: wallet.id } });
       await prisma.user.delete({ where: { id: user.id } });
     }

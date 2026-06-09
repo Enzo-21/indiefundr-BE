@@ -99,6 +99,19 @@ enum ReferralRewardStatus {
   voided
 }
 
+enum ReferralPayoutOrderKind {
+  invitee_bonus
+  inviter_bonus
+  principal_recovery
+}
+
+enum ReferralPayoutOrderStatus {
+  queued
+  processing
+  completed
+  failed
+}
+
 enum FeeSponsorshipStatus {
   topped_up
   purchase_ok
@@ -127,10 +140,11 @@ model User {
   profiles          Profile[]
   photos            Photo[]
   investments       Investment[]
-  purchaseOrders    PurchaseOrder[]
-  withdrawalOrders  WithdrawalOrder[]
-  failedInvestments FailedInvestment[]
-  otpVerifications  OtpVerification[]
+  purchaseOrders       PurchaseOrder[]
+  withdrawalOrders     WithdrawalOrder[]
+  referralPayoutOrders ReferralPayoutOrder[]
+  failedInvestments    FailedInvestment[]
+  otpVerifications     OtpVerification[]
   refreshSessions   RefreshSession[]
   feeSponsorships   FeeSponsorship[]
 
@@ -201,7 +215,8 @@ model Wallet {
   user              User?              @relation("UserWallets", fields: [userId], references: [id])
   investments       Investment[]
   purchaseOrders    PurchaseOrder[]
-  withdrawalOrders  WithdrawalOrder[]
+  withdrawalOrders     WithdrawalOrder[]
+  referralPayoutOrders ReferralPayoutOrder[]
   failedInvestments FailedInvestment[]
   feeSponsorships   FeeSponsorship[]
   walletActivities  WalletActivity[]
@@ -299,6 +314,8 @@ model Investment {
   @@index([userId, fundId, status])
   @@index([status, maturesAt])
   @@index([payabilityStatus, payoutEligibleAt])
+  @@index([status, subscribedAt, id])
+  @@index([status, redeemedAt(sort: Desc)])
   @@map("investments")
 }
 
@@ -596,20 +613,47 @@ model ReferralInvite {
 }
 
 model ReferralReward {
-  id               String             @id @default(auto()) @map("_id") @db.ObjectId
-  referralInviteId String             @db.ObjectId
-  role             ReferralRewardRole
-  amountUsdt       Float
-  status           ReferralRewardStatus @default(pending)
-  investmentId     String?            @db.ObjectId
-  treasuryEventId  String?            @db.ObjectId
-  createdAt        DateTime           @default(now())
-  creditedAt       DateTime?
+  id                    String             @id @default(auto()) @map("_id") @db.ObjectId
+  referralInviteId      String             @db.ObjectId
+  role                  ReferralRewardRole
+  amountUsdt            Float
+  status                ReferralRewardStatus @default(pending)
+  investmentId          String?            @db.ObjectId
+  treasuryEventId       String?            @db.ObjectId
+  referralPayoutOrderId String?            @unique @db.ObjectId
+  createdAt             DateTime           @default(now())
+  creditedAt            DateTime?
 
-  referralInvite ReferralInvite @relation(fields: [referralInviteId], references: [id])
+  referralInvite      ReferralInvite       @relation(fields: [referralInviteId], references: [id])
+  referralPayoutOrder ReferralPayoutOrder? @relation(fields: [referralPayoutOrderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([referralInviteId])
   @@map("referralrewards")
+}
+
+model ReferralPayoutOrder {
+  id               String                    @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String                    @map("user") @db.ObjectId
+  walletId         String                    @map("wallet") @db.ObjectId
+  referralInviteId String?                   @db.ObjectId
+  investmentId     String?                   @db.ObjectId
+  kind             ReferralPayoutOrderKind
+  amountUsdt       Float
+  status           ReferralPayoutOrderStatus @default(queued)
+  usdtTxId         String?
+  adminSettledBy   String?
+  failureReason    String?
+  date             DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id])
+  wallet         Wallet          @relation(fields: [walletId], references: [id])
+  referralReward ReferralReward?
+
+  @@index([status, date])
+  @@index([referralInviteId, kind])
+  @@index([investmentId, kind])
+  @@map("referralpayoutorders")
 }
 
 model ReferralRecoveryLink {

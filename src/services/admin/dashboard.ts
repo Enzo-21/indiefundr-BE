@@ -10,6 +10,13 @@ import {
   type UserWalletStats,
 } from "@/services/admin/userWalletStats";
 import {
+  buildAdminInvestmentsPageInfo,
+  buildAdminInvestmentsWhere,
+  sliceAdminInvestmentsPage,
+  type ListAdminInvestmentsOptions,
+} from "@/services/admin/adminInvestmentListQuery";
+import { loadAdminInvestmentsContext } from "@/services/admin/adminPayoutSummary";
+import {
   type AdminInvestmentRow,
   type AdminInvestmentsListResult,
 } from "@/services/admin/investmentAdminTypes";
@@ -320,17 +327,22 @@ function showPayoutActionsForInvestment(inv: {
   );
 }
 
-export async function listAdminInvestments(): Promise<AdminInvestmentsListResult> {
-  const [rows, ledger] = await Promise.all([
-    prisma.investment.findMany({
-      orderBy: [{ subscribedAt: "asc" }, { id: "asc" }],
-      include: {
-        user: { select: { email: true, name: true } },
-      },
-    }),
-    getLedgerSnapshot(),
-  ]);
+type AdminInvestmentRecord = Awaited<
+  ReturnType<
+    typeof prisma.investment.findMany<{
+      include: { user: { select: { email: true; name: true } } };
+    }>
+  >
+>[number];
 
+async function mapInvestmentsToAdminRows(
+  rows: AdminInvestmentRecord[],
+  ledger: Awaited<ReturnType<typeof getLedgerSnapshot>>,
+  fifoEligibleIds: Set<string>
+): Promise<{
+  mappedRows: AdminInvestmentRow[];
+  ledgerViews: Awaited<ReturnType<typeof buildInvestmentLedgerSnapshotMap>>;
+}> {
   const ledgerViews = await buildInvestmentLedgerSnapshotMap(
     rows.map((inv) => inv.id),
     rows
@@ -339,15 +351,17 @@ export async function listAdminInvestments(): Promise<AdminInvestmentsListResult
   const unlockerUserIds = Array.from(
     new Set(rows.flatMap((inv) => inv.payoutUnlockingUserIds))
   );
-  const unlockerUsers = await prisma.user.findMany({
-    where: { id: { in: unlockerUserIds } },
-    select: { id: true, email: true, name: true },
-  });
+  const unlockerUsers =
+    unlockerUserIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: unlockerUserIds } },
+          select: { id: true, email: true, name: true },
+        })
+      : [];
   const unlockerMap = new Map(unlockerUsers.map((user) => [user.id, user]));
 
   const now = new Date();
-  const fifoEligibleIds = computeFifoSurplusEligibleInvestmentIds(rows, ledger, now);
-  const mappedRows: AdminInvestmentRow[] = rows.map((inv) => {
+  const mappedRows = rows.map((inv) => {
     const ledgerView = ledgerViews.get(inv.id);
     const fund = getFundById(inv.fundId);
     const canClaim = canUserClaim(inv);
@@ -425,29 +439,78 @@ export async function listAdminInvestments(): Promise<AdminInvestmentsListResult
       redemptionTxId,
     };
   });
+  return { mappedRows, ledgerViews };
+}
 
+export async function listAdminPayoutActionRows(): Promise<AdminInvestmentRow[]> {
+  const [context, rows] = await Promise.all([
+    loadAdminInvestmentsContext(),
+    prisma.investment.findMany({
+      where: {
+        status: {
+          in: [
+            InvestmentStatus.active,
+            InvestmentStatus.matured,
+            InvestmentStatus.redeeming,
+          ],
+        },
+        OR: [
+          { status: { not: InvestmentStatus.redeeming } },
+          { payoutFailureReason: { not: null } },
+        ],
+      },
+      orderBy: [{ subscribedAt: "asc" }, { id: "asc" }],
+      include: {
+        user: { select: { email: true, name: true } },
+      },
+    }),
+  ]);
+
+  const { mappedRows } = await mapInvestmentsToAdminRows(
+    rows,
+    context.ledger,
+    context.fifoEligibleIds
+  );
+  return mappedRows;
+}
+
+export async function listAdminInvestments(
+  options: ListAdminInvestmentsOptions = {}
+): Promise<AdminInvestmentsListResult> {
+  const { view, limit, where, orderBy } = buildAdminInvestmentsWhere(options);
+
+  const [fetchedRows, context] = await Promise.all([
+    prisma.investment.findMany({
+      where,
+      orderBy,
+      take: limit + 1,
+      include: {
+        user: { select: { email: true, name: true } },
+      },
+    }),
+    loadAdminInvestmentsContext(),
+  ]);
+
+  const pageInfo = buildAdminInvestmentsPageInfo({
+    view,
+    limit,
+    rows: fetchedRows,
+  });
+  const rows = sliceAdminInvestmentsPage(fetchedRows, limit);
+
+  const { mappedRows, ledgerViews } = await mapInvestmentsToAdminRows(
+    rows,
+    context.ledger,
+    context.fifoEligibleIds
+  );
   const displayRows = buildInvestmentLedgerTimeline(mappedRows, ledgerViews);
-
-  const unlockedPayoutCount = mappedRows.filter(
-    (row) => row.canPayNow && row.showPayoutActions
-  ).length;
-  const surplusPayoutCount = mappedRows.filter(
-    (row) => row.canPayWithSurplus
-  ).length;
 
   return {
     rows: mappedRows,
     displayRows,
-    currentLedger: {
-      poolAvailable: ledger.poolAvailable,
-      treasurySurplus: ledger.treasurySurplus,
-      poolLiquidity: ledger.poolLiquidity,
-      protectedRevenueAvailable: ledger.protectedRevenueAvailable,
-    },
-    payoutAvailability: {
-      unlockedPayoutCount,
-      surplusPayoutCount,
-    },
+    currentLedger: context.currentLedger,
+    payoutAvailability: context.payoutAvailability,
+    pageInfo,
   };
 }
 

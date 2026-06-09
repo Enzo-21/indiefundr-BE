@@ -46,6 +46,7 @@ export default async function AdminSubscriptionsPage() {
   let rows;
   let pendingInvestmentCount = 0;
   let pendingWithdrawalCount = 0;
+  let pendingReferralCount = 0;
   try {
     rows = await listAdminOrderQueue();
     pendingInvestmentCount = rows.filter(
@@ -53,6 +54,9 @@ export default async function AdminSubscriptionsPage() {
     ).length;
     pendingWithdrawalCount = rows.filter(
       (row) => row.orderType === "withdraw"
+    ).length;
+    pendingReferralCount = rows.filter(
+      (row) => row.orderType === "referral"
     ).length;
   } catch (error) {
     return (
@@ -71,14 +75,16 @@ export default async function AdminSubscriptionsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
         <p className="text-sm text-muted-foreground">
-          Pending manual investment and withdrawal orders: use Complete order or
-          Complete withdrawal to automate TRX top-up, USDT payment, and
-          mark-success. Save tx ids or mark failed for edge cases.
+          Pending investment, withdrawal, and referral payout orders. Investment
+          and withdrawal flows support TRX top-up and USDT payment. Referral
+          orders pay treasury USDT to user wallets when both parties have
+          invested (or principal recovery when two recovery slots qualify).
         </p>
         <div className="mt-3">
           <SubscriptionsOrderStatusBar
             pendingInvestmentCount={pendingInvestmentCount}
             pendingWithdrawalCount={pendingWithdrawalCount}
+            pendingReferralCount={pendingReferralCount}
           />
         </div>
       </div>
@@ -123,13 +129,31 @@ export default async function AdminSubscriptionsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {row.orderType === "withdraw" ? "Withdrawal" : "Investment"}
+                    {row.orderType === "withdraw"
+                      ? "Withdrawal"
+                      : row.orderType === "referral"
+                        ? "Referral"
+                        : "Investment"}
                   </TableCell>
                   <TableCell className="max-w-[200px]">
                     {row.orderType === "withdraw" ? (
                       <span className="break-all font-mono text-xs">
                         {row.destinationAddress}
                       </span>
+                    ) : row.orderType === "referral" ? (
+                      <div className="text-sm">
+                        <div>{row.kindLabel}</div>
+                        {row.referralInviteId ? (
+                          <div className="font-mono text-xs text-muted-foreground">
+                            invite {row.referralInviteId.slice(-6)}
+                          </div>
+                        ) : null}
+                        {row.investmentId ? (
+                          <div className="font-mono text-xs text-muted-foreground">
+                            investment {row.investmentId.slice(-6)}
+                          </div>
+                        ) : null}
+                      </div>
                     ) : (
                       row.fundName
                     )}
@@ -140,46 +164,75 @@ export default async function AdminSubscriptionsPage() {
                   <TableCell className="max-w-[140px] truncate font-mono text-xs">
                     {row.walletAddress}
                   </TableCell>
-                  <TableCell>{formatBalance(row.trxBalance)}</TableCell>
                   <TableCell>
-                    {formatBalance(row.usdtBalance)}
-                    {row.balanceReadStatus === "rate_limited" ? (
-                      <div className="text-xs text-amber-600">
-                        Rate limited; refresh shortly
-                      </div>
-                    ) : null}
-                    {row.balanceReadStatus === "read_failed" ? (
-                      <div className="text-xs text-muted-foreground">
-                        Chain read failed
-                      </div>
-                    ) : null}
+                    {row.orderType === "referral"
+                      ? "—"
+                      : formatBalance(row.trxBalance)}
                   </TableCell>
-                  <TableCell>{row.reservedUsdt}</TableCell>
-                  <TableCell className="space-y-1 text-xs">
-                    {row.topUpTronscanUrl ? (
-                      <Link
-                        href={row.topUpTronscanUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary underline"
-                      >
-                        TRX tx
-                      </Link>
+                  <TableCell>
+                    {row.orderType === "referral" ? (
+                      "—"
                     ) : (
-                      <span className="text-muted-foreground">No TRX tx</span>
+                      <>
+                        {formatBalance(row.usdtBalance)}
+                        {row.balanceReadStatus === "rate_limited" ? (
+                          <div className="text-xs text-amber-600">
+                            Rate limited; refresh shortly
+                          </div>
+                        ) : null}
+                        {row.balanceReadStatus === "read_failed" ? (
+                          <div className="text-xs text-muted-foreground">
+                            Chain read failed
+                          </div>
+                        ) : null}
+                      </>
                     )}
-                    <br />
-                    {row.usdtTronscanUrl ? (
-                      <Link
-                        href={row.usdtTronscanUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary underline"
-                      >
-                        USDT tx
-                      </Link>
+                  </TableCell>
+                  <TableCell>
+                    {row.orderType === "referral" ? "—" : row.reservedUsdt}
+                  </TableCell>
+                  <TableCell className="space-y-1 text-xs">
+                    {row.orderType === "referral" ? (
+                      row.usdtTronscanUrl ? (
+                        <Link
+                          href={row.usdtTronscanUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary underline"
+                        >
+                          USDT tx
+                        </Link>
+                      ) : (
+                        <span className="text-muted-foreground">No USDT tx</span>
+                      )
                     ) : (
-                      <span className="text-muted-foreground">No USDT tx</span>
+                      <>
+                        {row.topUpTronscanUrl ? (
+                          <Link
+                            href={row.topUpTronscanUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary underline"
+                          >
+                            TRX tx
+                          </Link>
+                        ) : (
+                          <span className="text-muted-foreground">No TRX tx</span>
+                        )}
+                        <br />
+                        {row.usdtTronscanUrl ? (
+                          <Link
+                            href={row.usdtTronscanUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary underline"
+                          >
+                            USDT tx
+                          </Link>
+                        ) : (
+                          <span className="text-muted-foreground">No USDT tx</span>
+                        )}
+                      </>
                     )}
                   </TableCell>
                   <TableCell>

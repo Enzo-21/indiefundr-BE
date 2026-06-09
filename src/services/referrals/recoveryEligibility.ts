@@ -2,6 +2,12 @@ import { InvestmentStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getFundById } from "@/lib/config/investmentFunds";
 import {
+  isRecoveryWindowActive,
+  REFERRAL_RECOVERY_INVITEES_REQUIRED,
+  REFERRAL_RECOVERY_WINDOW_DAYS,
+  recoveryExpiresAt,
+} from "@/lib/config/referralRecovery";
+import {
   computeFifoSurplusEligibleInvestmentIds,
 } from "@/services/revenueEngine/payoutScheduler";
 import { getLedgerSnapshot } from "@/services/revenueEngine/ledger";
@@ -14,7 +20,18 @@ const BLOCKED_STATUSES: InvestmentStatus[] = [
   InvestmentStatus.referral_recovered,
 ];
 
-export async function isReferralRecoveryEligible(
+export type RecoveryContextPayload = {
+  investmentId: string;
+  fundName: string;
+  qualifiedCount: number;
+  requiredCount: number;
+  principalUsdt: number;
+  recoveryEligibleAt: string;
+  recoveryExpiresAt: string;
+  windowDays: number;
+};
+
+export async function isRecoveryCandidate(
   investment: Pick<
     Investment,
     | "id"
@@ -33,6 +50,27 @@ export async function isReferralRecoveryEligible(
   if (BLOCKED_STATUSES.includes(investment.status)) return false;
   if (fifoEligibleIds.has(investment.id)) return false;
   return true;
+}
+
+export async function isReferralRecoveryEligible(
+  investment: Pick<
+    Investment,
+    | "id"
+    | "status"
+    | "payoutUnlockedAt"
+    | "referralRecoveryCompletedAt"
+    | "recoveryEligibleAt"
+    | "subscribedAt"
+    | "projectedPayoutUsdt"
+    | "maturesAt"
+  >,
+  fifoEligibleIds: ReadonlySet<string>,
+  now: Date = new Date()
+): Promise<boolean> {
+  const candidate = await isRecoveryCandidate(investment, fifoEligibleIds);
+  if (!candidate) return false;
+  if (!investment.recoveryEligibleAt) return true;
+  return isRecoveryWindowActive(investment.recoveryEligibleAt, now);
 }
 
 export async function refreshRecoveryEligibilityForUser(userId: string) {
@@ -77,14 +115,53 @@ export async function refreshRecoveryEligibilityForUser(userId: string) {
 
   const now = new Date();
   for (const investment of investments) {
-    const eligible = await isReferralRecoveryEligible(investment, fifoIds);
+    const candidate = await isRecoveryCandidate(investment, fifoIds);
+    if (!candidate) {
+      await prisma.investment.update({
+        where: { id: investment.id },
+        data: { recoveryEligibleAt: null },
+      });
+      continue;
+    }
+
+    if (investment.recoveryEligibleAt) {
+      if (!isRecoveryWindowActive(investment.recoveryEligibleAt, now)) {
+        await prisma.investment.update({
+          where: { id: investment.id },
+          data: { recoveryEligibleAt: null },
+        });
+      }
+      continue;
+    }
+
     await prisma.investment.update({
       where: { id: investment.id },
-      data: {
-        recoveryEligibleAt: eligible ? investment.recoveryEligibleAt ?? now : null,
-      },
+      data: { recoveryEligibleAt: now },
     });
   }
+}
+
+function buildRecoveryPayload(
+  investment: Pick<Investment, "id" | "fundId" | "amountUsdt" | "recoveryEligibleAt">,
+  qualifiedCount: number
+): RecoveryContextPayload | null {
+  if (!investment.recoveryEligibleAt) return null;
+  if (!isRecoveryWindowActive(investment.recoveryEligibleAt)) return null;
+
+  const fund = getFundById(investment.fundId);
+  const eligibleAt = investment.recoveryEligibleAt;
+  const requiredCount = REFERRAL_RECOVERY_INVITEES_REQUIRED();
+
+  return {
+    investmentId: investment.id,
+    fundName: fund?.name ?? investment.fundId,
+    qualifiedCount,
+    requiredCount,
+    principalUsdt: investment.amountUsdt,
+    recoveryEligibleAt: eligibleAt.toISOString(),
+    recoveryExpiresAt: recoveryExpiresAt(eligibleAt).toISOString(),
+    windowDays: REFERRAL_RECOVERY_WINDOW_DAYS(),
+  };
 }
 
 export async function getRecoveryContextForInviter(userId: string) {
@@ -100,7 +177,11 @@ export async function getRecoveryContextForInviter(userId: string) {
     orderBy: [{ recoveryEligibleAt: "asc" }, { subscribedAt: "asc" }],
   });
 
-  if (!investment) {
+  if (!investment?.recoveryEligibleAt) {
+    return { mode: "standard" as const, recovery: null };
+  }
+
+  if (!isRecoveryWindowActive(investment.recoveryEligibleAt)) {
     return { mode: "standard" as const, recovery: null };
   }
 
@@ -109,16 +190,14 @@ export async function getRecoveryContextForInviter(userId: string) {
   });
 
   const qualifiedCount = link?.inviteIds.length ?? 0;
-  const fund = getFundById(investment.fundId);
+  const recovery = buildRecoveryPayload(investment, qualifiedCount);
+
+  if (!recovery) {
+    return { mode: "standard" as const, recovery: null };
+  }
 
   return {
     mode: "recovery" as const,
-    recovery: {
-      investmentId: investment.id,
-      fundName: fund?.name ?? investment.fundId,
-      qualifiedCount,
-      requiredCount: 2,
-      principalUsdt: investment.amountUsdt,
-    },
+    recovery,
   };
 }

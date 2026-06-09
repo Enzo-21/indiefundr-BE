@@ -4,6 +4,8 @@ Canonical business rules and triad math for the treasury payout engine implement
 
 **Configuration:** [`src/lib/config/revenueEngine.ts`](../../src/lib/config/revenueEngine.ts) · **Tests:** `src/services/revenueEngine/*.test.ts`
 
+**Related:** Per-fund investment slot caps and subscribe gates — [`../investments/README.md`](../investments/README.md).
+
 ---
 
 ## Table of contents

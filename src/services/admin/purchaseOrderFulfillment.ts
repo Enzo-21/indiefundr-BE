@@ -448,18 +448,29 @@ export async function listAdminSubscriptionQueue(): Promise<AdminSubscriptionRow
   );
 }
 
-export type AdminQueueRow = AdminOrderRow | AdminWithdrawalRow;
+export type AdminQueueRow =
+  | AdminOrderRow
+  | AdminWithdrawalRow
+  | import("@/services/admin/referralPayoutOrderFulfillment").AdminReferralPayoutRow;
 
 /** @deprecated Use listAdminOrderQueue */
 export async function listAdminOrderQueue(): Promise<AdminQueueRow[]> {
   const { listAdminWithdrawalQueue } = await import(
     "@/services/admin/withdrawalOrderFulfillment"
   );
-  const [subscriptions, withdrawals] = await Promise.all([
+  const { listAdminReferralPayoutQueue } = await import(
+    "@/services/admin/referralPayoutOrderFulfillment"
+  );
+  const [subscriptions, withdrawals, referrals] = await Promise.all([
     listAdminSubscriptionQueue(),
     listAdminWithdrawalQueue(),
+    listAdminReferralPayoutQueue(),
   ]);
-  const merged: AdminQueueRow[] = [...subscriptions, ...withdrawals];
+  const merged: AdminQueueRow[] = [
+    ...subscriptions,
+    ...withdrawals,
+    ...referrals,
+  ];
   merged.sort(
     (a, b) =>
       new Date(a.normalizedDateIso).getTime() -

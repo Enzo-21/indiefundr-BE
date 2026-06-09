@@ -148,6 +148,7 @@ export async function buildReferralRequisitesForActivity(
 ): Promise<ReferralRequisite[] | null> {
   const isReferralKind =
     params.kind === "referral_bonus_pending" ||
+    params.kind === "referral_bonus_processing" ||
     params.kind === "referral_bonus_credited";
   if (!isReferralKind || !params.entityId) {
     return null;

@@ -254,7 +254,13 @@ export async function getPendingReferralRewards(userId: string) {
   const activities = await prisma.walletActivity.findMany({
     where: {
       userId,
-      kind: { in: ["referral_bonus_pending", "referral_bonus_credited"] },
+      kind: {
+        in: [
+          "referral_bonus_pending",
+          "referral_bonus_processing",
+          "referral_bonus_credited",
+        ],
+      },
     },
     orderBy: { occurredAt: "desc" },
     take: 20,

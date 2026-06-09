@@ -1,5 +1,6 @@
 import type { Investment } from "@prisma/client";
 import { getFundById } from "@/lib/config/investmentFunds";
+import { recoveryExpiresAt } from "@/lib/config/referralRecovery";
 import {
   canUserClaim,
   getUserStatusLabel,
@@ -30,6 +31,7 @@ export type EnrichedInvestmentJson = {
   statusLabel: string;
   canClaim: boolean;
   recoveryEligibleAt: string | null;
+  recoveryExpiresAt: string | null;
   recoveryQualifiedCount: number | null;
   recoveryRequiredCount: number | null;
   fund: {
@@ -76,6 +78,9 @@ export function enrichInvestment(
     statusLabel: getUserStatusLabel(investment),
     canClaim: canUserClaim(investment),
     recoveryEligibleAt: investment.recoveryEligibleAt?.toISOString() ?? null,
+    recoveryExpiresAt: investment.recoveryEligibleAt
+      ? recoveryExpiresAt(investment.recoveryEligibleAt).toISOString()
+      : null,
     recoveryQualifiedCount: options.recoveryQualifiedCount ?? null,
     recoveryRequiredCount: options.recoveryRequiredCount ?? null,
     fund: fund

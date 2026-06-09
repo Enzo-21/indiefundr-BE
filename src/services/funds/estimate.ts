@@ -10,6 +10,7 @@ import { getEnv } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import * as feeSponsorship from "@/services/tron/feeSponsorship";
 import * as tron from "@/services/tron/client";
+import { getInvestmentSlotUsage } from "@/lib/config/investmentSlots";
 import {
   getActiveOrderForUser,
   getWalletUsdtAvailability,
@@ -81,7 +82,7 @@ export async function getSubscribeFeeEstimate(
       };
     }
 
-    const [estimate, availability, activeOrder] = await Promise.all([
+    const [estimate, availability, activeOrder, slotUsage] = await Promise.all([
       tron.estimateUsdtTransfer({
         fromAddress: sender.address,
         toAddress: receiver,
@@ -89,6 +90,7 @@ export async function getSubscribeFeeEstimate(
       }),
       getWalletUsdtAvailability(sender),
       getActiveOrderForUser(userId, fundId),
+      getInvestmentSlotUsage(userId, fundId),
     ]);
 
     const feesCoveredByApp = feeSponsorship.isEnabled();
@@ -120,6 +122,9 @@ export async function getSubscribeFeeEstimate(
         canTransfer:
           hasEnoughUsdt && (feesCoveredByApp || estimate.hasEnoughTrx),
         activeOrder: activeOrder ? formatOrderResponse(activeOrder) : null,
+        openCount: slotUsage.openCount,
+        maxOpenInvestments: slotUsage.maxOpenInvestments,
+        slotsAvailable: slotUsage.slotsAvailable,
         walletId: sender.id,
         isMainWallet: sender.isMainWallet,
         feesCoveredByApp,
