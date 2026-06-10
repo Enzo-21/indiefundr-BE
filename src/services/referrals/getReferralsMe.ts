@@ -290,6 +290,12 @@ export async function shouldShowRecoveryModal(userId: string): Promise<boolean> 
   });
   if (!user) return false;
 
+  const { getPendingUnpaidMaturityChoiceForUser } = await import(
+    "@/services/investments/unpaidMaturityChoice"
+  );
+  const pendingChoice = await getPendingUnpaidMaturityChoiceForUser(userId);
+  if (pendingChoice) return false;
+
   const ctx = await getRecoveryContextForInviter(userId);
   if (ctx.mode !== "recovery") return false;
 

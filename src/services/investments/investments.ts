@@ -1,6 +1,10 @@
 import { enrichInvestment } from "@/lib/serializers/investment";
 import { isValidObjectId } from "@/lib/validators/objectId";
 import { prisma } from "@/lib/prisma";
+import {
+  getUnpaidMaturityChoiceContext,
+  loadFifoEligibleIds,
+} from "@/services/investments/unpaidMaturityChoice";
 
 export type InvestmentsServiceResult<T> =
   | { ok: true; data: T }
@@ -16,7 +20,11 @@ export async function getUserInvestments(userId: string) {
   const { refreshRecoveryEligibilityForUser } = await import(
     "@/services/referrals/recoveryEligibility"
   );
+  const { processInvestmentForfeitures } = await import(
+    "@/services/investments/investmentForfeiture"
+  );
   await markMaturedInvestments();
+  await processInvestmentForfeitures();
   await refreshRecoveryEligibilityForUser(userId);
 
   const investments = await prisma.investment.findMany({
@@ -49,13 +57,18 @@ export async function getUserInvestments(userId: string) {
     "@/lib/config/referralRecovery"
   );
   const requiredCount = REFERRAL_RECOVERY_INVITEES_REQUIRED();
+  const fifoIds = await loadFifoEligibleIds();
 
-  return investments.map((investment) =>
-    enrichInvestment(investment, {
+  return investments.map((investment) => {
+    const choiceCtx = getUnpaidMaturityChoiceContext(investment, fifoIds);
+    return enrichInvestment(investment, {
       recoveryQualifiedCount: qualifiedByInvestment.get(investment.id) ?? null,
       recoveryRequiredCount: investment.recoveryEligibleAt ? requiredCount : null,
-    })
-  );
+      needsUnpaidMaturityChoice: choiceCtx?.needsChoice ?? false,
+      extensionMinDays: choiceCtx?.extensionMinDays ?? null,
+      extensionMaxDays: choiceCtx?.extensionMaxDays ?? null,
+    });
+  });
 }
 
 export async function redeemInvestment(

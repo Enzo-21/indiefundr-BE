@@ -4,6 +4,7 @@ export type LegacyUserJson = {
   _id: string;
   name: string;
   email: string;
+  username: string;
   date: string;
   firstTime: boolean;
   hasVerifiedMail: boolean;
@@ -16,6 +17,7 @@ export function serializeUser(user: User): LegacyUserJson {
     _id: user.id,
     name: user.name,
     email: user.email,
+    username: user.username ?? "",
     date: user.date.toISOString(),
     firstTime: user.firstTime,
     hasVerifiedMail: user.hasVerifiedMail,

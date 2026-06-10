@@ -22,7 +22,7 @@ describe("transactionInsights", () => {
       },
       {
         id: "growth-partners",
-        name: "Growth Partners",
+        name: "Arbitrage Circuit",
         tagline: "",
         returnPercent90d: 25,
         termDays: 90,
@@ -30,7 +30,7 @@ describe("transactionInsights", () => {
         riskLabel: "Medium-high risk",
         destinations: [],
         accentColor: "#000",
-        icon: "chart-line",
+        icon: "bolt",
       }
     );
 
@@ -74,11 +74,17 @@ describe("transactionInsights", () => {
         globalQueueRank: null,
         newSubscribersNeeded: null,
         chainMemo: null,
+        recoveryEligibleAt: null,
+        sympathyNotifiedAt: null,
+        referralRecoveryCompletedAt: null,
+        unpaidMaturityResolution: null,
+        unpaidMaturityResolvedAt: null,
+        termExtensionDays: null,
         date: subscribedAt,
       },
       {
         id: "growth-partners",
-        name: "Growth Partners",
+        name: "Arbitrage Circuit",
         tagline: "",
         returnPercent90d: 25,
         termDays: 90,
@@ -86,7 +92,7 @@ describe("transactionInsights", () => {
         riskLabel: "Medium-high risk",
         destinations: [],
         accentColor: "#000",
-        icon: "chart-line",
+        icon: "bolt",
       },
       31.25,
       7
@@ -129,6 +135,12 @@ describe("transactionInsights", () => {
       globalQueueRank: null,
       newSubscribersNeeded: null,
       chainMemo: null,
+      recoveryEligibleAt: null,
+      sympathyNotifiedAt: null,
+      referralRecoveryCompletedAt: null,
+      unpaidMaturityResolution: null,
+      unpaidMaturityResolvedAt: null,
+      termExtensionDays: null,
       date: new Date("2026-01-01T00:00:00.000Z"),
     });
 

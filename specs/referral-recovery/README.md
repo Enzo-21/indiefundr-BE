@@ -272,9 +272,35 @@ Same message plus:
 - Surplus: eligible or shortfall amount  
 - Deep link: `https://app.indiefundr.com/invite?code={code}`  
 
+### Unpaid maturity choice (recover vs wait)
+
+When an investment matures unpaid (no triad unlock, no surplus FIFO), the user must pick **once** per investment:
+
+| Path | Effect |
+|------|--------|
+| **Recover via invites** | Sets `unpaidMaturityResolution = referral_recovery`, starts `recoveryEligibleAt` window (existing invite flow) |
+| **Wait longer** | Sets `unpaidMaturityResolution = term_extension`, reverts to `active`, extends `maturesAt` by 7…half-fund-term days |
+
+`refreshRecoveryEligibilityForUser` no longer auto-starts recovery; recovery runs only after the user chooses **Recover via invites**.
+
+**48-hour choice deadline:** On first unpaid maturity, `unpaidMaturityChoiceDeadlineAt = now + 48h`. If the user does not choose in time → `status = forfeited` (`choice_deadline_expired`).
+
+**Forfeiture outcomes:**
+
+| Trigger | Result |
+|---------|--------|
+| No choice within 48h | `forfeited` — principal not returned |
+| Chose **wait**, matures unpaid again | `forfeited` immediately (`second_maturity_unpaid`) |
+| Chose **recover**, 7-day invite window expires | `forfeited` (`recovery_window_expired`) |
+
+Funds stay in pool/surplus (subscribe inflow already recorded); `TreasuryEvent.obligation_forfeiture` audits the released obligation.
+
+API: `POST /api/investments/:id/unpaid-maturity-choice` · `GET /api/investments/unpaid-maturity-choice/pending`
+
 ### Modal behavior
 
-- Show when `isReferralRecoveryEligible` and (`sympathyModalDismissedAt` is null OR dismissed > 7 days ago)  
+- Show sympathy modal when `isReferralRecoveryEligible` (after recover choice) and (`sympathyModalDismissedAt` is null OR dismissed > 7 days ago)  
+- Show **unpaid maturity choice** modal first when `needsUnpaidMaturityChoice`  
 - Actions: **Invite & earn** (primary), **Dismiss** (sets `sympathyModalDismissedAt`)  
 - Do not show more than once per session  
 

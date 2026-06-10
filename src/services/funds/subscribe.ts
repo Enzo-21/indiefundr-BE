@@ -22,20 +22,6 @@ import {
 import { formatOrderResponse } from "./orders";
 import type { FundsServiceResult } from "./estimate";
 import { logFundsEvent, logFundsRejected } from "./logging";
-import type { PurchaseOrder } from "@prisma/client";
-
-function activeOrderConflictResult(
-  activeOrder: PurchaseOrder
-): FundsServiceResult<Record<string, unknown>> {
-  return {
-    ok: false,
-    status: 409,
-    body: {
-      msg: "A subscription is already processing for this fund.",
-      ...formatOrderResponse(activeOrder),
-    },
-  };
-}
 
 export async function subscribeToFund(
   userId: string,
@@ -86,17 +72,6 @@ export async function subscribeToFund(
           slotUsage.maxOpenInvestments
         ),
       };
-    }
-
-    const activeOrder = await getActiveOrderForUser(userId, fundId);
-    if (activeOrder) {
-      logFundsRejected("subscribe", "active_order_exists", {
-        ...baseFields,
-        orderId: activeOrder.id,
-        status: activeOrder.status,
-        step: activeOrder.step,
-      });
-      return activeOrderConflictResult(activeOrder);
     }
 
     const sender = await getMainWallet(userId);
@@ -223,18 +198,6 @@ export async function subscribeToFund(
       },
     };
   } catch (err) {
-    const error = err as { code?: string };
-    if (error.code === "P11000" || (err as Error).message?.includes("Unique")) {
-      const activeOrder = await getActiveOrderForUser(userId, fundId);
-      if (activeOrder) {
-        logFundsRejected("subscribe", "active_order_exists", {
-          ...baseFields,
-          orderId: activeOrder.id,
-          reason: "duplicate_key",
-        });
-        return activeOrderConflictResult(activeOrder);
-      }
-    }
     logFundsEvent("subscribe", "error", "unexpected error", {
       ...baseFields,
       reason: "unexpected",

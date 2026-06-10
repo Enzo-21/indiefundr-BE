@@ -34,7 +34,7 @@ describe("enrichInvestment", () => {
   it("maps id to _id and includes presentation fields", () => {
     const json = enrichInvestment(baseInvestment);
     assert.equal(json._id, baseInvestment.id);
-    assert.equal(json.fundName, "Balanced Growth");
+    assert.equal(json.fundName, "Hustle Collective");
     assert.equal(json.statusLabel, "Awaiting admin payout");
     assert.equal(json.canClaim, false);
     assert.equal(json.payabilityStatus, "payable");

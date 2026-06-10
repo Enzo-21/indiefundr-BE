@@ -93,6 +93,11 @@ const rawEnvSchema = z.object({
   REFERRAL_RECOVERY_WINDOW_DAYS: z.coerce.number().default(7),
   REFERRAL_MONTHLY_SURPLUS_CAP_USDT: z.coerce.number().default(500),
   SYMPATHY_MODAL_COOLDOWN_DAYS: z.coerce.number().default(7),
+  UNPAID_MATURITY_CHOICE_HOURS: z.coerce.number().default(48),
+  TRANSAK_ENV: z.enum(["staging", "production"]).default("staging"),
+  TRANSAK_API_KEY: z.string().default(""),
+  TRANSAK_API_SECRET: z.string().default(""),
+  TRANSAK_REFERRER_DOMAIN: z.string().default("indiefundr.com"),
 });
 
 export type Env = ReturnType<typeof buildEnv>;
@@ -183,6 +188,11 @@ function buildEnv(raw: z.infer<typeof rawEnvSchema>) {
     referralRecoveryWindowDays: raw.REFERRAL_RECOVERY_WINDOW_DAYS,
     referralMonthlySurplusCapUsdt: raw.REFERRAL_MONTHLY_SURPLUS_CAP_USDT,
     sympathyModalCooldownDays: raw.SYMPATHY_MODAL_COOLDOWN_DAYS,
+    unpaidMaturityChoiceHours: raw.UNPAID_MATURITY_CHOICE_HOURS,
+    transakEnv: raw.TRANSAK_ENV,
+    transakApiKey: raw.TRANSAK_API_KEY.trim(),
+    transakApiSecret: raw.TRANSAK_API_SECRET.trim(),
+    transakReferrerDomain: raw.TRANSAK_REFERRER_DOMAIN.trim(),
   };
 }
 

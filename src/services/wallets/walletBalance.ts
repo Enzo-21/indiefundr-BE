@@ -134,6 +134,23 @@ export async function getActiveOrderForUser(
   });
 }
 
+export async function getActiveOrdersForUser(
+  userId: string,
+  fundId?: string | null
+) {
+  return prisma.purchaseOrder.findMany({
+    where: {
+      userId,
+      status: { in: ACTIVE_PURCHASE_ORDER_STATUSES },
+      ...(fundId ? { fundId } : {}),
+    },
+    orderBy: { date: "desc" },
+    include: {
+      wallet: { select: { address: true, name: true } },
+    },
+  });
+}
+
 export async function getActiveWithdrawalForUser(userId: string) {
   return prisma.withdrawalOrder.findFirst({
     where: {

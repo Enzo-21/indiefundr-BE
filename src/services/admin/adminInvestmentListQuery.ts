@@ -24,12 +24,14 @@ export const ADMIN_INVESTMENTS_MAX_LIMIT = 200;
 const QUEUE_EXCLUDED_STATUSES: InvestmentStatus[] = [
   InvestmentStatus.redeemed,
   InvestmentStatus.referral_recovered,
+  InvestmentStatus.forfeited,
   InvestmentStatus.failed,
 ];
 
 const ARCHIVE_STATUSES: InvestmentStatus[] = [
   InvestmentStatus.redeemed,
   InvestmentStatus.referral_recovered,
+  InvestmentStatus.forfeited,
   InvestmentStatus.failed,
 ];
 

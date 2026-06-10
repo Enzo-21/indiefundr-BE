@@ -1,5 +1,6 @@
 import type { User } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { allocateUniqueUsername } from "@/lib/users/username";
 import { serializeUser } from "@/lib/serializers/user";
 import { uiSnapshotLog } from "@/lib/uiSnapshotLog";
 import { isValidObjectId } from "@/lib/validators/objectId";
@@ -43,7 +44,7 @@ export async function getUserForAuth(
   userId: string
 ): Promise<UserServiceResult<User>> {
   try {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    let user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       return {
         ok: false,
@@ -51,6 +52,15 @@ export async function getUserForAuth(
         body: { msg: "Authentication error" },
       };
     }
+
+    if (!user.username) {
+      const username = await allocateUniqueUsername(user.email);
+      user = await prisma.user.update({
+        where: { id: userId },
+        data: { username },
+      });
+    }
+
     const serialized = serializeUser(user);
     uiSnapshotLog("auth.session", {
       userId: user.id,

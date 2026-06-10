@@ -35,6 +35,7 @@ describe("adminInvestmentListQuery", () => {
             in: [
               InvestmentStatus.redeemed,
               InvestmentStatus.referral_recovered,
+              InvestmentStatus.forfeited,
               InvestmentStatus.failed,
             ],
           },

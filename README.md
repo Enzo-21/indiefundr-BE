@@ -75,20 +75,33 @@ If a user has no wallet row (e.g. deleted in the database), the API recreates a 
 
 New users receive a main wallet at signup. **By default** `WALLET_ACTIVATION_ENABLED=false`: the treasury does **not** send signup TRX; addresses are activated lazily when the user invests (fee-sponsorship TRX top-up). Set `WALLET_ACTIVATION_ENABLED=true` to restore signup activation: treasury sends `WALLET_ACTIVATION_TRX` TRX (default **0.1**) so TronLink and USDT deposits work without the user funding TRX first. Use `1` in env if a network requires more. When enabled, activation runs in the background (non-blocking); `GET /api/wallets/portfolio` polls on-chain status and returns `activationStatus` (`ready` | `pending` | `failed`) until Tron confirms. Guardrails: `MAX_WALLET_ACTIVATIONS_PER_DAY`, `WALLET_ACTIVATION_CONFIRM_TIMEOUT_MS` (default 90s), treasury above `TREASURY_MIN_TRX_BALANCE` + activation amount. Fund the treasury wallet (Shasta faucet for testnet).
 
-### Manual operations (no cron)
+### Background jobs
 
-There is **no** background cron in dev or production. Ledger updates run on explicit admin actions (mark order successful, pay, confirm on-chain), not on a timer.
+**Maturity cron (Vercel):** [`vercel.json`](vercel.json) schedules `GET /api/cron/maturity` every minute (`* * * * *`). Each tick matures at most **5** overdue investments (FIFO by `maturesAt`), processes up to **5** forfeitures (expired 48h choice deadlines, expired recovery windows), then sends push notifications when `User.device` is set. The JSON response includes `pendingCount`, `forfeitedCount`, and `forfeiturePendingCount`. Set `CRON_SECRET` in Vercel env; Vercel sends `x-vercel-cron: 1` on scheduled invocations. One-minute cron requires a Vercel Pro (or higher) plan.
+
+**Unpaid maturity choice:** Users have **48 hours** (`UNPAID_MATURITY_CHOICE_HOURS`, default 48) after first unpaid maturity to choose recover vs wait, or the investment is `forfeited`. Second unpaid maturity after a term extension also forfeits immediately.
+
+Local manual run (with `npm run dev` running):
+
+```bash
+npm run cron:maturity
+```
+
+**Full investment pipeline** (`GET /api/cron/investments` — purchase orders, maturity, evaluate, redemptions) is **not** on the Vercel schedule; trigger manually with Bearer auth when needed.
+
+### Manual admin operations
+
+Ledger payout updates still run on explicit admin actions, not on the maturity cron timer:
 
 - **Mark order successful** — subscribe inflow + surplus credit + payout unlock scan
-- **Investments page** — marks overdue investments matured on load
 - **Pay now / Pay with surplus** — broadcast payout from treasury
 - **Confirm payout on-chain** — ledger outflow when chain confirms
 - **Reconcile treasury** — optional drift repair (treasury page)
 - **Sync treasury history** — on-chain history ingest (treasury page)
 
-User wallet reads only run **inbound USDT sync** (`syncWallet`); they do not auto-complete manual purchase orders.
+`GET /api/investments` also calls `markMaturedInvestments()` on load without a batch limit (idempotent with the cron; processes all overdue rows for that request).
 
-If you still see `[cron]` logs, an old `dev-cron-ticker` process may be running—stop all Node dev processes and run `npm run dev` again (only `next dev` should start).
+User wallet reads only run **inbound USDT sync** (`syncWallet`); they do not auto-complete manual purchase orders.
 
 See [plan/MANUAL_INVESTMENT_MVP.md](plan/MANUAL_INVESTMENT_MVP.md).
 

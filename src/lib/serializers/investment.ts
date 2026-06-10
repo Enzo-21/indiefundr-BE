@@ -1,5 +1,6 @@
 import type { Investment } from "@prisma/client";
 import { getFundById } from "@/lib/config/investmentFunds";
+import { isChoiceDeadlineActive } from "@/lib/config/unpaidMaturityChoice";
 import { recoveryExpiresAt } from "@/lib/config/referralRecovery";
 import {
   canUserClaim,
@@ -34,6 +35,15 @@ export type EnrichedInvestmentJson = {
   recoveryExpiresAt: string | null;
   recoveryQualifiedCount: number | null;
   recoveryRequiredCount: number | null;
+  unpaidMaturityResolution: string | null;
+  needsUnpaidMaturityChoice: boolean;
+  extensionMinDays: number | null;
+  extensionMaxDays: number | null;
+  termExtensionDays: number | null;
+  unpaidMaturityChoiceDeadlineAt: string | null;
+  choiceDeadlineExpired: boolean;
+  forfeitureReason: string | null;
+  forfeitedAt: string | null;
   fund: {
     id: string;
     name: string;
@@ -46,6 +56,9 @@ export type EnrichedInvestmentJson = {
 export type EnrichInvestmentOptions = {
   recoveryQualifiedCount?: number | null;
   recoveryRequiredCount?: number | null;
+  needsUnpaidMaturityChoice?: boolean;
+  extensionMinDays?: number | null;
+  extensionMaxDays?: number | null;
 };
 
 export function enrichInvestment(
@@ -75,7 +88,9 @@ export function enrichInvestment(
     newSubscribersNeeded: investment.newSubscribersNeeded,
     date: investment.date.toISOString(),
     fundName: fund?.name || investment.fundId,
-    statusLabel: getUserStatusLabel(investment),
+    statusLabel: getUserStatusLabel(investment, {
+      needsUnpaidMaturityChoice: options.needsUnpaidMaturityChoice ?? false,
+    }),
     canClaim: canUserClaim(investment),
     recoveryEligibleAt: investment.recoveryEligibleAt?.toISOString() ?? null,
     recoveryExpiresAt: investment.recoveryEligibleAt
@@ -83,6 +98,18 @@ export function enrichInvestment(
       : null,
     recoveryQualifiedCount: options.recoveryQualifiedCount ?? null,
     recoveryRequiredCount: options.recoveryRequiredCount ?? null,
+    unpaidMaturityResolution: investment.unpaidMaturityResolution ?? null,
+    needsUnpaidMaturityChoice: options.needsUnpaidMaturityChoice ?? false,
+    extensionMinDays: options.extensionMinDays ?? null,
+    extensionMaxDays: options.extensionMaxDays ?? null,
+    termExtensionDays: investment.termExtensionDays ?? null,
+    unpaidMaturityChoiceDeadlineAt:
+      investment.unpaidMaturityChoiceDeadlineAt?.toISOString() ?? null,
+    choiceDeadlineExpired: investment.unpaidMaturityChoiceDeadlineAt
+      ? !isChoiceDeadlineActive(investment.unpaidMaturityChoiceDeadlineAt)
+      : false,
+    forfeitureReason: investment.forfeitureReason ?? null,
+    forfeitedAt: investment.forfeitedAt?.toISOString() ?? null,
     fund: fund
       ? {
           id: fund.id,

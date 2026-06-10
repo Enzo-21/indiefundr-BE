@@ -13,6 +13,7 @@ import * as tron from "@/services/tron/client";
 import { getInvestmentSlotUsage } from "@/lib/config/investmentSlots";
 import {
   getActiveOrderForUser,
+  getActiveOrdersForUser,
   getWalletUsdtAvailability,
 } from "@/services/wallets/walletBalance";
 import { logFundsEvent, logFundsRejected } from "./logging";
@@ -82,16 +83,17 @@ export async function getSubscribeFeeEstimate(
       };
     }
 
-    const [estimate, availability, activeOrder, slotUsage] = await Promise.all([
+    const [estimate, availability, activeOrders, slotUsage] = await Promise.all([
       tron.estimateUsdtTransfer({
         fromAddress: sender.address,
         toAddress: receiver,
         amount: cost,
       }),
       getWalletUsdtAvailability(sender),
-      getActiveOrderForUser(userId, fundId),
+      getActiveOrdersForUser(userId, fundId),
       getInvestmentSlotUsage(userId, fundId),
     ]);
+    const activeOrder = activeOrders[0] ?? null;
 
     const feesCoveredByApp = feeSponsorship.isEnabled();
     const hasEnoughUsdt = availability.availableUsdt >= cost;
@@ -122,6 +124,7 @@ export async function getSubscribeFeeEstimate(
         canTransfer:
           hasEnoughUsdt && (feesCoveredByApp || estimate.hasEnoughTrx),
         activeOrder: activeOrder ? formatOrderResponse(activeOrder) : null,
+        activeOrders: activeOrders.map((order) => formatOrderResponse(order)),
         openCount: slotUsage.openCount,
         maxOpenInvestments: slotUsage.maxOpenInvestments,
         slotsAvailable: slotUsage.slotsAvailable,

@@ -6,7 +6,7 @@ Users may hold multiple **open** positions in the same fund, up to a per-fund ca
 
 **Open statuses** (count toward the slot cap): `pending`, `active`, `matured`, `redeeming`.
 
-**Closed statuses** (free a slot): `redeemed`, `referral_recovered`, `failed`.
+**Closed statuses** (free a slot): `redeemed`, `referral_recovered`, `forfeited`, `failed`.
 
 Helpers: [`src/lib/config/investmentSlots.ts`](../../src/lib/config/investmentSlots.ts).
 
@@ -14,8 +14,8 @@ Helpers: [`src/lib/config/investmentSlots.ts`](../../src/lib/config/investmentSl
 
 | Check | Behavior |
 |-------|----------|
-| Open count vs cap | `POST /api/funds/subscribe` returns **400** `SLOTS_FULL` when `openCount >= maxOpenInvestments` |
-| Active purchase order | Still **one** `queued` / `processing` order per user per fund (Mongo partial unique index) |
+| Used slots vs cap | `POST /api/funds/subscribe` returns **400** `SLOTS_FULL` when used slots (open investments + unlinked active orders) `>= maxOpenInvestments` |
+| Multiple active orders | Users may have multiple `queued` / `processing` orders per fund until the slot cap is reached |
 
 Investment rows are created inside a transaction that re-counts open positions before insert.
 

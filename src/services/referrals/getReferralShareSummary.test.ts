@@ -44,7 +44,7 @@ describe("referral share and inviter-stats response shapes", () => {
   it("recovery payload includes window expiry fields", () => {
     const recovery = {
       investmentId: "inv-1",
-      fundName: "Aggressive Alpha",
+      fundName: "High Roller Syndicate",
       qualifiedCount: 1,
       requiredCount: 2,
       principalUsdt: 25,

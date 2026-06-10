@@ -3,8 +3,6 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-const ACTIVE_PURCHASE_ORDER_STATUSES = ["queued", "processing"] as const;
-
 async function createIndex(
   collection: string,
   keys: Record<string, 1 | -1>,
@@ -102,15 +100,14 @@ async function main() {
     }
   );
 
+  // Legacy one-active-order-per-fund unique index — slot cap replaces this.
+  await dropIndex("purchaseorders", "user_1_fundId_1_active_unique");
+
   await createIndex(
     "purchaseorders",
-    { user: 1, fundId: 1 },
+    { user: 1, fundId: 1, status: 1 },
     {
-      name: "user_1_fundId_1_active_unique",
-      unique: true,
-      partialFilterExpression: {
-        status: { $in: [...ACTIVE_PURCHASE_ORDER_STATUSES] },
-      },
+      name: "user_1_fundId_1_status",
     }
   );
 

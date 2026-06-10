@@ -1,6 +1,7 @@
 import type { Investment, Prisma, PrismaClient } from "@prisma/client";
 import { prisma as defaultPrisma } from "@/lib/prisma";
 import { INVESTMENT_OPEN_STATUSES } from "@/services/investments/constants";
+import { ACTIVE_PURCHASE_ORDER_STATUSES } from "@/services/wallets/walletBalance";
 import { getFundById } from "./investmentFunds";
 
 const DEFAULT_MAX_OPEN_INVESTMENTS = 1;
@@ -45,6 +46,41 @@ export async function countOpenInvestmentsForUserFund(
   });
 }
 
+/** Active purchase orders not yet represented by an open investment row. */
+export async function countUnrepresentedActivePurchaseOrdersForUserFund(
+  userId: string,
+  fundId: string,
+  client: PrismaLike = defaultPrisma
+): Promise<number> {
+  const [activeOrders, linkedInvestments] = await Promise.all([
+    client.purchaseOrder.findMany({
+      where: {
+        userId,
+        fundId,
+        status: { in: ACTIVE_PURCHASE_ORDER_STATUSES },
+      },
+      select: { id: true },
+    }),
+    client.investment.findMany({
+      where: {
+        userId,
+        fundId,
+        status: { in: INVESTMENT_OPEN_STATUSES },
+        purchaseOrderId: { not: null },
+      },
+      select: { purchaseOrderId: true },
+    }),
+  ]);
+
+  const linkedOrderIds = new Set(
+    linkedInvestments
+      .map((inv) => inv.purchaseOrderId)
+      .filter((id): id is string => Boolean(id))
+  );
+
+  return activeOrders.filter((order) => !linkedOrderIds.has(order.id)).length;
+}
+
 export async function getInvestmentSlotUsage(
   userId: string,
   fundId: string,
@@ -55,7 +91,11 @@ export async function getInvestmentSlotUsage(
   slotsAvailable: number;
 }> {
   const maxOpenInvestments = getMaxOpenInvestmentsForFund(fundId);
-  const openCount = await countOpenInvestmentsForUserFund(userId, fundId, client);
+  const [investmentCount, processingOrderCount] = await Promise.all([
+    countOpenInvestmentsForUserFund(userId, fundId, client),
+    countUnrepresentedActivePurchaseOrdersForUserFund(userId, fundId, client),
+  ]);
+  const openCount = investmentCount + processingOrderCount;
   return {
     openCount,
     maxOpenInvestments,

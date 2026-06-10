@@ -14,13 +14,25 @@ enum InvestmentStatus {
   redeeming
   redeemed
   referral_recovered
+  forfeited
   failed
+}
+
+enum ForfeitureReason {
+  choice_deadline_expired
+  second_maturity_unpaid
+  recovery_window_expired
 }
 
 enum InvestmentPayabilityStatus {
   not_matured
   pending_liquidity
   payable
+}
+
+enum UnpaidMaturityResolution {
+  referral_recovery
+  term_extension
 }
 
 enum PurchaseOrderStatus {
@@ -75,6 +87,7 @@ enum TreasuryEventType {
   external_deposit_inflow
   referral_bonus_outflow
   referral_principal_recovery
+  obligation_forfeiture
 }
 
 enum ReferralInviteStatus {
@@ -129,6 +142,7 @@ model User {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
   name            String
   email           String
+  username        String?  @unique
   password        String?
   date            DateTime @default(now())
   firstTime       Boolean  @default(true)
@@ -302,6 +316,12 @@ model Investment {
   recoveryEligibleAt    DateTime?
   sympathyNotifiedAt    DateTime?
   referralRecoveryCompletedAt DateTime?
+  unpaidMaturityResolution   UnpaidMaturityResolution?
+  unpaidMaturityResolvedAt   DateTime?
+  unpaidMaturityChoiceDeadlineAt DateTime?
+  termExtensionDays          Int?
+  forfeitedAt                DateTime?
+  forfeitureReason           ForfeitureReason?
   date                  DateTime                   @default(now())
 
   user          User           @relation(fields: [userId], references: [id])

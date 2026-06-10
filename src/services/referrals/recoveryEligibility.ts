@@ -1,4 +1,4 @@
-import { InvestmentStatus } from "@prisma/client";
+import { InvestmentStatus, UnpaidMaturityResolution } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getFundById } from "@/lib/config/investmentFunds";
 import {
@@ -18,6 +18,8 @@ const BLOCKED_STATUSES: InvestmentStatus[] = [
   InvestmentStatus.redeeming,
   InvestmentStatus.redeemed,
   InvestmentStatus.referral_recovered,
+  InvestmentStatus.forfeited,
+  InvestmentStatus.failed,
 ];
 
 export type RecoveryContextPayload = {
@@ -31,7 +33,7 @@ export type RecoveryContextPayload = {
   windowDays: number;
 };
 
-export async function isRecoveryCandidate(
+export function isRecoveryCandidate(
   investment: Pick<
     Investment,
     | "id"
@@ -43,7 +45,7 @@ export async function isRecoveryCandidate(
     | "maturesAt"
   >,
   fifoEligibleIds: ReadonlySet<string>
-): Promise<boolean> {
+): boolean {
   if (investment.status !== InvestmentStatus.matured) return false;
   if (investment.payoutUnlockedAt) return false;
   if (investment.referralRecoveryCompletedAt) return false;
@@ -52,7 +54,7 @@ export async function isRecoveryCandidate(
   return true;
 }
 
-export async function isReferralRecoveryEligible(
+export function isReferralRecoveryEligible(
   investment: Pick<
     Investment,
     | "id"
@@ -60,16 +62,29 @@ export async function isReferralRecoveryEligible(
     | "payoutUnlockedAt"
     | "referralRecoveryCompletedAt"
     | "recoveryEligibleAt"
+    | "unpaidMaturityResolution"
     | "subscribedAt"
     | "projectedPayoutUsdt"
     | "maturesAt"
   >,
   fifoEligibleIds: ReadonlySet<string>,
   now: Date = new Date()
-): Promise<boolean> {
-  const candidate = await isRecoveryCandidate(investment, fifoEligibleIds);
+): boolean {
+  const candidate = isRecoveryCandidate(investment, fifoEligibleIds);
   if (!candidate) return false;
-  if (!investment.recoveryEligibleAt) return true;
+
+  if (
+    investment.unpaidMaturityResolution ===
+    UnpaidMaturityResolution.term_extension
+  ) {
+    return false;
+  }
+
+  if (investment.unpaidMaturityResolution == null) {
+    return false;
+  }
+
+  if (!investment.recoveryEligibleAt) return false;
   return isRecoveryWindowActive(investment.recoveryEligibleAt, now);
 }
 
@@ -89,6 +104,7 @@ export async function refreshRecoveryEligibilityForUser(userId: string) {
       payoutUnlockedAt: true,
       referralRecoveryCompletedAt: true,
       recoveryEligibleAt: true,
+      unpaidMaturityResolution: true,
       subscribedAt: true,
       projectedPayoutUsdt: true,
       maturesAt: true,
@@ -115,21 +131,50 @@ export async function refreshRecoveryEligibilityForUser(userId: string) {
 
   const now = new Date();
   for (const investment of investments) {
-    const candidate = await isRecoveryCandidate(investment, fifoIds);
+    const candidate = isRecoveryCandidate(investment, fifoIds);
     if (!candidate) {
-      await prisma.investment.update({
-        where: { id: investment.id },
-        data: { recoveryEligibleAt: null },
-      });
+      if (investment.recoveryEligibleAt) {
+        await prisma.investment.update({
+          where: { id: investment.id },
+          data: { recoveryEligibleAt: null },
+        });
+      }
+      continue;
+    }
+
+    if (
+      investment.unpaidMaturityResolution ===
+      UnpaidMaturityResolution.term_extension
+    ) {
+      if (investment.recoveryEligibleAt) {
+        await prisma.investment.update({
+          where: { id: investment.id },
+          data: { recoveryEligibleAt: null },
+        });
+      }
+      continue;
+    }
+
+    if (investment.unpaidMaturityResolution == null) {
+      if (investment.recoveryEligibleAt) {
+        await prisma.investment.update({
+          where: { id: investment.id },
+          data: { recoveryEligibleAt: null },
+        });
+      }
       continue;
     }
 
     if (investment.recoveryEligibleAt) {
       if (!isRecoveryWindowActive(investment.recoveryEligibleAt, now)) {
-        await prisma.investment.update({
-          where: { id: investment.id },
-          data: { recoveryEligibleAt: null },
-        });
+        const { forfeitInvestment } = await import(
+          "@/services/investments/investmentForfeiture"
+        );
+        const { ForfeitureReason } = await import("@prisma/client");
+        await forfeitInvestment(
+          investment.id,
+          ForfeitureReason.recovery_window_expired
+        );
       }
       continue;
     }
@@ -173,6 +218,7 @@ export async function getRecoveryContextForInviter(userId: string) {
       status: InvestmentStatus.matured,
       recoveryEligibleAt: { not: null },
       referralRecoveryCompletedAt: null,
+      unpaidMaturityResolution: UnpaidMaturityResolution.referral_recovery,
     },
     orderBy: [{ recoveryEligibleAt: "asc" }, { subscribedAt: "asc" }],
   });

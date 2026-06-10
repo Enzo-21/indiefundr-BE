@@ -63,7 +63,7 @@ describe("upgradeActivityTxWithChainStatus", () => {
       amount: 25,
       status: "pending",
       displayStatus: "pending",
-      label: "Investment order (Balanced Growth)",
+      label: "Investment order (Hustle Collective)",
       date: new Date(),
       txId: "tx-abc",
       tronscanUrl: null,

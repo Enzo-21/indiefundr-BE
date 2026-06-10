@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { sendVerificationMail } from "@/services/mailing/sendOtpEmail";
 import { logDevLoginOtp } from "@/lib/devLoginOtpLog";
 import { uiSnapshotLog } from "@/lib/uiSnapshotLog";
+import { allocateUniqueUsername } from "@/lib/users/username";
 import { ensureUserHasWallet } from "@/services/wallets/ensureDefaultWallet";
 import { issueTokenPair } from "./tokens";
 
@@ -148,6 +149,7 @@ export async function startPasswordlessAuth(
         data: {
           name: deriveNameFromEmail(email),
           email,
+          username: await allocateUniqueUsername(email),
           password: null,
           hasVerifiedMail: false,
         },

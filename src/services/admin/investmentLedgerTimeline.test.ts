@@ -30,7 +30,7 @@ function baseRow(
     userEmail: `${overrides.id}@test.com`,
     userName: null,
     fundId: "balanced-growth",
-    fundName: "Balanced Growth",
+    fundName: "Hustle Collective",
     amountUsdt: 25,
     projectedPayoutUsdt: 28.75,
     status: InvestmentStatus.active,
