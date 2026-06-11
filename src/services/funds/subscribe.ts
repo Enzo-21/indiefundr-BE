@@ -14,6 +14,7 @@ import * as tron from "@/services/tron/client";
 import {
   getInvestmentSlotUsage,
   slotsFullResponseBody,
+  totalInvestmentsCapResponseBody,
 } from "@/lib/config/investmentSlots";
 import {
   getActiveOrderForUser,
@@ -57,7 +58,27 @@ export async function subscribeToFund(
       };
     }
 
-    const slotUsage = await getInvestmentSlotUsage(userId, fundId);
+    const slotUsage = await getInvestmentSlotUsage(
+      userId,
+      fundId,
+      undefined,
+      user.level
+    );
+    if (slotUsage.totalSlotsAvailable <= 0) {
+      logFundsRejected("subscribe", "total_investments_cap", {
+        ...baseFields,
+        totalOpenCount: slotUsage.totalOpenCount,
+        maxTotalOpenInvestments: slotUsage.maxTotalOpenInvestments,
+      });
+      return {
+        ok: false,
+        status: 400,
+        body: totalInvestmentsCapResponseBody(
+          slotUsage.totalOpenCount,
+          slotUsage.maxTotalOpenInvestments
+        ),
+      };
+    }
     if (slotUsage.slotsAvailable <= 0) {
       logFundsRejected("subscribe", "slots_full", {
         ...baseFields,

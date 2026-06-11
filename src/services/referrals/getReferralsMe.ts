@@ -286,14 +286,18 @@ export async function dismissSympathyModal(userId: string) {
 export async function shouldShowRecoveryModal(userId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { sympathyModalDismissedAt: true },
+    select: { sympathyModalDismissedAt: true, level: true },
   });
   if (!user) return false;
 
+  const { normalizePlayerLevel } = await import("@/lib/config/playerLevels");
   const { getPendingUnpaidMaturityChoiceForUser } = await import(
     "@/services/investments/unpaidMaturityChoice"
   );
-  const pendingChoice = await getPendingUnpaidMaturityChoiceForUser(userId);
+  const pendingChoice = await getPendingUnpaidMaturityChoiceForUser(
+    userId,
+    normalizePlayerLevel(user.level)
+  );
   if (pendingChoice) return false;
 
   const ctx = await getRecoveryContextForInviter(userId);

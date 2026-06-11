@@ -1,7 +1,10 @@
-import { normalizePlayerLevel } from "@/lib/config/playerLevels";
 import { withAuth } from "@/lib/http/withAuth";
+import {
+  normalizePlayerLevel,
+  PLAYER_LEVELS,
+} from "@/lib/config/playerLevels";
+import { getTotalInvestmentUsage } from "@/lib/config/investmentSlots";
 import { prisma } from "@/lib/prisma";
-import { getPendingUnpaidMaturityChoiceForUser } from "@/services/investments/unpaidMaturityChoice";
 import {
   getPowerInventory,
   serializePowerCards,
@@ -14,16 +17,20 @@ export async function GET(request: Request) {
       select: { level: true },
     });
     const currentLevel = normalizePlayerLevel(user?.level);
-    const inventory = await getPowerInventory(authUser.id, currentLevel);
-    const pending = await getPendingUnpaidMaturityChoiceForUser(
+    const totalUsage = await getTotalInvestmentUsage(
       authUser.id,
+      prisma,
       currentLevel
     );
+    const inventory = await getPowerInventory(authUser.id, currentLevel);
 
     return Response.json({
-      show: pending != null,
-      choice: pending,
+      currentLevel,
+      levels: PLAYER_LEVELS,
       powers: serializePowerCards(inventory),
+      totalOpenCount: totalUsage.totalOpenCount,
+      maxTotalOpenInvestments: totalUsage.maxTotalOpenInvestments,
+      totalSlotsAvailable: totalUsage.totalSlotsAvailable,
     });
   });
 }

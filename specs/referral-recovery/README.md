@@ -297,6 +297,8 @@ Funds stay in pool/surplus (subscribe inflow already recorded); `TreasuryEvent.o
 
 API: `POST /api/investments/:id/unpaid-maturity-choice` · `GET /api/investments/unpaid-maturity-choice/pending`
 
+Each maturity choice path consumes one **player power card** (`referral_recovery` or `term_extension`). Cards are granted cumulatively by `User.level` (see `playerLevels.ts`); uses are stored in `PlayerPowerUse`. `POST` returns `403 power_unavailable` when the user has no card left for the selected path.
+
 ### Modal behavior
 
 - Show sympathy modal when `isReferralRecoveryEligible` (after recover choice) and (`sympathyModalDismissedAt` is null OR dismissed > 7 days ago)  
@@ -497,9 +499,10 @@ Optional monthly cap: `REFERRAL_MONTHLY_SURPLUS_CAP_USDT` — pause new referral
 
 ### Interaction with triad / FIFO
 
-- Referral rewards **do not** consume unlocker slots  
-- Referral recovery **closes** the investment without using triad or surplus FIFO payout paths  
-- New invitee subscriptions **add** `S_sub` to surplus, partially replenishing bonus draws  
+- Invitee investments that consume a **recovery slot** are marked `excludedFromTriadUnlock` and **never** count as triad unlockers for any user's matured investment (including other users' payout heads).  
+- Referral recovery **closes** the inviter's investment via `principal_recovery` (**25 USDT** principal only), not via triad unlock or surplus FIFO projected payout.  
+- Standard referral bonuses (2 USDT inviter / invitee) do not consume triad unlocker slots.  
+- New invitee subscriptions **add** `S_sub` to surplus, partially replenishing bonus draws (including recovery invitees).  
 
 ---
 

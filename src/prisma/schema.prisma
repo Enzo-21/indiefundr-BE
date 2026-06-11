@@ -35,6 +35,11 @@ enum UnpaidMaturityResolution {
   term_extension
 }
 
+enum PlayerPowerType {
+  referral_recovery
+  term_extension
+}
+
 enum PurchaseOrderStatus {
   queued
   processing
@@ -149,6 +154,7 @@ model User {
   hasVerifiedMail Boolean  @default(false)
   device          String?
   isPro           Boolean  @default(false)
+  level           Int      @default(0)
 
   wallets           Wallet[]            @relation("UserWallets")
   profiles          Profile[]
@@ -171,6 +177,7 @@ model User {
   referralCode         ReferralCode?
   invitesSent          ReferralInvite[] @relation("InviterUser")
   invitesReceived      ReferralInvite[] @relation("InviteeUser")
+  playerPowerUses      PlayerPowerUse[]
 
   @@map("users")
 }
@@ -322,10 +329,12 @@ model Investment {
   termExtensionDays          Int?
   forfeitedAt                DateTime?
   forfeitureReason           ForfeitureReason?
+  excludedFromTriadUnlock    Boolean                    @default(false)
   date                  DateTime                   @default(now())
 
   user          User           @relation(fields: [userId], references: [id])
   referralRecoveryLink ReferralRecoveryLink?
+  playerPowerUse PlayerPowerUse?
   wallet        Wallet         @relation(fields: [walletId], references: [id])
   purchaseOrder PurchaseOrder? @relation("InvestmentToOrder", fields: [purchaseOrderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   purchaseOrdersFromInvestment PurchaseOrder[] @relation("OrderToInvestment")
@@ -337,6 +346,21 @@ model Investment {
   @@index([status, subscribedAt, id])
   @@index([status, redeemedAt(sort: Desc)])
   @@map("investments")
+}
+
+model PlayerPowerUse {
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String          @db.ObjectId
+  investmentId String          @unique @db.ObjectId
+  powerType    PlayerPowerType
+  userLevel    Int
+  consumedAt   DateTime        @default(now())
+
+  user       User       @relation(fields: [userId], references: [id])
+  investment Investment @relation(fields: [investmentId], references: [id])
+
+  @@index([userId, powerType])
+  @@map("playerpoweruses")
 }
 
 model PurchaseOrder {

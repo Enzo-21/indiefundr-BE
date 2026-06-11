@@ -14,6 +14,13 @@ import {
   getUnpaidMaturityChoiceContext,
   isUnpaidMaturityChoicePending,
 } from "@/services/investments/unpaidMaturityChoice";
+import { buildPowerInventory } from "@/services/playerPowers/playerPowers";
+
+const fullPowers = buildPowerInventory(4, {});
+const emptyPowers = buildPowerInventory(4, {
+  referral_recovery: 15,
+  term_extension: 14,
+});
 
 const choiceDeadlineAt = new Date("2099-06-05T12:00:00.000Z");
 const choiceNow = new Date("2099-06-03T12:00:00.000Z");
@@ -68,12 +75,29 @@ describe("unpaid maturity choice eligibility", () => {
       isUnpaidMaturityChoicePending(baseInvestment, new Set(), choiceNow),
       true
     );
-    const ctx = getUnpaidMaturityChoiceContext(baseInvestment, new Set());
+    const ctx = getUnpaidMaturityChoiceContext(
+      baseInvestment,
+      new Set(),
+      fullPowers
+    );
     assert.ok(ctx);
     assert.equal(ctx?.extensionMinDays, 7);
     assert.equal(ctx?.extensionMaxDays, 45);
     assert.equal(ctx?.needsChoice, true);
     assert.equal(ctx?.choiceDeadlineAt, choiceDeadlineAt.toISOString());
+    assert.equal(ctx?.canChooseReferralRecovery, true);
+    assert.equal(ctx?.canChooseTermExtension, true);
+  });
+
+  it("marks choice paths unavailable when power cards are depleted", () => {
+    const ctx = getUnpaidMaturityChoiceContext(
+      baseInvestment,
+      new Set(),
+      emptyPowers
+    );
+    assert.ok(ctx);
+    assert.equal(ctx?.canChooseReferralRecovery, false);
+    assert.equal(ctx?.canChooseTermExtension, false);
   });
 
   it("blocks referral recovery until user chooses recover path", () => {

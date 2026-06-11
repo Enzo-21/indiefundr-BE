@@ -37,6 +37,8 @@ export type EnrichedInvestmentJson = {
   recoveryRequiredCount: number | null;
   unpaidMaturityResolution: string | null;
   needsUnpaidMaturityChoice: boolean;
+  canChooseReferralRecovery: boolean;
+  canChooseTermExtension: boolean;
   extensionMinDays: number | null;
   extensionMaxDays: number | null;
   termExtensionDays: number | null;
@@ -57,6 +59,8 @@ export type EnrichInvestmentOptions = {
   recoveryQualifiedCount?: number | null;
   recoveryRequiredCount?: number | null;
   needsUnpaidMaturityChoice?: boolean;
+  canChooseReferralRecovery?: boolean;
+  canChooseTermExtension?: boolean;
   extensionMinDays?: number | null;
   extensionMaxDays?: number | null;
 };
@@ -100,6 +104,8 @@ export function enrichInvestment(
     recoveryRequiredCount: options.recoveryRequiredCount ?? null,
     unpaidMaturityResolution: investment.unpaidMaturityResolution ?? null,
     needsUnpaidMaturityChoice: options.needsUnpaidMaturityChoice ?? false,
+    canChooseReferralRecovery: options.canChooseReferralRecovery ?? false,
+    canChooseTermExtension: options.canChooseTermExtension ?? false,
     extensionMinDays: options.extensionMinDays ?? null,
     extensionMaxDays: options.extensionMaxDays ?? null,
     termExtensionDays: investment.termExtensionDays ?? null,

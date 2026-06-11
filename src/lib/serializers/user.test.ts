@@ -14,6 +14,7 @@ const sampleUser: User = {
   hasVerifiedMail: false,
   device: "expo-push-token",
   isPro: false,
+  level: 0,
 };
 
 describe("serializeUser", () => {
@@ -28,6 +29,7 @@ describe("serializeUser", () => {
     assert.equal(json.hasVerifiedMail, false);
     assert.equal(json.device, "expo-push-token");
     assert.equal(json.isPro, false);
+    assert.equal(json.level, 0);
     assert.equal("password" in json, false);
   });
 });

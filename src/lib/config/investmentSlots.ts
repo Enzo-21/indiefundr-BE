@@ -3,6 +3,11 @@ import { prisma as defaultPrisma } from "@/lib/prisma";
 import { INVESTMENT_OPEN_STATUSES } from "@/services/investments/constants";
 import { ACTIVE_PURCHASE_ORDER_STATUSES } from "@/services/wallets/walletBalance";
 import { getFundById } from "./investmentFunds";
+import {
+  getEffectiveSlotsPerFund,
+  getPlayerLevelPerks,
+  normalizePlayerLevel,
+} from "./playerLevels";
 
 const DEFAULT_MAX_OPEN_INVESTMENTS = 1;
 
@@ -21,6 +26,21 @@ export class InvestmentSlotsFullError extends Error {
   }
 }
 
+export class TotalInvestmentsCapError extends Error {
+  readonly code = "TOTAL_INVESTMENTS_CAP" as const;
+  readonly totalOpenCount: number;
+  readonly maxTotalOpenInvestments: number;
+
+  constructor(totalOpenCount: number, maxTotalOpenInvestments: number) {
+    super(
+      `Maximum open investments reached at your level (${totalOpenCount}/${maxTotalOpenInvestments})`
+    );
+    this.name = "TotalInvestmentsCapError";
+    this.totalOpenCount = totalOpenCount;
+    this.maxTotalOpenInvestments = maxTotalOpenInvestments;
+  }
+}
+
 export function getMaxOpenInvestmentsForFund(fundId: string): number {
   const fund = getFundById(fundId);
   const max = fund?.maxOpenInvestments;
@@ -32,6 +52,21 @@ export function getMaxOpenInvestmentsForFund(fundId: string): number {
 
 type PrismaLike = PrismaClient | Prisma.TransactionClient;
 
+async function resolveUserLevel(
+  userId: string,
+  client: PrismaLike,
+  userLevel?: number
+): Promise<number> {
+  if (userLevel !== undefined) {
+    return normalizePlayerLevel(userLevel);
+  }
+  const user = await client.user.findUnique({
+    where: { id: userId },
+    select: { level: true },
+  });
+  return normalizePlayerLevel(user?.level);
+}
+
 export async function countOpenInvestmentsForUserFund(
   userId: string,
   fundId: string,
@@ -41,6 +76,18 @@ export async function countOpenInvestmentsForUserFund(
     where: {
       userId,
       fundId,
+      status: { in: INVESTMENT_OPEN_STATUSES },
+    },
+  });
+}
+
+export async function countOpenInvestmentsForUser(
+  userId: string,
+  client: PrismaLike = defaultPrisma
+): Promise<number> {
+  return client.investment.count({
+    where: {
+      userId,
       status: { in: INVESTMENT_OPEN_STATUSES },
     },
   });
@@ -81,37 +128,126 @@ export async function countUnrepresentedActivePurchaseOrdersForUserFund(
   return activeOrders.filter((order) => !linkedOrderIds.has(order.id)).length;
 }
 
+export async function countUnrepresentedActivePurchaseOrdersForUser(
+  userId: string,
+  client: PrismaLike = defaultPrisma
+): Promise<number> {
+  const [activeOrders, linkedInvestments] = await Promise.all([
+    client.purchaseOrder.findMany({
+      where: {
+        userId,
+        status: { in: ACTIVE_PURCHASE_ORDER_STATUSES },
+      },
+      select: { id: true },
+    }),
+    client.investment.findMany({
+      where: {
+        userId,
+        status: { in: INVESTMENT_OPEN_STATUSES },
+        purchaseOrderId: { not: null },
+      },
+      select: { purchaseOrderId: true },
+    }),
+  ]);
+
+  const linkedOrderIds = new Set(
+    linkedInvestments
+      .map((inv) => inv.purchaseOrderId)
+      .filter((id): id is string => Boolean(id))
+  );
+
+  return activeOrders.filter((order) => !linkedOrderIds.has(order.id)).length;
+}
+
+export async function getTotalInvestmentUsage(
+  userId: string,
+  client: PrismaLike = defaultPrisma,
+  userLevel?: number
+): Promise<{
+  totalOpenCount: number;
+  maxTotalOpenInvestments: number;
+  totalSlotsAvailable: number;
+}> {
+  const level = await resolveUserLevel(userId, client, userLevel);
+  const maxTotalOpenInvestments =
+    getPlayerLevelPerks(level).maxTotalOpenInvestments;
+  const [investmentCount, processingOrderCount] = await Promise.all([
+    countOpenInvestmentsForUser(userId, client),
+    countUnrepresentedActivePurchaseOrdersForUser(userId, client),
+  ]);
+  const totalOpenCount = investmentCount + processingOrderCount;
+  return {
+    totalOpenCount,
+    maxTotalOpenInvestments,
+    totalSlotsAvailable: Math.max(0, maxTotalOpenInvestments - totalOpenCount),
+  };
+}
+
 export async function getInvestmentSlotUsage(
   userId: string,
   fundId: string,
-  client: PrismaLike = defaultPrisma
+  client: PrismaLike = defaultPrisma,
+  userLevel?: number
 ): Promise<{
   openCount: number;
   maxOpenInvestments: number;
   slotsAvailable: number;
+  totalOpenCount: number;
+  maxTotalOpenInvestments: number;
+  totalSlotsAvailable: number;
 }> {
-  const maxOpenInvestments = getMaxOpenInvestmentsForFund(fundId);
-  const [investmentCount, processingOrderCount] = await Promise.all([
+  const level = await resolveUserLevel(userId, client, userLevel);
+  const catalogMax = getMaxOpenInvestmentsForFund(fundId);
+  const maxOpenInvestments = getEffectiveSlotsPerFund(level, catalogMax);
+  const [investmentCount, processingOrderCount, totalUsage] = await Promise.all([
     countOpenInvestmentsForUserFund(userId, fundId, client),
     countUnrepresentedActivePurchaseOrdersForUserFund(userId, fundId, client),
+    getTotalInvestmentUsage(userId, client, level),
   ]);
   const openCount = investmentCount + processingOrderCount;
+  const perFundAvailable = Math.max(0, maxOpenInvestments - openCount);
+  const slotsAvailable = Math.min(
+    perFundAvailable,
+    totalUsage.totalSlotsAvailable
+  );
   return {
     openCount,
     maxOpenInvestments,
-    slotsAvailable: Math.max(0, maxOpenInvestments - openCount),
+    slotsAvailable,
+    totalOpenCount: totalUsage.totalOpenCount,
+    maxTotalOpenInvestments: totalUsage.maxTotalOpenInvestments,
+    totalSlotsAvailable: totalUsage.totalSlotsAvailable,
   };
+}
+
+export async function assertTotalOpenInvestmentCapacity(
+  userId: string,
+  client: PrismaLike = defaultPrisma,
+  userLevel?: number
+): Promise<void> {
+  const { totalOpenCount, maxTotalOpenInvestments } =
+    await getTotalInvestmentUsage(userId, client, userLevel);
+  if (totalOpenCount >= maxTotalOpenInvestments) {
+    throw new TotalInvestmentsCapError(
+      totalOpenCount,
+      maxTotalOpenInvestments
+    );
+  }
 }
 
 export async function assertCanOpenInvestment(
   userId: string,
   fundId: string,
-  client: PrismaLike = defaultPrisma
+  client: PrismaLike = defaultPrisma,
+  userLevel?: number
 ): Promise<void> {
+  const level = await resolveUserLevel(userId, client, userLevel);
+  await assertTotalOpenInvestmentCapacity(userId, client, level);
   const { openCount, maxOpenInvestments } = await getInvestmentSlotUsage(
     userId,
     fundId,
-    client
+    client,
+    level
   );
   if (openCount >= maxOpenInvestments) {
     throw new InvestmentSlotsFullError(openCount, maxOpenInvestments);
@@ -127,6 +263,18 @@ export function slotsFullResponseBody(
     msg: `You have reached the maximum of ${maxOpenInvestments} open investments in this fund`,
     openCount,
     maxOpenInvestments,
+  };
+}
+
+export function totalInvestmentsCapResponseBody(
+  totalOpenCount: number,
+  maxTotalOpenInvestments: number
+): Record<string, unknown> {
+  return {
+    code: "TOTAL_INVESTMENTS_CAP",
+    msg: `You have reached the maximum of ${maxTotalOpenInvestments} open investments at your level`,
+    totalOpenCount,
+    maxTotalOpenInvestments,
   };
 }
 

@@ -129,6 +129,10 @@ export async function issueReferralRewards(
     });
 
     if (shouldUseRecoverySlot(link, referralInviteId, required)) {
+      await prisma.investment.update({
+        where: { id: investmentId },
+        data: { excludedFromTriadUnlock: true },
+      });
       await maybeEnqueuePrincipalRecoveryOrder(
         invite.inviterUserId,
         referralInviteId

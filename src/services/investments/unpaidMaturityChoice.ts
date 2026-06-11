@@ -20,6 +20,12 @@ import { isRecoveryCandidate } from "@/services/referrals/recoveryEligibility";
 import { getLedgerSnapshot } from "@/services/revenueEngine/ledger";
 import { computeFifoSurplusEligibleInvestmentIds } from "@/services/revenueEngine/payoutScheduler";
 import { markMaturedInvestments } from "@/services/investments/maturity";
+import {
+  consumePowerForInvestment,
+  getPowerInventory,
+  PlayerPowerUnavailableError,
+  type PowerInventory,
+} from "@/services/playerPowers/playerPowers";
 
 export type UnpaidMaturityChoice = "referral_recovery" | "term_extension";
 
@@ -34,6 +40,9 @@ export type UnpaidMaturityChoiceContext = {
   termDays: number;
   choiceDeadlineAt: string;
   choiceHours: number;
+  powers: PowerInventory;
+  canChooseReferralRecovery: boolean;
+  canChooseTermExtension: boolean;
 };
 
 export type UnpaidMaturityChoiceResult =
@@ -118,7 +127,8 @@ export function getUnpaidMaturityChoiceContext(
     | "projectedPayoutUsdt"
     | "maturesAt"
   >,
-  fifoEligibleIds: ReadonlySet<string>
+  fifoEligibleIds: ReadonlySet<string>,
+  powers: PowerInventory
 ): UnpaidMaturityChoiceContext | null {
   const needsChoice = isUnpaidMaturityChoicePending(investment, fifoEligibleIds);
   if (!needsChoice || !investment.unpaidMaturityChoiceDeadlineAt) return null;
@@ -138,16 +148,23 @@ export function getUnpaidMaturityChoiceContext(
     termDays: bounds.termDays,
     choiceDeadlineAt: investment.unpaidMaturityChoiceDeadlineAt.toISOString(),
     choiceHours: UNPAID_MATURITY_CHOICE_HOURS(),
+    powers,
+    canChooseReferralRecovery: powers.referral_recovery.available > 0,
+    canChooseTermExtension: powers.term_extension.available > 0,
   };
 }
 
-export async function getPendingUnpaidMaturityChoiceForUser(userId: string) {
+export async function getPendingUnpaidMaturityChoiceForUser(
+  userId: string,
+  userLevel: number
+) {
   const { processInvestmentForfeitures } = await import(
     "@/services/investments/investmentForfeiture"
   );
   await markMaturedInvestments();
   await processInvestmentForfeitures();
   const fifoIds = await loadFifoEligibleIds();
+  const powers = await getPowerInventory(userId, userLevel);
 
   const investments = await prisma.investment.findMany({
     where: {
@@ -162,7 +179,7 @@ export async function getPendingUnpaidMaturityChoiceForUser(userId: string) {
   });
 
   for (const investment of investments) {
-    const ctx = getUnpaidMaturityChoiceContext(investment, fifoIds);
+    const ctx = getUnpaidMaturityChoiceContext(investment, fifoIds, powers);
     if (ctx) return ctx;
   }
 
@@ -196,6 +213,12 @@ export async function applyUnpaidMaturityChoice(
   );
   await markMaturedInvestments();
   await processInvestmentForfeitures();
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { level: true },
+  });
+  const userLevel = user?.level ?? 0;
 
   const investment = await prisma.investment.findFirst({
     where: { id: investmentId, userId },
@@ -250,47 +273,82 @@ export async function applyUnpaidMaturityChoice(
     };
   }
 
-  if (choice === "referral_recovery") {
-    const updated = await prisma.investment.update({
-      where: { id: investmentId },
-      data: {
-        unpaidMaturityResolution: UnpaidMaturityResolution.referral_recovery,
-        unpaidMaturityResolvedAt: now,
-        recoveryEligibleAt: now,
-      },
+  try {
+    if (choice === "referral_recovery") {
+      const updated = await prisma.$transaction(async (tx) => {
+        await consumePowerForInvestment(tx, {
+          userId,
+          userLevel,
+          investmentId,
+          powerType: choice,
+          consumedAt: now,
+        });
+
+        return tx.investment.update({
+          where: { id: investmentId },
+          data: {
+            unpaidMaturityResolution: UnpaidMaturityResolution.referral_recovery,
+            unpaidMaturityResolvedAt: now,
+            recoveryEligibleAt: now,
+          },
+        });
+      });
+
+      return { ok: true, data: enrichInvestment(updated) };
+    }
+
+    const termDays = computeInvestmentTermDays(investment);
+    const days = clampExtensionDays(termDays, extensionDays ?? NaN);
+    if (days == null) {
+      const bounds = extensionBounds(termDays);
+      return {
+        ok: false,
+        status: 400,
+        body: {
+          msg: `extensionDays must be an integer between ${bounds.minDays} and ${bounds.maxDays}`,
+          code: "invalid_extension_days",
+          extensionMinDays: bounds.minDays,
+          extensionMaxDays: bounds.maxDays,
+        },
+      };
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      await consumePowerForInvestment(tx, {
+        userId,
+        userLevel,
+        investmentId,
+        powerType: choice,
+        consumedAt: now,
+      });
+
+      return tx.investment.update({
+        where: { id: investmentId },
+        data: {
+          unpaidMaturityResolution: UnpaidMaturityResolution.term_extension,
+          unpaidMaturityResolvedAt: now,
+          termExtensionDays: days,
+          status: InvestmentStatus.active,
+          payabilityStatus: InvestmentPayabilityStatus.not_matured,
+          maturesAt: addDuration(now, `${days}D`),
+          recoveryEligibleAt: null,
+        },
+      });
     });
 
     return { ok: true, data: enrichInvestment(updated) };
+  } catch (error) {
+    if (error instanceof PlayerPowerUnavailableError) {
+      return {
+        ok: false,
+        status: 403,
+        body: {
+          msg: error.message,
+          code: error.code,
+          powerType: error.powerType,
+        },
+      };
+    }
+    throw error;
   }
-
-  const termDays = computeInvestmentTermDays(investment);
-  const days = clampExtensionDays(termDays, extensionDays ?? NaN);
-  if (days == null) {
-    const bounds = extensionBounds(termDays);
-    return {
-      ok: false,
-      status: 400,
-      body: {
-        msg: `extensionDays must be an integer between ${bounds.minDays} and ${bounds.maxDays}`,
-        code: "invalid_extension_days",
-        extensionMinDays: bounds.minDays,
-        extensionMaxDays: bounds.maxDays,
-      },
-    };
-  }
-
-  const updated = await prisma.investment.update({
-    where: { id: investmentId },
-    data: {
-      unpaidMaturityResolution: UnpaidMaturityResolution.term_extension,
-      unpaidMaturityResolvedAt: now,
-      termExtensionDays: days,
-      status: InvestmentStatus.active,
-      payabilityStatus: InvestmentPayabilityStatus.not_matured,
-      maturesAt: addDuration(now, `${days}D`),
-      recoveryEligibleAt: null,
-    },
-  });
-
-  return { ok: true, data: enrichInvestment(updated) };
 }

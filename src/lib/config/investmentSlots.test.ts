@@ -3,9 +3,14 @@ import { describe, it } from "node:test";
 import { PurchaseOrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
+  getEffectiveSlotsPerFund,
+  getPlayerLevelPerks,
+} from "./playerLevels";
+import {
   getInvestmentSlotUsage,
   getMaxOpenInvestmentsForFund,
   InvestmentSlotsFullError,
+  TotalInvestmentsCapError,
 } from "./investmentSlots";
 import { SKIP_DB_MUTATING_TESTS } from "@/test/constants";
 
@@ -28,6 +33,18 @@ describe("investment slot helpers", () => {
     assert.equal(err.openCount, 5);
     assert.equal(err.maxOpenInvestments, 5);
     assert.match(err.message, /5\/5/);
+  });
+
+  it("TotalInvestmentsCapError exposes code and counts", () => {
+    const err = new TotalInvestmentsCapError(3, 3);
+    assert.equal(err.code, "TOTAL_INVESTMENTS_CAP");
+    assert.equal(err.totalOpenCount, 3);
+    assert.equal(err.maxTotalOpenInvestments, 3);
+  });
+
+  it("level 0 caps per-fund slots at 1", () => {
+    assert.equal(getEffectiveSlotsPerFund(0, 5), 1);
+    assert.equal(getPlayerLevelPerks(0).maxTotalOpenInvestments, 3);
   });
 
   it(
@@ -66,7 +83,8 @@ describe("investment slot helpers", () => {
 
       const usage = await getInvestmentSlotUsage(user.id, fundId);
       assert.equal(usage.openCount, 1);
-      assert.equal(usage.slotsAvailable, 4);
+      assert.equal(usage.maxOpenInvestments, 1);
+      assert.equal(usage.slotsAvailable, 0);
 
       await prisma.purchaseOrder.deleteMany({ where: { userId: user.id } });
       await prisma.wallet.delete({ where: { id: wallet.id } });

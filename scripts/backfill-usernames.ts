@@ -4,18 +4,23 @@ import { allocateUniqueUsername } from "../src/lib/users/username";
 
 const prisma = new PrismaClient();
 
+function needsUsername(username: string | null | undefined): boolean {
+  return username == null || username.trim() === "";
+}
+
 async function main() {
   const users = await prisma.user.findMany({
-    where: { username: null },
-    select: { id: true, email: true },
+    select: { id: true, email: true, username: true },
   });
 
-  if (users.length === 0) {
+  const toBackfill = users.filter((user) => needsUsername(user.username));
+
+  if (toBackfill.length === 0) {
     console.log("No users to backfill.");
     return;
   }
 
-  for (const user of users) {
+  for (const user of toBackfill) {
     const username = await allocateUniqueUsername(user.email);
     await prisma.user.update({
       where: { id: user.id },
@@ -23,7 +28,7 @@ async function main() {
     });
   }
 
-  console.log(`Backfilled username for ${users.length} user(s).`);
+  console.log(`Backfilled username for ${toBackfill.length} user(s).`);
 }
 
 main()

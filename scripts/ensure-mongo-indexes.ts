@@ -49,6 +49,17 @@ async function dropIndex(collection: string, name: string) {
 }
 
 async function main() {
+  // Optional FK: sparse unique allows many users without a referral invite.
+  await createIndex(
+    "users",
+    { referredByInviteId: 1 },
+    {
+      name: "users_referredByInviteId_key",
+      unique: true,
+      sparse: true,
+    }
+  );
+
   // Legacy one-open-investment-per-fund unique index — replaced by per-fund slot caps.
   await dropIndex("investments", "user_1_fundId_1_open_unique");
 
@@ -117,6 +128,23 @@ async function main() {
     {
       name: "expiresAt_1_ttl",
       expireAfterSeconds: 0,
+    }
+  );
+
+  await createIndex(
+    "playerpoweruses",
+    { investmentId: 1 },
+    {
+      name: "playerpoweruses_investmentId_key",
+      unique: true,
+    }
+  );
+
+  await createIndex(
+    "playerpoweruses",
+    { userId: 1, powerType: 1 },
+    {
+      name: "playerpoweruses_userId_powerType_idx",
     }
   );
 

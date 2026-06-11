@@ -255,6 +255,69 @@ describe("payout scheduler helpers", () => {
     ]);
   });
 
+  it("skips recovery invitee investments excluded from triad unlock", () => {
+    const base = {
+      id: "head",
+      userId: "user-head",
+      subscribedAt: new Date("2026-01-01T00:00:00.000Z"),
+    };
+    const unlockers = findUnlockingInvestments(base, [
+      {
+        id: "recovery-1",
+        userId: "recovery-user-1",
+        subscribedAt: new Date("2026-01-02T00:00:00.000Z"),
+        excludedFromTriadUnlock: true,
+      },
+      {
+        id: "recovery-2",
+        userId: "recovery-user-2",
+        subscribedAt: new Date("2026-01-03T00:00:00.000Z"),
+        excludedFromTriadUnlock: true,
+      },
+      {
+        id: "normal-1",
+        userId: "normal-user-1",
+        subscribedAt: new Date("2026-01-04T00:00:00.000Z"),
+        excludedFromTriadUnlock: false,
+      },
+      {
+        id: "normal-2",
+        userId: "normal-user-2",
+        subscribedAt: new Date("2026-01-05T00:00:00.000Z"),
+        excludedFromTriadUnlock: false,
+      },
+    ]);
+
+    assert.deepEqual(
+      unlockers.map((inv) => inv.id),
+      ["normal-1", "normal-2"]
+    );
+  });
+
+  it("does not unlock another user when only recovery invitees subscribed later", () => {
+    const otherUserHead = {
+      id: "other-matured",
+      userId: "other-user",
+      subscribedAt: new Date("2026-01-01T00:00:00.000Z"),
+    };
+    const unlockers = findUnlockingInvestments(otherUserHead, [
+      {
+        id: "recovery-only-1",
+        userId: "invitee-1",
+        subscribedAt: new Date("2026-01-02T00:00:00.000Z"),
+        excludedFromTriadUnlock: true,
+      },
+      {
+        id: "recovery-only-2",
+        userId: "invitee-2",
+        subscribedAt: new Date("2026-01-03T00:00:00.000Z"),
+        excludedFromTriadUnlock: true,
+      },
+    ]);
+
+    assert.equal(unlockers.length, 0);
+  });
+
   it("skips later investments already consumed as unlockers", () => {
     const base = {
       id: "a",

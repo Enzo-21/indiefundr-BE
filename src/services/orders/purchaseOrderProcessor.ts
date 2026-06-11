@@ -23,6 +23,7 @@ import {
   createInvestmentIfSlotAvailable,
   getInvestmentSlotUsage,
   InvestmentSlotsFullError,
+  TotalInvestmentsCapError,
 } from "@/lib/config/investmentSlots";
 import { sendPushNotification } from "@/services/orders/pushNotify";
 import { onSubscribeCompleted } from "@/services/revenueEngine/onSubscribeCompleted";
@@ -971,7 +972,10 @@ async function processUsdtTransfer(
       transaction: signedTransaction as Prisma.InputJsonValue,
     });
   } catch (err) {
-    if (err instanceof InvestmentSlotsFullError) {
+    if (
+      err instanceof InvestmentSlotsFullError ||
+      err instanceof TotalInvestmentsCapError
+    ) {
       await failOrder(order, err.message, {
         wallet,
         treasuryAddress,
@@ -1307,7 +1311,10 @@ export async function ensureInvestmentForCompletedUsdt(
           : {}),
     });
   } catch (err) {
-    if (err instanceof InvestmentSlotsFullError) {
+    if (
+      err instanceof InvestmentSlotsFullError ||
+      err instanceof TotalInvestmentsCapError
+    ) {
       throw new Error(err.message);
     }
     throw err;

@@ -5,6 +5,7 @@ import {
   getUnpaidMaturityChoiceContext,
   loadFifoEligibleIds,
 } from "@/services/investments/unpaidMaturityChoice";
+import { getPowerInventory } from "@/services/playerPowers/playerPowers";
 
 export type InvestmentsServiceResult<T> =
   | { ok: true; data: T }
@@ -58,13 +59,20 @@ export async function getUserInvestments(userId: string) {
   );
   const requiredCount = REFERRAL_RECOVERY_INVITEES_REQUIRED();
   const fifoIds = await loadFifoEligibleIds();
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { level: true },
+  });
+  const powers = await getPowerInventory(userId, user?.level ?? 0);
 
   return investments.map((investment) => {
-    const choiceCtx = getUnpaidMaturityChoiceContext(investment, fifoIds);
+    const choiceCtx = getUnpaidMaturityChoiceContext(investment, fifoIds, powers);
     return enrichInvestment(investment, {
       recoveryQualifiedCount: qualifiedByInvestment.get(investment.id) ?? null,
       recoveryRequiredCount: investment.recoveryEligibleAt ? requiredCount : null,
       needsUnpaidMaturityChoice: choiceCtx?.needsChoice ?? false,
+      canChooseReferralRecovery: choiceCtx?.canChooseReferralRecovery ?? false,
+      canChooseTermExtension: choiceCtx?.canChooseTermExtension ?? false,
       extensionMinDays: choiceCtx?.extensionMinDays ?? null,
       extensionMaxDays: choiceCtx?.extensionMaxDays ?? null,
     });

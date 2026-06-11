@@ -46,7 +46,7 @@ const SURPLUS_LIQUIDITY_TRIGGERS = new Set<PayoutTrigger>([
 
 export type PayoutUnlocker = Pick<
   Investment,
-  "id" | "userId" | "subscribedAt"
+  "id" | "userId" | "subscribedAt" | "excludedFromTriadUnlock"
 > & {
   user?: { name: string; email: string };
 };
@@ -259,6 +259,7 @@ export function findUnlockingInvestments<T extends PayoutUnlocker>(
     if (investment.id === candidate.id) continue;
     if (consumedUnlockingInvestmentIds.has(investment.id)) continue;
     if (investment.subscribedAt <= candidate.subscribedAt) continue;
+    if (investment.excludedFromTriadUnlock) continue;
 
     selected.push(investment);
     if (selected.length === 2) break;

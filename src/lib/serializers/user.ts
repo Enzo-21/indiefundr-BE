@@ -10,6 +10,7 @@ export type LegacyUserJson = {
   hasVerifiedMail: boolean;
   device: string | null;
   isPro: boolean;
+  level: number;
 };
 
 export function serializeUser(user: User): LegacyUserJson {
@@ -23,6 +24,7 @@ export function serializeUser(user: User): LegacyUserJson {
     hasVerifiedMail: user.hasVerifiedMail,
     device: user.device,
     isPro: user.isPro,
+    level: user.level ?? 0,
   };
 }
 

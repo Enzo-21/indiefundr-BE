@@ -181,21 +181,17 @@ describe("subscribeToFund", () => {
       });
 
       const fundId = "aggressive-alpha";
-      const maxOpen = getMaxOpenInvestmentsForFund(fundId);
-
-      for (let i = 0; i < maxOpen; i++) {
-        await prisma.investment.create({
-          data: {
-            userId: user.id,
-            walletId: wallet.id,
-            fundId,
-            amountUsdt: 25,
-            returnPercent90d: 40,
-            projectedPayoutUsdt: 35,
-            status: InvestmentStatus.active,
-          },
-        });
-      }
+      await prisma.investment.create({
+        data: {
+          userId: user.id,
+          walletId: wallet.id,
+          fundId,
+          amountUsdt: 25,
+          returnPercent90d: 40,
+          projectedPayoutUsdt: 35,
+          status: InvestmentStatus.active,
+        },
+      });
 
       const result = await subscribeToFund(user.id, {
         fundId,
@@ -207,8 +203,64 @@ describe("subscribeToFund", () => {
         assert.equal(result.status, 400);
         const body = result.body as Record<string, unknown>;
         assert.equal(body.code, "SLOTS_FULL");
-        assert.equal(body.openCount, maxOpen);
-        assert.equal(body.maxOpenInvestments, maxOpen);
+        assert.equal(body.openCount, 1);
+        assert.equal(body.maxOpenInvestments, 1);
+      }
+
+      await prisma.investment.deleteMany({ where: { userId: user.id } });
+      await prisma.wallet.delete({ where: { id: wallet.id } });
+      await prisma.user.delete({ where: { id: user.id } });
+    }
+  );
+
+  it(
+    "returns TOTAL_INVESTMENTS_CAP when portfolio-wide open count reaches level cap",
+    { skip: skipDbTests },
+    async () => {
+      const user = await prisma.user.create({
+        data: {
+          name: "Subscribe Total Cap Test",
+          email: `subscribe-total-cap-${Date.now()}@example.com`,
+        },
+      });
+
+      const wallet = await prisma.wallet.create({
+        data: {
+          userId: user.id,
+          name: "Main",
+          address: `TSubscribeTotalCap${Date.now()}`,
+          privateKey: "test-private-key",
+          isMainWallet: true,
+        },
+      });
+
+      const fundIds = ["aggressive-alpha", "balanced-growth", "capital-shield"];
+      for (const fundId of fundIds) {
+        await prisma.investment.create({
+          data: {
+            userId: user.id,
+            walletId: wallet.id,
+            fundId,
+            amountUsdt: 25,
+            returnPercent90d: 15,
+            projectedPayoutUsdt: 28.75,
+            status: InvestmentStatus.active,
+          },
+        });
+      }
+
+      const result = await subscribeToFund(user.id, {
+        fundId: "growth-partners",
+        cost: 25,
+      });
+
+      assert.equal(result.ok, false);
+      if (!result.ok) {
+        assert.equal(result.status, 400);
+        const body = result.body as Record<string, unknown>;
+        assert.equal(body.code, "TOTAL_INVESTMENTS_CAP");
+        assert.equal(body.totalOpenCount, 3);
+        assert.equal(body.maxTotalOpenInvestments, 3);
       }
 
       await prisma.investment.deleteMany({ where: { userId: user.id } });

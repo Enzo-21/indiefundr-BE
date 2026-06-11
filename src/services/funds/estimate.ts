@@ -91,7 +91,7 @@ export async function getSubscribeFeeEstimate(
       }),
       getWalletUsdtAvailability(sender),
       getActiveOrdersForUser(userId, fundId),
-      getInvestmentSlotUsage(userId, fundId),
+      getInvestmentSlotUsage(userId, fundId, undefined, user.level),
     ]);
     const activeOrder = activeOrders[0] ?? null;
 
@@ -128,6 +128,9 @@ export async function getSubscribeFeeEstimate(
         openCount: slotUsage.openCount,
         maxOpenInvestments: slotUsage.maxOpenInvestments,
         slotsAvailable: slotUsage.slotsAvailable,
+        totalOpenCount: slotUsage.totalOpenCount,
+        maxTotalOpenInvestments: slotUsage.maxTotalOpenInvestments,
+        totalSlotsAvailable: slotUsage.totalSlotsAvailable,
         walletId: sender.id,
         isMainWallet: sender.isMainWallet,
         feesCoveredByApp,
