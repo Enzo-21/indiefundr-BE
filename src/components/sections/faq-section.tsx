@@ -51,14 +51,13 @@ export function FaqSection() {
               <Card className="shadow-lg">
                 <CardContent className="space-y-6">
                   <div className="space-y-2.5">
-                    <h3 className="text-xl font-medium md:text-2xl">Can&apos;t find answers?</h3>
+                    <h3 className="text-xl font-medium md:text-2xl">{faqSection.supportCard.title}</h3>
                     <p className="text-muted-foreground text-base leading-relaxed">
-                      We&apos;re here to help you out whenever you need! Get in touch with our dedicated support
-                      team for personalized assistance anytime.
+                      {faqSection.supportCard.description}
                     </p>
                   </div>
                   <PrimarySwipeButton className="group w-fit has-[>svg]:px-6">
-                    Open the app
+                    {faqSection.supportCard.cta}
                   </PrimarySwipeButton>
                 </CardContent>
               </Card>

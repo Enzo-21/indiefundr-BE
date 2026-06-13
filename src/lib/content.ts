@@ -5,6 +5,7 @@ import {
   featuresCopy,
   footerCopy,
   heroCopy,
+  heroDecorCopy,
   howItWorksCopy,
   testimonialsCopy,
   MARKETING_BRAND,
@@ -12,19 +13,33 @@ import {
 
 export const siteConfig = {
   name: MARKETING_BRAND,
-  title: "IndieFundr — USDT fund investing on Tron",
+  title: "IndieFundr — Multiply your money in 90 days",
   description:
-    "Invest USDT in curated 90-day funds with a built-in Tron wallet, portfolio tracking, and withdrawals.",
+    "Put your money to work in five studied, unconventional 90-day funds with illustrative targets from 6% to 40%. Start from $25. Fund and withdraw globally with USDT.",
+  keywords: [
+    "invest money",
+    "multiply money",
+    "unconventional investing",
+    "90 day investment",
+    "high yield funds",
+    "mobile investing",
+    "IndieFundr",
+    "passive returns",
+    "alternative investments",
+    "fund investing from $25",
+  ],
   url: "https://indiefundr.com",
 };
 
 export const heroStats = [
-  "Curated 90-day USDT funds",
-  "Built-in Tron wallet",
-  "Subscribe from 25 USDT",
-  "On-chain transparency",
-  "Treasury-sponsored TRX fees",
+  "From $25 per fund",
+  "Five studied, 90-day funds",
+  "Targets up to 40% in 90 days",
+  "Beyond traditional investing",
+  "Unconventional strategies, vetted funds",
 ];
+
+export { heroDecorCopy };
 
 export const heroContent = {
   title: heroCopy.title,
@@ -109,11 +124,11 @@ export const benefitMarqueeRows = [
     transactions: [
       { title: "Fund subscribe", amount: 2500, difference: 120, type: "debit" as const, isBordered: false, icon: "chart-spline" as const },
       { title: "Payout claim", amount: 2750, difference: 250, type: "credit" as const, isBordered: true, icon: "hand-coins" as const },
-      { title: "USDT deposit", amount: 5000, difference: 500, type: "credit" as const, isBordered: false, icon: "circle-dollar-sign" as const },
+      { title: "Deposit", amount: 5000, difference: 500, type: "credit" as const, isBordered: false, icon: "circle-dollar-sign" as const },
       { title: "Withdrawal", amount: 1200, difference: 120, type: "debit" as const, isBordered: true, icon: "credit-card" as const },
       { title: "Fund subscribe", amount: 2500, difference: 120, type: "debit" as const, isBordered: false, icon: "chart-spline" as const },
       { title: "Portfolio sync", amount: 0, difference: 0, type: "credit" as const, isBordered: true, icon: "repeat" as const },
-      { title: "USDT deposit", amount: 1000, difference: 100, type: "credit" as const, isBordered: true, icon: "circle-dollar-sign" as const },
+      { title: "Deposit", amount: 1000, difference: 100, type: "credit" as const, isBordered: true, icon: "circle-dollar-sign" as const },
     ],
   },
   {
@@ -122,7 +137,7 @@ export const benefitMarqueeRows = [
       { title: "Payout claim", amount: 2750, difference: 250, type: "credit" as const, isBordered: true, icon: "hand-coins" as const },
       { title: "Fund subscribe", amount: 2500, difference: 120, type: "debit" as const, isBordered: false, icon: "chart-spline" as const },
       { title: "Withdrawal", amount: 800, difference: 80, type: "debit" as const, isBordered: true, icon: "credit-card" as const },
-      { title: "USDT deposit", amount: 3000, difference: 300, type: "credit" as const, isBordered: false, icon: "circle-dollar-sign" as const },
+      { title: "Deposit", amount: 3000, difference: 300, type: "credit" as const, isBordered: false, icon: "circle-dollar-sign" as const },
       { title: "Fund subscribe", amount: 2500, difference: 120, type: "debit" as const, isBordered: true, icon: "chart-spline" as const },
       { title: "Withdrawal", amount: 500, difference: 50, type: "debit" as const, isBordered: false, icon: "credit-card" as const },
       { title: "Other", amount: 100, difference: 10, type: "debit" as const, isBordered: true, icon: "more-horizontal" as const },
@@ -132,12 +147,12 @@ export const benefitMarqueeRows = [
     reverse: false,
     transactions: [
       { title: "Fund subscribe", amount: 2500, difference: 120, type: "debit" as const, isBordered: false, icon: "chart-spline" as const },
-      { title: "USDT deposit", amount: 5000, difference: 500, type: "credit" as const, isBordered: true, icon: "circle-dollar-sign" as const },
+      { title: "Deposit", amount: 5000, difference: 500, type: "credit" as const, isBordered: true, icon: "circle-dollar-sign" as const },
       { title: "Payout claim", amount: 2750, difference: 250, type: "credit" as const, isBordered: false, icon: "hand-coins" as const },
       { title: "Withdrawal", amount: 1200, difference: 120, type: "debit" as const, isBordered: true, icon: "credit-card" as const },
       { title: "Fund subscribe", amount: 2500, difference: 120, type: "debit" as const, isBordered: false, icon: "chart-spline" as const },
       { title: "Portfolio sync", amount: 0, difference: 0, type: "credit" as const, isBordered: true, icon: "repeat" as const },
-      { title: "USDT deposit", amount: 1000, difference: 100, type: "credit" as const, isBordered: true, icon: "circle-dollar-sign" as const },
+      { title: "Deposit", amount: 1000, difference: 100, type: "credit" as const, isBordered: true, icon: "circle-dollar-sign" as const },
     ],
   },
 ];
@@ -158,19 +173,16 @@ export const testimonials = testimonialsCopy.items.map((item, index) => ({
 }));
 
 export const pricingPlans = howItWorksCopy.steps.map((step) => ({
+  step: step.step,
   name: step.name,
-  priceLabel: step.price,
   description: step.description,
   features: step.highlights,
-  isHighlighted: Boolean(step.popular),
-  isLimited: false,
 }));
 
 export const howItWorksSection = {
   badge: "How it works",
   title: howItWorksCopy.title,
   subtitle: howItWorksCopy.subtitle,
-  ctaLabel: ctaCopy.primary,
 };
 
 export const faqItems = faqCopy.items;
@@ -178,7 +190,10 @@ export const faqItems = faqCopy.items;
 export const faqSection = {
   title: faqCopy.title,
   subtitle: faqCopy.subtitle,
+  supportCard: faqCopy.supportCard,
 };
+
+export const navCta = heroCopy.navCta;
 
 export const ctaSection = {
   badge: "Try now",
@@ -202,29 +217,25 @@ export const footerLinks = {
 };
 
 export const footerTagline = footerCopy.tagline;
+export const footerShareLine = footerCopy.shareLine;
+export const footerShareHint = footerCopy.shareHint;
 
 export const quoteParts = [
-  "Invest",
-  "USDT",
-  "in",
-  "curated",
-  "90-day",
-  "funds",
-  "with",
+  "Your",
+  "money",
+  "in.",
+  "Returns",
+  "out.",
+  "Every",
+  "move",
   { type: "image" as const, src: "/images/quote-image-1.webp", alt: "Investor avatar 1" },
-  "on-chain",
-  "proof",
-  "you",
-  "can",
+  "verified.",
   { type: "image" as const, src: "/images/quote-image-2.webp", alt: "Investor avatar 2" },
-  "verify",
-  "on",
-  "TronScan.",
 ];
 
 export const brandLogos = [
-  { src: "/images/brand-logo/amazon.webp", darkSrc: "/images/brand-logo/amazon-dark.webp", alt: "Built on Tron" },
-  { src: "/images/brand-logo/twitter.webp", alt: "USDT" },
+  { src: "/images/brand-logo/amazon.webp", darkSrc: "/images/brand-logo/amazon-dark.webp", alt: "Global investing" },
+  { src: "/images/brand-logo/twitter.webp", alt: "Returns" },
   { src: "/images/brand-logo/trustpilot.webp", alt: "Portfolio" },
   { src: "/images/brand-logo/reddit.webp", alt: "IndieFundr" },
 ];

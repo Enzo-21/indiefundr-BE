@@ -8,95 +8,113 @@ export const marketingNav = [
 ] as const;
 
 export const heroCopy = {
-  eyebrow: "USDT investing on Tron",
-  title: "Grow USDT in curated 90-day funds",
+  eyebrow: "Unconventional investing, 90 days",
+  title: "What if your money actually multiplied?",
   subtitle:
-    "IndieFundr gives you a Tron wallet, a catalog of risk-tiered funds, and a clear portfolio — subscribe with USDT, track on-chain activity, and withdraw when you are ready.",
-  primaryCta: "Open the app",
+    "Your cash is probably sitting idle — earning less than inflation. IndieFundr deploys it into five studied 90-day funds built on unconventional strategies, with illustrative targets from 6% to 40%. We use USDT so you can fund and withdraw from anywhere in the world.",
+  primaryCta: "Start now",
   secondaryCta: "See how it works",
-  stat: "Built for transparent on-chain investing",
+  navCta: "Start now",
+  stat: "Built for transparent investing",
+};
+
+export const heroDecorCopy = {
+  fundSubscribe: {
+    fundName: "High Roller Syndicate",
+    label: "Fund subscribe",
+    amount: "$2,500",
+  },
+  maturity: {
+    title: "Maturity in 47 days",
+    subtitle: "2,750 payout pending",
+  },
+  portfolio: {
+    label: "Portfolio +10%",
+    amount: "+$250",
+    period: "this term",
+  },
 };
 
 export const featuresCopy = {
-  title: "Everything you need to invest from your phone",
+  title: "Five studied funds. One app. 90 days each.",
   subtitle:
-    "From wallet creation to fund subscription and payout claims — designed for USDT on Tron.",
+    "We put your money to work in unconventional plays — you pick the fund, we handle the rest.",
   items: [
     {
-      title: "Tron wallet built in",
+      title: "Fund your account in minutes",
       description:
-        "Register and get a main USDT wallet automatically. View balances, activity, and TronScan links in one place.",
+        "Sign up, add money, and you're ready to invest. No seed phrases, no bank wire delays.",
     },
     {
-      title: "Curated fund catalog",
+      title: "Pick your strategy",
       description:
-        "Choose from multiple 90-day funds with different risk profiles and illustrative target returns.",
+        "High Roller Syndicate to Bonus & Promo Lane — five risk tiers, 6% to 40% illustrative targets.",
     },
     {
-      title: "Simple USDT subscribe",
+      title: "$25 in, slide to confirm",
       description:
-        "Invest from 25 USDT per fund. Treasury-sponsored TRX covers network fees so you mainly need USDT.",
+        "Choose a fund, lock in your term, and track every dollar until maturity.",
     },
     {
-      title: "Portfolio tracking",
+      title: "See what's earning vs what's free",
       description:
-        "See invested vs available balance, per-fund positions, maturity dates, and claim payouts when ready.",
+        "Invested balance, maturity date, and payout status — no spreadsheet required.",
     },
     {
-      title: "Withdraw on your terms",
+      title: "Withdraw when you're ready",
       description:
-        "Send available USDT to any valid Tron address when your balance is not reserved by open orders.",
+        "Claim your returns back to your wallet and cash out on your schedule.",
     },
   ],
 };
 
 export const benefitsCopy = {
-  title: "Why investors use IndieFundr",
+  title: "Why your money grows faster here",
   subtitle:
-    "Clarity, on-chain proof, and a mobile-first flow — without juggling exchanges and spreadsheets.",
+    "Unconventional strategies, studied funds, and full visibility — without the friction of traditional brokers.",
   items: [
     {
-      title: "On-chain transparency",
+      title: "Returns beyond traditional investing",
       description:
-        "Subscriptions and payouts tie to real Tron transactions you can verify on TronScan.",
+        "Our funds target 6% to 40% over 90 days through plays banks won't touch — arbitrage, syndicates, promo lanes, and more.",
     },
     {
-      title: "USDT-first experience",
+      title: "Studied before you invest",
       description:
-        "Fund investments with USDT. Network fees are handled via treasury TRX sponsorship on subscribe.",
+        "Every fund is built around a specific strategy and risk tier. You choose — we deploy.",
     },
     {
-      title: "Live activity feed",
+      title: "Every move is traceable",
       description:
-        "Pending orders, investments, redemptions, and transfers appear in your home activity list.",
+        "Subscriptions and payouts link to verifiable transactions. No black box.",
     },
     {
-      title: "Clean mobile UX",
+      title: "Built for your phone",
       description:
-        "Slide-to-confirm flows, clear validation, and portfolio breakdowns designed for small screens.",
+        "Slide-to-confirm, clear invested vs available breakdown, maturity countdown on every position.",
     },
   ],
 };
 
 export const testimonialsCopy = {
-  title: "Built for indie capital",
-  subtitle: "Early feedback from builders testing USDT fund flows on Shasta.",
+  title: "What beta testers actually said",
+  subtitle: "Early feedback from investors testing fund flows on Shasta.",
   items: [
     {
       quote:
-        "I can see exactly which fund my USDT went to and when the position matures — no guessing.",
+        "I know exactly which fund got my $250 and when it matures. No guessing, no spreadsheet.",
       name: "Beta tester",
       handle: "@fund_ops",
     },
     {
       quote:
-        "Subscribe with USDT only was the killer feature. I did not have to hunt for TRX first.",
+        "I put money in with one tap — didn't need to figure out crypto fees first.",
       name: "Mobile user",
       handle: "@shasta_user",
     },
     {
       quote:
-        "Portfolio breakdown makes it obvious what is invested vs what I can still withdraw.",
+        "Invested vs available is right there. I stopped worrying about what I could actually withdraw.",
       name: "Power user",
       handle: "@usdt_native",
     },
@@ -105,55 +123,75 @@ export const testimonialsCopy = {
 
 export const howItWorksCopy = {
   title: "How it works",
-  subtitle: "Three steps from signup to payout — illustrative targets, not guarantees.",
+  subtitle: "From signup to payout in 3 steps — illustrative targets, never guarantees.",
   steps: [
     {
-      name: "Create wallet",
-      price: "Free",
+      step: 1,
+      name: "Fund your account",
       description:
-        "Sign up with email OTP, receive a Tron main wallet, and fund it with USDT (testnet or mainnet).",
-      highlights: ["Email verification", "Auto wallet", "TronScan links"],
-    },
-    {
-      name: "Subscribe to a fund",
-      price: "25 USDT",
-      description:
-        "Pick a fund, confirm with slide-to-submit, and track the order until the investment is active.",
+        "Transfer USDT on TRC20 from any wallet or exchange — Binance, Trust Wallet, OKX, Bybit, and more. Sign up with email and your account is ready in minutes.",
       highlights: [
-        "Multiple risk tiers",
-        "90-day term",
-        "On-chain USDT transfer",
+        "Binance, Trust Wallet, OKX",
+        "TRC20 network",
+        "From $25 to start",
       ],
-      popular: true,
     },
     {
-      name: "Claim payout",
-      price: "At maturity",
+      step: 2,
+      name: "Subscribe to a fund",
       description:
-        "When a position matures, claim USDT back to your wallet and withdraw to any Tron address.",
-      highlights: ["Portfolio alerts", "Parallel withdrawals", "Activity history"],
+        "We invest your money for up to 90 days. Once we hit the promised return, we mark your payout ready — usually well before day 90. Most users collect early.",
+      highlights: [
+        "Up to 90-day term",
+        "Payout ready when target is hit",
+        "Most users collect early",
+        "Illustrative targets up to 40%",
+      ],
+    },
+    {
+      step: 3,
+      name: "Get paid — no paperwork",
+      description:
+        "Returns are credited straight to your wallet — no forms, no bureaucracy. Then you choose: reinvest, send to another wallet, or swap on an exchange for local currency.",
+      highlights: [
+        "Auto-credited to your account",
+        "Reinvest in one tap",
+        "Send to any wallet or exchange",
+        "Swap for your local currency",
+      ],
     },
   ],
 };
 
 export const faqCopy = {
   title: "Frequently asked questions",
-  subtitle: "Quick answers about wallets, USDT, testnet, and fund risk.",
+  subtitle: "Quick answers about our funds, returns, and how funding works.",
+  supportCard: {
+    title: "Can't find answers?",
+    description:
+      "Open the app and explore five studied funds, 90-day terms, and full portfolio visibility.",
+    cta: "Download the app",
+  },
   items: [
     {
       question: "What is IndieFundr?",
       answer:
-        "IndieFundr is a mobile app for investing USDT into curated 90-day funds on the Tron network, with built-in wallet, portfolio, and withdrawal flows.",
+        "IndieFundr is a mobile app that deploys your money into five studied 90-day investment funds — unconventional strategies with illustrative targets from 6% to 40%. From $25 per fund. Built-in wallet, portfolio tracking, and withdrawals included.",
+    },
+    {
+      question: "Why do you use USDT?",
+      answer:
+        "USDT is a dollar-pegged stablecoin that lets you fund and withdraw from anywhere — no bank wires, no currency conversion delays. You think in money; we handle the rails.",
     },
     {
       question: "Do I need TRX to invest?",
       answer:
-        "For fund subscriptions, treasury fee sponsorship covers typical Tron network fees — you primarily need USDT in your main wallet. Withdrawals may require TRX depending on network conditions.",
+        "For fund subscriptions, treasury fee sponsorship covers Tron network fees — you need funds in your wallet. Withdrawals may require TRX depending on network conditions.",
     },
     {
       question: "Is this testnet or mainnet?",
       answer:
-        "Development uses Shasta testnet by default. Production deployments use mainnet USDT — always check your environment and TronScan links in the app.",
+        "Development uses Shasta testnet by default. Production deployments use mainnet USDT — always check your environment and transaction links in the app.",
     },
     {
       question: "Are returns guaranteed?",
@@ -163,16 +201,16 @@ export const faqCopy = {
     {
       question: "Can I withdraw while orders are open?",
       answer:
-        "Available USDT excludes amounts reserved by pending investments or withdrawals. Multiple withdrawals are allowed when remaining balance covers them.",
+        "Available balance excludes amounts reserved by pending investments or withdrawals. Multiple withdrawals are allowed when remaining balance covers them.",
     },
   ],
 };
 
 export const ctaCopy = {
-  title: "Ready to invest your USDT?",
+  title: "Your money isn't going to multiply itself.",
   subtitle:
-    "Open the IndieFundr app, fund your wallet, and explore funds in minutes.",
-  primary: "Open the app",
+    "$25 minimum. Five studied funds. 90-day terms. Open the app and pick your first strategy.",
+  primary: "Start now",
   appStore: "App Store",
   playStore: "Google Play",
   orLabel: "OR",
@@ -181,7 +219,9 @@ export const ctaCopy = {
 
 export const footerCopy = {
   tagline:
-    "Invest USDT in curated Tron funds with wallet, portfolio, and withdrawal tools in one mobile experience.",
+    "Deploy your money into studied, unconventional 90-day funds — from your phone.",
+  shareLine: "$25 in. 90 days. Returns beyond traditional.",
+  shareHint: "Know someone sitting on idle cash? Send them this.",
   company: [
     { label: "Features", href: "#features" },
     { label: "Benefits", href: "#benefits" },

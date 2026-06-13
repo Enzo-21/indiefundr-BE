@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getAppOpenUrl } from "@/lib/marketing/appUrl";
+import { navCta } from "@/lib/content";
 import { cn } from "@/lib/utils";
 
 const primaryClasses =
@@ -68,7 +69,7 @@ export function NavGetStartedButton({
 }) {
   return (
     <a href="#cta" className={cn(primaryClasses, className)} onClick={onClick}>
-      Get started
+      {navCta}
     </a>
   );
 }

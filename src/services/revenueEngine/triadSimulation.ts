@@ -17,6 +17,7 @@ export type SimulatedInvestment = {
   userId: string;
   subscribedAt: Date;
   projectedPayoutUsdt: number;
+  excludedFromTriadUnlock: boolean;
 };
 
 /** Mirrors evaluatePayoutReadiness unlock selection (in-memory, no DB). */
@@ -123,6 +124,7 @@ export function buildSequentialCohort(
       userId: `user-${n}`,
       subscribedAt: new Date(startMs + index * msStep),
       projectedPayoutUsdt: payoutUsdt,
+      excludedFromTriadUnlock: false,
     };
   });
 }

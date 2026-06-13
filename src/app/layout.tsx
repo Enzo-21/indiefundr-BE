@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Lora, Roboto_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { createSiteMetadata } from "@/lib/marketing/metadata";
 import "./globals.css";
 
 const inter = Inter({
@@ -18,13 +19,7 @@ const robotoMono = Roboto_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "IndieFundr",
-    template: "%s | IndieFundr",
-  },
-  description: "USDT fund investing on Tron",
-};
+export const metadata: Metadata = createSiteMetadata();
 
 export default function RootLayout({
   children,

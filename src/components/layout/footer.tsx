@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FooterTextHoverEffect } from "@/components/footer-text-hover-effect";
 import { StoreDownloadBadges } from "@/components/marketing/store-download-badges";
 import { SwipeLogoSmall } from "@/components/swipe-logo";
-import { footerLinks, footerTagline, siteConfig } from "@/lib/content";
+import { footerLinks, footerShareHint, footerShareLine, footerTagline, siteConfig } from "@/lib/content";
 
 export function Footer({ requestHost }: { requestHost?: string | null }) {
 
@@ -58,7 +58,11 @@ export function Footer({ requestHost }: { requestHost?: string | null }) {
             </div>
           </div>
 
-          <div className="-mb-10 pt-10 sm:px-16 md:-mb-22 lg:px-24">
+          <div className="-mb-10 space-y-2 pt-10 text-center sm:px-16 md:-mb-22 lg:px-24">
+            <p className="text-foreground text-xl font-semibold sm:text-2xl md:text-3xl">
+              {footerShareLine}
+            </p>
+            <p className="text-muted-foreground text-sm">{footerShareHint}</p>
             <FooterTextHoverEffect text={siteConfig.name} />
           </div>
         </div>

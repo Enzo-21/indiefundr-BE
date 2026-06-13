@@ -2,12 +2,10 @@
 
 import { Check } from "lucide-react";
 import { MotionPreset } from "@/components/motion-preset";
-import { PrimarySwipeButton } from "@/components/swipe-buttons";
 import { SpinBadgeIcon } from "@/components/swipe-logo";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { howItWorksSection, pricingPlans } from "@/lib/content";
-import { cn } from "@/lib/utils";
 
 export function PricingSection() {
   return (
@@ -33,29 +31,13 @@ export function PricingSection() {
         <MotionPreset fade slide={{ direction: "down", offset: 50 }} delay={0.2}>
           <div className="grid gap-6 lg:grid-cols-3">
             {pricingPlans.map((plan) => (
-              <Card
-                key={plan.name}
-                className={cn(
-                  "relative shadow-none ring-1",
-                  plan.isHighlighted && "border-primary ring-primary"
-                )}
-              >
-                {plan.isHighlighted && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">Popular</Badge>
-                )}
-                {plan.isLimited && (
-                  <Badge variant="secondary" className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    Limited availability
-                  </Badge>
-                )}
+              <Card key={plan.step} className="relative shadow-none ring-1">
                 <CardHeader className="space-y-2 pb-4">
-                  <h3 className="text-xl font-semibold capitalize">{plan.name}</h3>
+                  <p className="text-primary text-sm font-medium">Step {plan.step}</p>
+                  <h3 className="text-xl font-semibold">{plan.name}</h3>
                   <p className="text-muted-foreground text-sm">{plan.description}</p>
-                  <div className="flex items-baseline gap-1 pt-2">
-                    <span className="text-4xl font-semibold">{plan.priceLabel}</span>
-                  </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent>
                   <ul className="space-y-3">
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-center gap-2 text-sm">
@@ -64,9 +46,6 @@ export function PricingSection() {
                       </li>
                     ))}
                   </ul>
-                  <PrimarySwipeButton className="w-full justify-center rounded-full">
-                    {howItWorksSection.ctaLabel}
-                  </PrimarySwipeButton>
                 </CardContent>
               </Card>
             ))}

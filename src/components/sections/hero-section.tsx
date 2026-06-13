@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Marquee } from "@/components/marquee";
 import { MotionPreset } from "@/components/motion-preset";
 import { PrimarySwipeButton, SecondarySwipeButton } from "@/components/swipe-buttons";
-import { heroStats, heroContent } from "@/lib/content";
+import { heroStats, heroContent, heroDecorCopy } from "@/lib/content";
 import { cn } from "@/lib/utils";
 
 const floatClasses = [
@@ -108,12 +108,12 @@ export function HeroSection({
             className="top-[3.5%] left-[19%] flex -rotate-3 items-center gap-2 rounded-lg border px-3 py-1.5"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/brand-logo/amazon.webp" alt="Amazon logo" className="size-4 dark:hidden" />
+            <img src="/images/brand-logo/amazon.webp" alt="Fund icon" className="size-4 dark:hidden" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/brand-logo/amazon-dark.webp" alt="Amazon logo dark" className="hidden size-4 dark:inline-block" />
-            <span className="font-medium">Amazon</span>
-            <span className="text-muted-foreground text-xs font-light">Shopping</span>
-            <span className="text-destructive ml-6 text-sm">$800</span>
+            <img src="/images/brand-logo/amazon-dark.webp" alt="Fund icon dark" className="hidden size-4 dark:inline-block" />
+            <span className="font-medium">{heroDecorCopy.fundSubscribe.fundName}</span>
+            <span className="text-muted-foreground text-xs font-light">{heroDecorCopy.fundSubscribe.label}</span>
+            <span className="text-destructive ml-6 text-sm">{heroDecorCopy.fundSubscribe.amount}</span>
           </FloatingCard>
 
           <FloatingCard
@@ -127,8 +127,8 @@ export function HeroSection({
               </svg>
             </span>
             <div className="flex flex-col text-left">
-              <span className="font-medium">Expense limit is near 🤔</span>
-              <span className="text-muted-foreground text-xs">1:20</span>
+              <span className="font-medium">{heroDecorCopy.maturity.title}</span>
+              <span className="text-muted-foreground text-xs">{heroDecorCopy.maturity.subtitle}</span>
             </div>
           </FloatingCard>
 
@@ -136,11 +136,11 @@ export function HeroSection({
             floatIndex={2}
             className="top-[7.5%] right-[10.5%] flex rotate-3 flex-col gap-1 rounded-xl border px-3 py-4 shadow-xl"
           >
-            <span className="text-muted-foreground text-sm">Total expenses in 2 month</span>
+            <span className="text-muted-foreground text-sm">{heroDecorCopy.portfolio.label}</span>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-4xl font-semibold">$13k</span>
+              <span className="text-4xl font-semibold">{heroDecorCopy.portfolio.amount}</span>
               <span className="flex h-5 items-center gap-1 rounded-full bg-green-600/10 px-1 text-green-600 dark:bg-green-400/10 dark:text-green-400">
-                <span className="text-sm">+38%</span>
+                <span className="text-sm">{heroDecorCopy.portfolio.period}</span>
                 <ChevronUp className="size-4" />
               </span>
             </div>
