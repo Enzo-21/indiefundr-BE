@@ -99,16 +99,33 @@ export type AppOpenUrlOptions = {
  * URL used by landing CTAs.
  * Dev localhost → app.localhost:{port} (middleware → APP_WEB_URL).
  * Dev LAN IP → same IP:{port}/__open-app (middleware → Expo on that IP).
- * Prod → https://app.{marketingDomain}.
+ * Prod → APP_WEB_URL when set to a non-localhost host; else https://app.{marketingDomain}.
  */
-export function getAppOpenUrl(options?: AppOpenUrlOptions): string {
-  const isProd = process.env.NODE_ENV === "production";
+export function getAppOpenUrl(
+  options?: AppOpenUrlOptions,
+  env: NodeJS.ProcessEnv = process.env
+): string {
+  const isProd = env.NODE_ENV === "production";
   if (isProd) {
-    const domain = getMarketingDomainFromEnv().split(":")[0];
-    return `https://app.${domain}`;
+    const appWebUrl = getAppWebUrlFromEnv(env);
+    try {
+      const appHost = parseHostname(new URL(appWebUrl).host);
+      if (appHost && !isLocalDevMarketingHost(appHost)) {
+        return appWebUrl;
+      }
+    } catch {
+      // ignore invalid APP_WEB_URL
+    }
+
+    const marketingHost = parseHostname(getMarketingDomainFromEnv(env));
+    if (marketingHost && !isLocalDevMarketingHost(marketingHost)) {
+      return `https://app.${marketingHost}`;
+    }
+
+    return appWebUrl;
   }
 
-  const port = process.env.PORT?.trim() || "3000";
+  const port = env.PORT?.trim() || "3000";
   const hostname = parseHostname(options?.host ?? null);
 
   if (isPrivateLanIpv4(hostname)) {

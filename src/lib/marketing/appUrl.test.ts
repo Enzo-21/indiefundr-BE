@@ -87,6 +87,37 @@ describe("appUrl", () => {
     assert.equal(isPrivateLanIpv4("localhost"), false);
   });
 
+  it("returns APP_WEB_URL for production CTAs when configured", () => {
+    assert.equal(
+      getAppOpenUrl(undefined, {
+        NODE_ENV: "production",
+        APP_WEB_URL: "https://indiefundr-fe-two.vercel.app",
+        MARKETING_DOMAIN: "localhost:3000",
+      }),
+      "https://indiefundr-fe-two.vercel.app"
+    );
+  });
+
+  it("falls back to app marketing subdomain when APP_WEB_URL is localhost", () => {
+    assert.equal(
+      getAppOpenUrl(undefined, {
+        NODE_ENV: "production",
+        APP_WEB_URL: "http://localhost:8081",
+        MARKETING_DOMAIN: "indiefundr.com",
+      }),
+      "https://app.indiefundr.com"
+    );
+  });
+
+  it("avoids https://app.localhost when production env vars are unset", () => {
+    assert.equal(
+      getAppOpenUrl(undefined, {
+        NODE_ENV: "production",
+      }),
+      "http://localhost:8081"
+    );
+  });
+
   it("lists production CORS origins from APP_WEB_URL and app marketing subdomain", () => {
     const origins = getProductionCorsOrigins({
       APP_WEB_URL: "https://app.indiefundr.com",
