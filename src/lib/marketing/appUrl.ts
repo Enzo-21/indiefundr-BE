@@ -147,3 +147,35 @@ export function isDevLocalOrigin(origin: string | null): boolean {
     return false;
   }
 }
+
+/** Origins allowed for API CORS in production (Vercel web app). */
+export function getProductionCorsOrigins(
+  env: NodeJS.ProcessEnv = process.env
+): string[] {
+  const origins = new Set<string>();
+  const appWebUrl = getAppWebUrlFromEnv(env);
+  if (appWebUrl) {
+    try {
+      origins.add(new URL(appWebUrl).origin);
+    } catch {
+      // ignore invalid APP_WEB_URL
+    }
+  }
+  const marketingHost = parseHostname(getMarketingDomainFromEnv(env));
+  if (marketingHost && !isLocalDevMarketingHost(marketingHost)) {
+    origins.add(`https://app.${marketingHost}`);
+  }
+  return [...origins];
+}
+
+export function isProductionAppOrigin(
+  origin: string | null,
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
+  if (!origin) return false;
+  try {
+    return getProductionCorsOrigins(env).includes(new URL(origin).origin);
+  } catch {
+    return false;
+  }
+}

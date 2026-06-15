@@ -4,9 +4,11 @@ import {
   DEV_LAN_APP_OPEN_PATH,
   getAppOpenUrl,
   getAppWebUrlFromEnv,
+  getProductionCorsOrigins,
   isAppSubdomainHost,
   isDevLocalOrigin,
   isPrivateLanIpv4,
+  isProductionAppOrigin,
   resolveAppRedirectTarget,
 } from "./appUrl";
 
@@ -83,5 +85,30 @@ describe("appUrl", () => {
     assert.equal(isPrivateLanIpv4("192.168.0.23"), true);
     assert.equal(isPrivateLanIpv4("10.0.0.5"), true);
     assert.equal(isPrivateLanIpv4("localhost"), false);
+  });
+
+  it("lists production CORS origins from APP_WEB_URL and app marketing subdomain", () => {
+    const origins = getProductionCorsOrigins({
+      APP_WEB_URL: "https://app.indiefundr.com",
+      MARKETING_DOMAIN: "indiefundr.com",
+    });
+    assert.deepEqual(origins, ["https://app.indiefundr.com"]);
+  });
+
+  it("allows production app origin for API CORS", () => {
+    assert.equal(
+      isProductionAppOrigin("https://app.indiefundr.com", {
+        APP_WEB_URL: "https://app.indiefundr.com",
+        MARKETING_DOMAIN: "indiefundr.com",
+      }),
+      true
+    );
+    assert.equal(
+      isProductionAppOrigin("https://evil.example", {
+        APP_WEB_URL: "https://app.indiefundr.com",
+        MARKETING_DOMAIN: "indiefundr.com",
+      }),
+      false
+    );
   });
 });

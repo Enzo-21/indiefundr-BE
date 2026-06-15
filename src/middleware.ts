@@ -5,6 +5,8 @@ import {
   DEV_LAN_APP_OPEN_PATH,
   isAppSubdomainHost,
   isDevLocalOrigin,
+  isPrivateLanIpv4,
+  isProductionAppOrigin,
   resolveAppRedirectTarget,
 } from "@/lib/marketing/appUrl";
 
@@ -17,7 +19,11 @@ function corsHeadersForRequest(request: NextRequest): Headers {
   const origin = request.headers.get("origin");
   const isDev = process.env.NODE_ENV !== "production";
 
-  if (origin && isDev && isDevLocalOrigin(origin)) {
+  if (
+    origin &&
+    ((isDev && isDevLocalOrigin(origin)) ||
+      (!isDev && isProductionAppOrigin(origin)))
+  ) {
     headers.set("Access-Control-Allow-Origin", origin);
     headers.set("Vary", "Origin");
   }
