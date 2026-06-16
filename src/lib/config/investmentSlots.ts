@@ -4,8 +4,10 @@ import { INVESTMENT_OPEN_STATUSES } from "@/services/investments/constants";
 import { ACTIVE_PURCHASE_ORDER_STATUSES } from "@/services/wallets/walletBalance";
 import { getFundById } from "./investmentFunds";
 import {
+  getEffectiveMaxTotalOpenInvestments,
   getEffectiveSlotsPerFund,
   getPlayerLevelPerks,
+  hasUnlimitedTotalOpenInvestments,
   normalizePlayerLevel,
 } from "./playerLevels";
 
@@ -169,17 +171,22 @@ export async function getTotalInvestmentUsage(
   totalSlotsAvailable: number;
 }> {
   const level = await resolveUserLevel(userId, client, userLevel);
-  const maxTotalOpenInvestments =
-    getPlayerLevelPerks(level).maxTotalOpenInvestments;
+  const perks = getPlayerLevelPerks(level);
+  const maxTotalOpenInvestments = getEffectiveMaxTotalOpenInvestments(level);
   const [investmentCount, processingOrderCount] = await Promise.all([
     countOpenInvestmentsForUser(userId, client),
     countUnrepresentedActivePurchaseOrdersForUser(userId, client),
   ]);
   const totalOpenCount = investmentCount + processingOrderCount;
+  const unlimitedTotal = hasUnlimitedTotalOpenInvestments(perks);
   return {
     totalOpenCount,
-    maxTotalOpenInvestments,
-    totalSlotsAvailable: Math.max(0, maxTotalOpenInvestments - totalOpenCount),
+    maxTotalOpenInvestments: unlimitedTotal
+      ? perks.maxTotalOpenInvestments
+      : maxTotalOpenInvestments,
+    totalSlotsAvailable: unlimitedTotal
+      ? Number.MAX_SAFE_INTEGER
+      : Math.max(0, maxTotalOpenInvestments - totalOpenCount),
   };
 }
 
@@ -227,6 +234,10 @@ export async function assertTotalOpenInvestmentCapacity(
 ): Promise<void> {
   const { totalOpenCount, maxTotalOpenInvestments } =
     await getTotalInvestmentUsage(userId, client, userLevel);
+  const level = await resolveUserLevel(userId, client, userLevel);
+  if (hasUnlimitedTotalOpenInvestments(getPlayerLevelPerks(level))) {
+    return;
+  }
   if (totalOpenCount >= maxTotalOpenInvestments) {
     throw new TotalInvestmentsCapError(
       totalOpenCount,

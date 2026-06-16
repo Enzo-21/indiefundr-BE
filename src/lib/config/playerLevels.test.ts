@@ -11,18 +11,18 @@ import {
 } from "./playerLevels";
 
 describe("playerLevels", () => {
-  it("defines five levels from 0 through 4", () => {
-    assert.equal(PLAYER_LEVELS.length, 5);
+  it("defines six levels from 0 through 5", () => {
+    assert.equal(PLAYER_LEVELS.length, 6);
     assert.deepEqual(
       PLAYER_LEVELS.map((entry) => entry.level),
-      [0, 1, 2, 3, 4]
+      [0, 1, 2, 3, 4, 5]
     );
   });
 
   it("normalizes invalid levels to 0", () => {
     assert.equal(normalizePlayerLevel(undefined), 0);
     assert.equal(normalizePlayerLevel(-1), 0);
-    assert.equal(normalizePlayerLevel(99), 4);
+    assert.equal(normalizePlayerLevel(99), 5);
   });
 
   it("returns starter perks for level 0", () => {
@@ -38,6 +38,8 @@ describe("playerLevels", () => {
     assert.equal(getEffectiveSlotsPerFund(0, 5), 1);
     assert.equal(getEffectiveSlotsPerFund(4, 5), 5);
     assert.equal(getEffectiveSlotsPerFund(4, 3), 3);
+    assert.equal(getEffectiveSlotsPerFund(5, 5), 5);
+    assert.equal(getEffectiveSlotsPerFund(5, 10), 10);
   });
 
   it("returns per-level power grants", () => {
@@ -59,6 +61,10 @@ describe("playerLevels", () => {
     assert.deepEqual(getCumulativePowerGrants(4), {
       referral_recovery: 15,
       term_extension: 14,
+    });
+    assert.deepEqual(getCumulativePowerGrants(5), {
+      referral_recovery: 22,
+      term_extension: 21,
     });
   });
 });

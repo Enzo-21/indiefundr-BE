@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   buildCollisionUsername,
   deriveBaseUsernameFromEmail,
+  formatPublicUsername,
   validateUsernameInput,
 } from "./username";
 
@@ -56,5 +57,17 @@ describe("validateUsernameInput", () => {
     if (!result.ok) {
       assert.match(result.msg, /reserved/i);
     }
+  });
+});
+
+describe("formatPublicUsername", () => {
+  it("prefixes usernames with @", () => {
+    assert.equal(formatPublicUsername("builder_jane"), "@builder_jane");
+    assert.equal(formatPublicUsername("@builder_jane"), "@builder_jane");
+  });
+
+  it("falls back when username is missing", () => {
+    assert.equal(formatPublicUsername(null), "Friend");
+    assert.equal(formatPublicUsername("   "), "Friend");
   });
 });

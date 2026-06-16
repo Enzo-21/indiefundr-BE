@@ -6,6 +6,8 @@ export type PlayerPowerGrants = {
 export type PlayerLevelPerks = {
   slotsPerFund: number;
   maxTotalOpenInvestments: number;
+  unlimitedSlotsPerFund?: boolean;
+  unlimitedTotalOpenInvestments?: boolean;
   powerGrants: PlayerPowerGrants;
 };
 
@@ -99,7 +101,7 @@ export const PLAYER_LEVELS: PlayerLevelDefinition[] = [
   },
   {
     level: 4,
-    title: "Elite",
+    title: "Master",
     subtitle: "Maximum flexibility across the platform",
     requirements: [
       "Reach level 3",
@@ -115,6 +117,30 @@ export const PLAYER_LEVELS: PlayerLevelDefinition[] = [
       slotsPerFund: 5,
       maxTotalOpenInvestments: 20,
       powerGrants: { referral_recovery: 5, term_extension: 5 },
+    },
+  },
+  {
+    level: 5,
+    title: "Elite",
+    subtitle: "Unlimited capacity for top investors",
+    requirements: [
+      "Reach level 4",
+      "Hold investments in at least 4 different funds",
+      "Complete 10+ successful investments lifetime",
+    ],
+    benefits: [
+      "Unlimited open slots per fund",
+      "Unlimited open investments across all funds",
+      "+7 Recovery Invite power cards",
+      "+7 Extra Time power cards",
+      "Priority access to new funds and features",
+    ],
+    perks: {
+      slotsPerFund: 5,
+      maxTotalOpenInvestments: 20,
+      unlimitedSlotsPerFund: true,
+      unlimitedTotalOpenInvestments: true,
+      powerGrants: { referral_recovery: 7, term_extension: 7 },
     },
   },
 ];
@@ -172,6 +198,28 @@ export function getCumulativePowerGrants(
   return totals;
 }
 
+export function hasUnlimitedSlotsPerFund(
+  perks: Pick<PlayerLevelPerks, "slotsPerFund" | "unlimitedSlotsPerFund">
+): boolean {
+  return perks.unlimitedSlotsPerFund === true;
+}
+
+export function hasUnlimitedTotalOpenInvestments(
+  perks: Pick<PlayerLevelPerks, "maxTotalOpenInvestments" | "unlimitedTotalOpenInvestments">
+): boolean {
+  return perks.unlimitedTotalOpenInvestments === true;
+}
+
+export function getEffectiveMaxTotalOpenInvestments(
+  level: number | null | undefined
+): number {
+  const perks = getPlayerLevelPerks(level);
+  if (hasUnlimitedTotalOpenInvestments(perks)) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+  return perks.maxTotalOpenInvestments;
+}
+
 export function getEffectiveSlotsPerFund(
   level: number | null | undefined,
   fundCatalogMax: number
@@ -181,5 +229,8 @@ export function getEffectiveSlotsPerFund(
     typeof fundCatalogMax === "number" && fundCatalogMax > 0
       ? Math.floor(fundCatalogMax)
       : 1;
+  if (hasUnlimitedSlotsPerFund(perks)) {
+    return catalogMax;
+  }
   return Math.min(perks.slotsPerFund, catalogMax);
 }

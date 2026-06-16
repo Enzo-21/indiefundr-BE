@@ -8,10 +8,10 @@ import {
 import { REFERRAL_INVITER_BONUS_USDT } from "@/lib/config/referralRecovery";
 import { prisma } from "@/lib/prisma";
 import { buildShareUrl, getOrCreateReferralCode } from "./referralCode";
+import { formatPublicUsername } from "@/lib/users/username";
 import {
   canEarnInviterRewards,
   hasCompletedFirstInvestment,
-  maskEmail,
 } from "./referralEligibility";
 import { getRecoveryContextForInviter } from "./recoveryEligibility";
 import {
@@ -30,7 +30,7 @@ export type ReferralInviteBonusStatus =
 
 function mapInviteBonus(
   row: ReferralInvite & {
-    invitee: { email: string } | null;
+    invitee: { username: string | null } | null;
     rewards: ReferralReward[];
   }
 ) {
@@ -63,7 +63,9 @@ function mapInviteBonus(
     status: row.status,
     signedUpAt: row.createdAt.toISOString(),
     qualifiedAt: row.qualifiedAt?.toISOString() ?? null,
-    inviteeMasked: row.invitee ? maskEmail(row.invitee.email) : null,
+    inviteeUsername: row.invitee
+      ? formatPublicUsername(row.invitee.username)
+      : null,
     bonusUsdt,
     bonusStatus,
     bonusLabel,
@@ -165,17 +167,7 @@ export async function getReferralRedemption(userId: string) {
       await ensureReferralPendingActivity(userId, pendingCode);
     }
 
-    const invitee = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { email: true },
-    });
-    if (invitee?.email) {
-      await ensureSignedUpInviteAndInviterPending(
-        userId,
-        invitee.email,
-        slot.pendingReferralCode
-      );
-    }
+    await ensureSignedUpInviteAndInviterPending(userId, slot.pendingReferralCode);
   }
 
   return {
@@ -183,12 +175,12 @@ export async function getReferralRedemption(userId: string) {
     canRedeemReason,
     hasRedeemed,
     pendingCode,
-    pendingInviterMasked: slot?.pendingReferralCode
-      ? maskEmail(slot.pendingReferralCode.owner.email)
+    pendingInviterUsername: slot?.pendingReferralCode
+      ? formatPublicUsername(slot.pendingReferralCode.owner.username)
       : null,
     code: slot?.referredByInvite?.referralCode.code ?? null,
-    inviterMasked: slot?.referredByInvite
-      ? maskEmail(slot.referredByInvite.inviter.email)
+    inviterUsername: slot?.referredByInvite
+      ? formatPublicUsername(slot.referredByInvite.inviter.username)
       : null,
     redeemedAt: slot?.referredByInvite?.redeemedAt?.toISOString() ?? null,
     status: slot?.referredByInvite?.status ?? null,
@@ -205,7 +197,7 @@ export async function getReferralsMe(userId: string) {
       orderBy: { createdAt: "desc" },
       take: 50,
       include: {
-        invitee: { select: { email: true } },
+        invitee: { select: { username: true } },
         rewards: {
           where: { role: ReferralRewardRole.inviter_bonus },
           take: 1,
@@ -215,7 +207,7 @@ export async function getReferralsMe(userId: string) {
   ]);
 
   for (const invite of invites) {
-    if (invite.status !== ReferralInviteStatus.signed_up || !invite.invitee?.email) {
+    if (invite.status !== ReferralInviteStatus.signed_up || !invite.invitee) {
       continue;
     }
     const entityId = `referral-inviter-pending:${invite.id}`;
@@ -231,7 +223,7 @@ export async function getReferralsMe(userId: string) {
       await ensureInviterReferralPendingActivity(
         userId,
         invite.id,
-        maskEmail(invite.invitee.email)
+        formatPublicUsername(invite.invitee.username)
       );
     }
   }

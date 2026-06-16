@@ -110,3 +110,14 @@ export async function allocateUniqueUsername(email: string): Promise<string> {
 
   throw new Error("Failed to allocate unique username");
 }
+
+export function formatPublicUsername(
+  username: string | null | undefined,
+  fallback = "Friend"
+): string {
+  const trimmed = username?.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+  return trimmed.startsWith("@") ? trimmed : `@${trimmed}`;
+}

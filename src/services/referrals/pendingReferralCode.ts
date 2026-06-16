@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { getMainWallet } from "@/lib/wallets/helpers";
 import { findReferralCodeByCode } from "./referralCode";
 import { ReferralError } from "./referralErrors";
-import { hasCompletedFirstInvestment, maskEmail } from "./referralEligibility";
+import { formatPublicUsername } from "@/lib/users/username";
+import { hasCompletedFirstInvestment } from "./referralEligibility";
 import { getUserReferralSlot, hasUsedReferralSlot } from "./userReferralSlot";
 import { REFERRAL_INVITEE_BONUS_USDT } from "@/lib/config/referralRecovery";
 import {
@@ -26,7 +27,6 @@ export async function ensureReferralPendingActivity(
 
 export async function ensureSignedUpInviteAndInviterPending(
   inviteeUserId: string,
-  inviteeEmail: string,
   referralCode: { id: string; userId: string; code: string },
   db?: Prisma.TransactionClient
 ) {
@@ -46,7 +46,12 @@ export async function ensureSignedUpInviteAndInviterPending(
     });
   }
 
-  const inviteeMasked = maskEmail(inviteeEmail);
+  const invitee = await client.user.findUnique({
+    where: { id: inviteeUserId },
+    select: { username: true },
+  });
+  const inviteeDisplay = formatPublicUsername(invitee?.username);
+
   const inviterWallet = await getMainWallet(invite.inviterUserId).catch(() => null);
   if (inviterWallet) {
     if (db) {
@@ -55,7 +60,7 @@ export async function ensureSignedUpInviteAndInviterPending(
           inviterUserId: invite.inviterUserId,
           walletId: inviterWallet.id,
           inviteId: invite.id,
-          inviteeMasked,
+          inviteeDisplayName: inviteeDisplay,
         },
         db
       );
@@ -63,7 +68,7 @@ export async function ensureSignedUpInviteAndInviterPending(
       await ensureInviterReferralPendingActivity(
         invite.inviterUserId,
         invite.id,
-        inviteeMasked
+        inviteeDisplay
       );
     }
   }
@@ -80,14 +85,14 @@ export async function backfillInviterInvitesFromPendingCodes(
     },
     select: {
       id: true,
-      email: true,
+      username: true,
       pendingReferralCode: { select: { id: true, userId: true, code: true } },
     },
   });
 
   let created = 0;
   for (const redeemer of pendingRedeemers) {
-    if (!redeemer.email || !redeemer.pendingReferralCode) {
+    if (!redeemer.pendingReferralCode) {
       continue;
     }
     const existing = await prisma.referralInvite.findUnique({
@@ -99,7 +104,6 @@ export async function backfillInviterInvitesFromPendingCodes(
     }
     await ensureSignedUpInviteAndInviterPending(
       redeemer.id,
-      redeemer.email,
       redeemer.pendingReferralCode
     );
     created += 1;
@@ -108,14 +112,14 @@ export async function backfillInviterInvitesFromPendingCodes(
 }
 
 function buildPendingSaveResponse(
-  referralCode: { code: string; owner: { email: string } },
+  referralCode: { code: string; owner: { username: string | null } },
   bonusUsdt: number
 ) {
   return {
     mode: "pending" as const,
     bonusUsdt,
     pendingCode: referralCode.code,
-    pendingInviterMasked: maskEmail(referralCode.owner.email),
+    pendingInviterUsername: formatPublicUsername(referralCode.owner.username),
     message: "Code saved — bonus unlocks when you invest",
   };
 }
@@ -137,15 +141,9 @@ export async function savePendingReferralCode(userId: string, rawCode: string) {
     throw new ReferralError("SELF_REFERRAL", "You cannot use your own code", 400);
   }
 
-  const [user, invitee] = await Promise.all([
-    getUserReferralSlot(userId),
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { email: true },
-    }),
-  ]);
+  const user = await getUserReferralSlot(userId);
 
-  if (!user || !invitee?.email) {
+  if (!user) {
     throw new ReferralError("INVALID_CODE", "User not found", 400);
   }
 
@@ -170,11 +168,7 @@ export async function savePendingReferralCode(userId: string, rawCode: string) {
 
   if (user.pendingReferralCodeId === referralCode.id) {
     await ensureReferralPendingActivity(userId, referralCode.code);
-    await ensureSignedUpInviteAndInviterPending(
-      userId,
-      invitee.email,
-      referralCode
-    );
+    await ensureSignedUpInviteAndInviterPending(userId, referralCode);
     return buildPendingSaveResponse(referralCode, bonusUsdt);
   }
 
@@ -202,12 +196,7 @@ export async function savePendingReferralCode(userId: string, rawCode: string) {
       );
     }
 
-    await ensureSignedUpInviteAndInviterPending(
-      userId,
-      invitee.email,
-      referralCode,
-      tx
-    );
+    await ensureSignedUpInviteAndInviterPending(userId, referralCode, tx);
   });
 
   return buildPendingSaveResponse(referralCode, bonusUsdt);

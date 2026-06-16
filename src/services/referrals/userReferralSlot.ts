@@ -12,7 +12,7 @@ export async function getUserReferralSlot(userId: string) {
           id: true,
           userId: true,
           code: true,
-          owner: { select: { email: true } },
+          owner: { select: { username: true } },
         },
       },
       referredByInvite: {
@@ -21,7 +21,7 @@ export async function getUserReferralSlot(userId: string) {
           status: true,
           redeemedAt: true,
           referralCode: { select: { code: true } },
-          inviter: { select: { email: true } },
+          inviter: { select: { username: true } },
         },
       },
     },

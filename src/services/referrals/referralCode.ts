@@ -40,11 +40,11 @@ export async function getOrCreateReferralCode(userId: string): Promise<ReferralC
 
 export async function findReferralCodeByCode(
   rawCode: string
-): Promise<(ReferralCode & { owner: { id: string; email: string } }) | null> {
+): Promise<(ReferralCode & { owner: { id: string; username: string | null } }) | null> {
   const code = rawCode.trim().toUpperCase();
   if (!code) return null;
   return prisma.referralCode.findFirst({
     where: { code: { equals: code, mode: "insensitive" } },
-    include: { owner: { select: { id: true, email: true } } },
+    include: { owner: { select: { id: true, username: true } } },
   });
 }

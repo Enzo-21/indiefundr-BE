@@ -139,7 +139,7 @@ export async function upsertInviterReferralPendingActivity(
     inviterUserId: string;
     walletId: string;
     inviteId: string;
-    inviteeMasked: string;
+    inviteeDisplayName: string;
   },
   db?: Prisma.TransactionClient
 ) {
@@ -159,7 +159,7 @@ export async function upsertInviterReferralPendingActivity(
         amountUsdt: amount,
         status: "pending",
         label: "Referral reward",
-        detail: params.inviteeMasked,
+        detail: params.inviteeDisplayName,
         pendingTapInfo,
         occurredAt: now,
         chainFinal: true,
@@ -172,7 +172,7 @@ export async function upsertInviterReferralPendingActivity(
 export async function ensureInviterReferralPendingActivity(
   inviterUserId: string,
   inviteId: string,
-  inviteeMasked: string,
+  inviteeDisplayName: string,
   db?: Prisma.TransactionClient
 ): Promise<void> {
   const wallet = await getMainWallet(inviterUserId).catch(() => null);
@@ -184,7 +184,7 @@ export async function ensureInviterReferralPendingActivity(
       inviterUserId,
       walletId: wallet.id,
       inviteId,
-      inviteeMasked,
+      inviteeDisplayName,
     },
     db
   );
