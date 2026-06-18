@@ -12,7 +12,6 @@ import {
   type AutopilotManualCheckItem,
   isAutopilotNonTerminalFailure,
 } from "@/lib/admin/autopilotBatch";
-import { InvestmentStatus } from "@prisma/client";
 import { AUTOPILOT_INTER_PAYOUT_DELAY_SEC } from "@/lib/config/adminAutopilot";
 import type { InvestmentPayoutMode } from "@/services/admin/investmentPayoutFulfillment";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
@@ -203,7 +202,7 @@ export function usePayoutAutopilot() {
       const seedResult = await adminGetInvestmentPayoutSeed(candidate.investmentId);
       if (
         seedResult.ok &&
-        seedResult.data.status === InvestmentStatus.redeeming &&
+        seedResult.data.status === "redeeming" &&
         seedResult.data.redemptionTxId
       ) {
         return null;

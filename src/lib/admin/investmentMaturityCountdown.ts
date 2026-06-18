@@ -1,7 +1,5 @@
-import { InvestmentStatus } from "@prisma/client";
-
 type MaturityCountdownInvestment = {
-  status: InvestmentStatus | string;
+  status: string;
   maturesAt: Date | string | null;
 };
 
@@ -10,5 +8,5 @@ export function shouldShowInvestmentMaturityCountdown(
   inv: MaturityCountdownInvestment
 ): boolean {
   if (!inv.maturesAt) return false;
-  return inv.status === InvestmentStatus.matured;
+  return inv.status === "matured";
 }

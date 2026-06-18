@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { getTronscanTxUrl } from "@/lib/wallets/helpers";
+import { getTronscanTxUrl } from "@/lib/tron/tronscanUrl";
 import {
   badgeVariantForInvestmentStatus,
   badgeVariantForPayoutStatus,

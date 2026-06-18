@@ -1,4 +1,3 @@
-import { InvestmentStatus } from "@prisma/client";
 import type { AdminInvestmentRow } from "@/services/admin/investmentAdminTypes";
 import { isSurplusPayoutTrigger } from "@/services/revenueEngine/payoutTriggers";
 import { investmentShortId } from "./investmentTableIds";
@@ -27,7 +26,7 @@ export function buildInvestmentReasonNote(inv: AdminInvestmentRow): string | nul
 
   const paidWithSurplus =
     inv.payoutStatus === "paid_surplus" ||
-    (inv.status === InvestmentStatus.redeemed &&
+    (inv.status === "redeemed" &&
       isSurplusPayoutTrigger(inv.payoutTriggeredBy));
 
   if (paidWithSurplus) {
@@ -36,7 +35,7 @@ export function buildInvestmentReasonNote(inv: AdminInvestmentRow): string | nul
 
   if (
     inv.payoutStatus === "paying_surplus" ||
-    (inv.status === InvestmentStatus.redeeming &&
+    (inv.status === "redeeming" &&
       isSurplusPayoutTrigger(inv.payoutTriggeredBy))
   ) {
     return "Paying with surplus";

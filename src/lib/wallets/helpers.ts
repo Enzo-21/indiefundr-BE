@@ -1,6 +1,8 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getEnv } from "@/lib/env";
+import { getTronscanTxUrl } from "@/lib/tron/tronscanUrl";
+
+export { getTronscanTxUrl };
 
 export async function getMainWallet(userId: string) {
   let wallet = await prisma.wallet.findFirst({
@@ -23,15 +25,6 @@ export function chainTransferLabel(
     return status === "pending" ? "Receiving USDT" : "USDT received";
   }
   return "USDT sent";
-}
-
-export function getTronscanTxUrl(txId: string): string {
-  const network = getEnv().blockchainNetwork;
-  const base =
-    network === "mainnet"
-      ? "https://tronscan.org"
-      : "https://shasta.tronscan.org";
-  return `${base}/#/transaction/${txId}`;
 }
 
 export function buildWalletActivityWhere(
