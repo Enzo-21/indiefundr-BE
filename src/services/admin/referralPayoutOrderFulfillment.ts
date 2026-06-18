@@ -289,6 +289,19 @@ export async function completeReferralPayoutOrder(
       await clearInviterReferralPendingActivity(order.referralInviteId);
     }
   }
+
+  try {
+    const { notifyReferralPayoutOrderCompleted } = await import(
+      "@/services/mailing/notifyUserPayment"
+    );
+    await notifyReferralPayoutOrderCompleted({ order, txId });
+  } catch (notifyErr) {
+    const message =
+      notifyErr instanceof Error ? notifyErr.message : String(notifyErr);
+    console.error("[mail] notifyReferralPayoutOrderCompleted failed:", message, {
+      orderId: order.id,
+    });
+  }
 }
 
 export async function markReferralPayoutOrderFailed(

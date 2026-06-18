@@ -89,6 +89,25 @@ async function processRedemptionForInvestment(
     fundName: fund?.name || investment.fundId,
     amountUsdt: investment.projectedPayoutUsdt,
   });
+
+  try {
+    const { notifyUserPayment } = await import(
+      "@/services/mailing/notifyUserPayment"
+    );
+    await notifyUserPayment({
+      kind: "investment_payout",
+      investment: redeemed,
+      txId,
+      fund: fund ?? undefined,
+    });
+  } catch (notifyErr) {
+    const message =
+      notifyErr instanceof Error ? notifyErr.message : String(notifyErr);
+    console.error("[mail] notifyUserPayment failed:", message, {
+      investmentId: investment.id,
+    });
+  }
+
   return "confirmed";
 }
 

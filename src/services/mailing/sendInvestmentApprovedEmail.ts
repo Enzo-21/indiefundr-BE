@@ -1,5 +1,4 @@
 import { render } from "@react-email/render";
-import { Resend } from "resend";
 import type { Investment, PurchaseOrder, User } from "@prisma/client";
 import InvestmentApprovedEmail from "@/emails/InvestmentApprovedEmail";
 import type { InvestmentFund } from "@/lib/config/investmentFunds";
@@ -9,27 +8,11 @@ import {
   investmentReceiptFilename,
 } from "./investmentReceiptDocument";
 import { buildReceiptPdfBuffer } from "./investmentReceiptPdf";
-
-function getResendClient() {
-  const apiKey = getEnv().resendApiKey;
-  if (!apiKey) {
-    throw new Error("RESEND_API_KEY is not configured. Set it in backend/.env");
-  }
-  return new Resend(apiKey);
-}
-
-function getResendErrorMessage(error: unknown): string {
-  if (!error || typeof error !== "object") {
-    return "Unknown mail provider error";
-  }
-  const maybeError = error as { message?: string; error?: string; name?: string };
-  return (
-    maybeError.message ||
-    maybeError.error ||
-    maybeError.name ||
-    "Unknown mail provider error"
-  );
-}
+import {
+  getResendClient,
+  getResendErrorMessage,
+  mailingFromAddress,
+} from "./resendClient";
 
 export async function sendInvestmentApprovedEmail(params: {
   user: Pick<User, "email" | "name">;
@@ -72,7 +55,7 @@ export async function sendInvestmentApprovedEmail(params: {
       "Your receipt is attached to this email.";
 
     const { error } = await resend.emails.send({
-      from: `IndieFundr <accounts@${env.mailingDomain}>`,
+      from: mailingFromAddress(),
       to: [user.email],
       subject,
       text,

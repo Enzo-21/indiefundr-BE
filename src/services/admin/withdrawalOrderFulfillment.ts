@@ -277,7 +277,31 @@ export async function markAdminWithdrawalSuccess(
     },
   });
 
-  await rebuildWalletActivity(order.userId, order.walletId, order.walletId);
+  const completed = await prisma.withdrawalOrder.findUnique({
+    where: { id: orderId },
+  });
+  if (!completed) {
+    throw new Error("Withdrawal order not found after completion");
+  }
+
+  await rebuildWalletActivity(completed.userId, completed.walletId, completed.walletId);
+
+  try {
+    const { notifyUserPayment } = await import(
+      "@/services/mailing/notifyUserPayment"
+    );
+    await notifyUserPayment({
+      kind: "withdrawal",
+      order: completed,
+      txId: usdtTxId,
+    });
+  } catch (notifyErr) {
+    const message =
+      notifyErr instanceof Error ? notifyErr.message : String(notifyErr);
+    console.error("[mail] notifyUserPayment failed:", message, {
+      orderId: completed.id,
+    });
+  }
 }
 
 export async function appendAdminWithdrawalAutopilotManualCheckNote(
