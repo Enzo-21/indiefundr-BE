@@ -13,6 +13,22 @@ import {
 
 const DEFAULT_MAX_OPEN_INVESTMENTS = 1;
 
+export type InvestmentSlotOptions = {
+  /** Omit this in-flight order when counting reserved-but-unlinked purchase orders. */
+  excludingPurchaseOrderId?: string;
+};
+
+export function countUnrepresentedActiveOrders(
+  activeOrderIds: string[],
+  linkedOrderIds: ReadonlySet<string>,
+  options: InvestmentSlotOptions = {}
+): number {
+  const excludeId = options.excludingPurchaseOrderId;
+  return activeOrderIds.filter(
+    (orderId) => !linkedOrderIds.has(orderId) && orderId !== excludeId
+  ).length;
+}
+
 export class InvestmentSlotsFullError extends Error {
   readonly code = "SLOTS_FULL" as const;
   readonly openCount: number;
@@ -99,7 +115,8 @@ export async function countOpenInvestmentsForUser(
 export async function countUnrepresentedActivePurchaseOrdersForUserFund(
   userId: string,
   fundId: string,
-  client: PrismaLike = defaultPrisma
+  client: PrismaLike = defaultPrisma,
+  options: InvestmentSlotOptions = {}
 ): Promise<number> {
   const [activeOrders, linkedInvestments] = await Promise.all([
     client.purchaseOrder.findMany({
@@ -127,12 +144,17 @@ export async function countUnrepresentedActivePurchaseOrdersForUserFund(
       .filter((id): id is string => Boolean(id))
   );
 
-  return activeOrders.filter((order) => !linkedOrderIds.has(order.id)).length;
+  return countUnrepresentedActiveOrders(
+    activeOrders.map((order) => order.id),
+    linkedOrderIds,
+    options
+  );
 }
 
 export async function countUnrepresentedActivePurchaseOrdersForUser(
   userId: string,
-  client: PrismaLike = defaultPrisma
+  client: PrismaLike = defaultPrisma,
+  options: InvestmentSlotOptions = {}
 ): Promise<number> {
   const [activeOrders, linkedInvestments] = await Promise.all([
     client.purchaseOrder.findMany({
@@ -158,13 +180,18 @@ export async function countUnrepresentedActivePurchaseOrdersForUser(
       .filter((id): id is string => Boolean(id))
   );
 
-  return activeOrders.filter((order) => !linkedOrderIds.has(order.id)).length;
+  return countUnrepresentedActiveOrders(
+    activeOrders.map((order) => order.id),
+    linkedOrderIds,
+    options
+  );
 }
 
 export async function getTotalInvestmentUsage(
   userId: string,
   client: PrismaLike = defaultPrisma,
-  userLevel?: number
+  userLevel?: number,
+  options: InvestmentSlotOptions = {}
 ): Promise<{
   totalOpenCount: number;
   maxTotalOpenInvestments: number;
@@ -175,7 +202,7 @@ export async function getTotalInvestmentUsage(
   const maxTotalOpenInvestments = getEffectiveMaxTotalOpenInvestments(level);
   const [investmentCount, processingOrderCount] = await Promise.all([
     countOpenInvestmentsForUser(userId, client),
-    countUnrepresentedActivePurchaseOrdersForUser(userId, client),
+    countUnrepresentedActivePurchaseOrdersForUser(userId, client, options),
   ]);
   const totalOpenCount = investmentCount + processingOrderCount;
   const unlimitedTotal = hasUnlimitedTotalOpenInvestments(perks);
@@ -194,7 +221,8 @@ export async function getInvestmentSlotUsage(
   userId: string,
   fundId: string,
   client: PrismaLike = defaultPrisma,
-  userLevel?: number
+  userLevel?: number,
+  options: InvestmentSlotOptions = {}
 ): Promise<{
   openCount: number;
   maxOpenInvestments: number;
@@ -208,8 +236,13 @@ export async function getInvestmentSlotUsage(
   const maxOpenInvestments = getEffectiveSlotsPerFund(level, catalogMax);
   const [investmentCount, processingOrderCount, totalUsage] = await Promise.all([
     countOpenInvestmentsForUserFund(userId, fundId, client),
-    countUnrepresentedActivePurchaseOrdersForUserFund(userId, fundId, client),
-    getTotalInvestmentUsage(userId, client, level),
+    countUnrepresentedActivePurchaseOrdersForUserFund(
+      userId,
+      fundId,
+      client,
+      options
+    ),
+    getTotalInvestmentUsage(userId, client, level, options),
   ]);
   const openCount = investmentCount + processingOrderCount;
   const perFundAvailable = Math.max(0, maxOpenInvestments - openCount);
@@ -230,10 +263,11 @@ export async function getInvestmentSlotUsage(
 export async function assertTotalOpenInvestmentCapacity(
   userId: string,
   client: PrismaLike = defaultPrisma,
-  userLevel?: number
+  userLevel?: number,
+  options: InvestmentSlotOptions = {}
 ): Promise<void> {
   const { totalOpenCount, maxTotalOpenInvestments } =
-    await getTotalInvestmentUsage(userId, client, userLevel);
+    await getTotalInvestmentUsage(userId, client, userLevel, options);
   const level = await resolveUserLevel(userId, client, userLevel);
   if (hasUnlimitedTotalOpenInvestments(getPlayerLevelPerks(level))) {
     return;
@@ -250,15 +284,17 @@ export async function assertCanOpenInvestment(
   userId: string,
   fundId: string,
   client: PrismaLike = defaultPrisma,
-  userLevel?: number
+  userLevel?: number,
+  options: InvestmentSlotOptions = {}
 ): Promise<void> {
   const level = await resolveUserLevel(userId, client, userLevel);
-  await assertTotalOpenInvestmentCapacity(userId, client, level);
+  await assertTotalOpenInvestmentCapacity(userId, client, level, options);
   const { openCount, maxOpenInvestments } = await getInvestmentSlotUsage(
     userId,
     fundId,
     client,
-    level
+    level,
+    options
   );
   if (openCount >= maxOpenInvestments) {
     throw new InvestmentSlotsFullError(openCount, maxOpenInvestments);
@@ -298,7 +334,10 @@ export async function createInvestmentIfSlotAvailable(
   }
 
   return defaultPrisma.$transaction(async (tx) => {
-    await assertCanOpenInvestment(userId, fundId, tx);
+    const slotOptions: InvestmentSlotOptions = data.purchaseOrderId
+      ? { excludingPurchaseOrderId: data.purchaseOrderId }
+      : {};
+    await assertCanOpenInvestment(userId, fundId, tx, undefined, slotOptions);
     return tx.investment.create({ data });
   });
 }

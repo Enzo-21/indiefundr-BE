@@ -7,6 +7,7 @@ import {
   getPlayerLevelPerks,
 } from "./playerLevels";
 import {
+  countUnrepresentedActiveOrders,
   getInvestmentSlotUsage,
   getMaxOpenInvestmentsForFund,
   InvestmentSlotsFullError,
@@ -18,6 +19,25 @@ const hasDatabase = Boolean(process.env.DATABASE_URL?.trim());
 const skipDbTests = SKIP_DB_MUTATING_TESTS || !hasDatabase;
 
 describe("investment slot helpers", () => {
+  it("excludes the in-flight purchase order when materializing its investment", () => {
+    const linked = new Set(["order-linked"]);
+    assert.equal(
+      countUnrepresentedActiveOrders(
+        ["order-current", "order-linked"],
+        linked
+      ),
+      1
+    );
+    assert.equal(
+      countUnrepresentedActiveOrders(
+        ["order-current", "order-linked"],
+        linked,
+        { excludingPurchaseOrderId: "order-current" }
+      ),
+      0
+    );
+  });
+
   it("returns per-fund maxOpenInvestments from catalog", () => {
     assert.equal(getMaxOpenInvestmentsForFund("aggressive-alpha"), 5);
     assert.equal(getMaxOpenInvestmentsForFund("capital-shield"), 5);
