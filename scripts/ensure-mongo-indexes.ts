@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
+import { unsetNullUniqueUserFieldsInMongo } from "../src/lib/prisma/mongoUniqueOptionalFields";
 
 const prisma = new PrismaClient();
 
@@ -49,7 +50,12 @@ async function dropIndex(collection: string, name: string) {
 }
 
 async function main() {
-  // Optional FK: sparse unique allows many users without a referral invite.
+  // Prisma db push may create a non-sparse unique index; replace with sparse so
+  // many users without a referral invite do not collide on null.
+  await dropIndex("users", "users_referredByInviteId_key");
+  await unsetNullUniqueUserFieldsInMongo((command) =>
+    prisma.$runCommandRaw(command)
+  );
   await createIndex(
     "users",
     { referredByInviteId: 1 },
