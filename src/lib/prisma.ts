@@ -3,10 +3,6 @@ import { stripMongoUnsetNullUniqueUserFields } from "@/lib/prisma/mongoUniqueOpt
 
 export const GLOBAL_LEDGER_ID = "global";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
 function createPrismaClient() {
   return new PrismaClient().$extends({
     query: {
@@ -58,8 +54,17 @@ function createPrismaClient() {
   });
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+type ExtendedPrismaClient = ReturnType<typeof createPrismaClient>;
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: ExtendedPrismaClient | undefined;
+};
+
+const extendedPrisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma as unknown as PrismaClient;
+  globalForPrisma.prisma = extendedPrisma;
 }
+
+/** Cast keeps Prisma $extends compatible with existing PrismaClient typings. */
+export const prisma = extendedPrisma as unknown as PrismaClient;

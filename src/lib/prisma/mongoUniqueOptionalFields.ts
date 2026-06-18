@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 /** Optional @unique fields on MongoDB must be unset, not stored as null. */
 export const MONGO_UNSET_NULL_UNIQUE_USER_FIELDS = [
   "referredByInviteId",
@@ -18,10 +20,10 @@ export function stripMongoUnsetNullUniqueUserFields<
 }
 
 export async function unsetNullUniqueUserFieldsInMongo(
-  runCommandRaw: (command: Record<string, unknown>) => Promise<unknown>
+  runCommandRaw: (command: Prisma.InputJsonObject) => Promise<unknown>
 ): Promise<void> {
   for (const field of MONGO_UNSET_NULL_UNIQUE_USER_FIELDS) {
-    const result = await runCommandRaw({
+    const command: Prisma.InputJsonObject = {
       update: "users",
       updates: [
         {
@@ -30,7 +32,8 @@ export async function unsetNullUniqueUserFieldsInMongo(
           multi: true,
         },
       ],
-    });
+    };
+    const result = await runCommandRaw(command);
     const payload = result as { nModified?: number; n?: number };
     const modified = payload.nModified ?? payload.n ?? 0;
     console.log(`Unset ${field} on ${modified} user(s)`);
