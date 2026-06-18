@@ -1,9 +1,22 @@
-import type { PurchaseOrder } from "@prisma/client";
+import {
+  PurchaseOrderStatus,
+  PurchaseOrderStep,
+  type PurchaseOrder,
+} from "@prisma/client";
 import { APP_NAME } from "@/lib/constants/appBranding";
 import { getTronscanTxUrl } from "@/lib/wallets/helpers";
-import { RETRY_PENDING_PREFIX } from "@/services/orders/orderSettlementView";
+import { isManualFulfillmentOrder } from "@/services/orders/purchaseOrderManual";
+import {
+  RETRY_PENDING_PREFIX,
+  type OrderSettlementPhase,
+} from "@/services/orders/orderSettlementView";
 import type { AppTransaction } from "./walletTransactions";
 import type { WalletActivityTx } from "./walletActivityMerge";
+
+export type PendingTapInfo = {
+  title: string;
+  message: string;
+};
 
 export function transactionFromJson(
   value: unknown
@@ -22,13 +35,55 @@ export function getPurchaseOrderActivityLink(order: PurchaseOrder) {
   return { txId: null, tronscanUrl: null };
 }
 
+export function isManualOrderAwaitingAdminReview(
+  order: Pick<PurchaseOrder, "fulfillmentMode" | "step" | "status">
+): boolean {
+  return (
+    isManualFulfillmentOrder(order) &&
+    order.step === PurchaseOrderStep.awaiting_review &&
+    order.status !== PurchaseOrderStatus.completed &&
+    order.status !== PurchaseOrderStatus.failed
+  );
+}
+
+export function buildPendingOrderSubmittedTapInfo(
+  fundName: string
+): PendingTapInfo {
+  return {
+    title: "Order submitted",
+    message:
+      `Your ${fundName} investment order was created successfully and is being processed. ` +
+      "Our team allocates funds to investments within up to 72 business hours. " +
+      "Once assigned, your investment is approved right away — you can leave the app and we will notify you when it is active.",
+  };
+}
+
+export function shouldShowPendingPurchaseOrderTapInfo(
+  order: PurchaseOrder,
+  displayStatus: string,
+  settlementPhase: OrderSettlementPhase
+): boolean {
+  if (displayStatus !== "pending") {
+    return false;
+  }
+  if (settlementPhase !== "confirming") {
+    return true;
+  }
+  return isManualOrderAwaitingAdminReview(order);
+}
+
 export function getPendingPurchaseOrderTapInfo(
   order: PurchaseOrder,
   fundName: string
-) {
+): PendingTapInfo | null {
+  if (isManualOrderAwaitingAdminReview(order)) {
+    return buildPendingOrderSubmittedTapInfo(fundName);
+  }
+
   if (order.usdtTxId) {
     return null;
   }
+
   if (order.topUpTxId || (order.sponsoredTrx && order.sponsoredTrx > 0)) {
     const retryPending = (order.failureReason || "").startsWith(
       RETRY_PENDING_PREFIX
@@ -39,15 +94,11 @@ export function getPendingPurchaseOrderTapInfo(
         ? `${APP_NAME} is retrying the Tron network fee transfer for your ${fundName} investment after a previous attempt did not succeed. Your USDT is still reserved.`
         : `${APP_NAME} is covering Tron network fees for your ${fundName} investment. ` +
           "This step uses a small TRX transfer on your wallet — it is not your USDT payment. " +
-          "Once your USDT is sent, you can tap this activity again to view that payment on TronScan.",
+          "Once your USDT is sent, you can tap this activity again for an update.",
     };
   }
-  return {
-    title: "Investment processing",
-    message:
-      `Your ${fundName} investment is being set up. ` +
-      "You will be able to view the USDT payment on TronScan once it is broadcast.",
-  };
+
+  return buildPendingOrderSubmittedTapInfo(fundName);
 }
 
 export function getGenericChainActivityLabel(

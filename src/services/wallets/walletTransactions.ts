@@ -6,7 +6,7 @@ import {
 } from "@prisma/client";
 import { buildOrderSettlementView, resolvePurchaseOrderActivityDisplayStatus } from "@/services/orders/orderSettlementView";
 import { getFundById } from "@/lib/config/investmentFunds";
-import { getPendingPurchaseOrderTapInfo } from "./walletActivityLabels";
+import { getPendingPurchaseOrderTapInfo, shouldShowPendingPurchaseOrderTapInfo } from "./walletActivityLabels";
 import {
   buildFailedInvestmentActivityWhere,
   buildPurchaseOrderActivityWhere,
@@ -525,10 +525,13 @@ export async function buildAppTransactions(
       : inFlightPending && !isManualReserved
         ? `Investment order (${fundName}) — ${settlementLabel}`
         : `Investment order (${fundName})`;
-    const pendingTapInfo =
-      displayStatus === "pending" && settlement.phase !== "confirming"
-        ? getPendingPurchaseOrderTapInfo(order, fundName)
-        : null;
+    const pendingTapInfo = shouldShowPendingPurchaseOrderTapInfo(
+      order,
+      displayStatus,
+      settlement.phase
+    )
+      ? getPendingPurchaseOrderTapInfo(order, fundName)
+      : null;
 
     transactions.push({
       id: `purchase-order-${order.id}`,

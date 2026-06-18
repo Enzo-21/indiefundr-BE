@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Toaster } from "@/components/ui/sonner";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { verifyAdminSession } from "@/lib/auth/adminSession";
+import { getAdminPendingOrderCount } from "@/services/admin/adminOrderCounts";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,9 @@ export default async function AdminProtectedLayout({
 
   return (
     <>
-      <AdminShell email={session.email}>{children}</AdminShell>
+      <AdminShell email={session.email} pendingOrderCount={await getAdminPendingOrderCount()}>
+        {children}
+      </AdminShell>
       <Toaster richColors position="top-center" />
     </>
   );

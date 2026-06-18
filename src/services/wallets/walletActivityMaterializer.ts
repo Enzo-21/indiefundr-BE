@@ -23,6 +23,10 @@ import * as tron from "@/services/tron/client";
 import type { WalletActivityTx } from "./walletActivityMerge";
 import type { TransactionInsights } from "./transactionInsights";
 import {
+  getPendingPurchaseOrderTapInfo,
+  getPurchaseOrderActivityLink,
+} from "./walletActivityLabels";
+import {
   linksFromInvestment,
   linksFromPurchaseOrder,
   usdtLinks,
@@ -160,37 +164,6 @@ function appendWithdrawalActivityRow(
         "You can open this activity again once the transfer is on TronScan.",
     },
   });
-}
-
-function getPurchaseOrderActivityLink(order: PurchaseOrder) {
-  if (order.usdtTxId) {
-    return {
-      txId: order.usdtTxId,
-      tronscanUrl: getTronscanTxUrl(order.usdtTxId),
-    };
-  }
-  return { txId: null, tronscanUrl: null };
-}
-
-function getPendingPurchaseOrderTapInfo(order: PurchaseOrder, fundName: string) {
-  if (order.usdtTxId) {
-    return null;
-  }
-  if (order.topUpTxId || (order.sponsoredTrx && order.sponsoredTrx > 0)) {
-    return {
-      title: "Preparing network fees",
-      message:
-        `${APP_NAME} is covering Tron network fees for your ${fundName} investment. ` +
-        "This step uses a small TRX transfer on your wallet — it is not your USDT payment. " +
-        "Once your USDT is sent, you can tap this activity again to view that payment on TronScan.",
-    };
-  }
-  return {
-    title: "Investment processing",
-    message:
-      `Your ${fundName} investment is being set up. ` +
-      "You will be able to view the USDT payment on TronScan once it is broadcast.",
-  };
 }
 
 function getFailedPurchaseOrderDetail(order: PurchaseOrder): string | null {

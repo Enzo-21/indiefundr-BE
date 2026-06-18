@@ -5,15 +5,17 @@ import { Separator } from "@/components/ui/separator";
 
 export function AdminShell({
   email,
+  pendingOrderCount = 0,
   children,
 }: {
   email: string;
+  pendingOrderCount?: number;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="hidden w-56 shrink-0 border-r md:block">
-        <AdminSidebar />
+        <AdminSidebar pendingOrderCount={pendingOrderCount} />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b px-6 py-4">

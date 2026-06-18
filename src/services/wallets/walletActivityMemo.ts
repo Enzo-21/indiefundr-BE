@@ -2,7 +2,10 @@ import { getFundById } from "@/lib/config/investmentFunds";
 import { getTronscanTxUrl } from "@/lib/wallets/helpers";
 import { prisma } from "@/lib/prisma";
 import type { IndieFundrMemo } from "@/lib/tron/transactionMemo";
-import { getPendingPurchaseOrderTapInfo } from "./walletActivityLabels";
+import {
+  getPendingPurchaseOrderTapInfo,
+  shouldShowPendingPurchaseOrderTapInfo,
+} from "./walletActivityLabels";
 import type { WalletActivityTx } from "./walletActivityMerge";
 import { getTypicalPayoutDaysForFund } from "@/services/funds/typicalPayoutDays";
 import {
@@ -95,10 +98,13 @@ export async function classifyChainRowFromMemo(
     const label = displayStatus === "failed"
       ? `Failed investment order (${fundName})`
       : `Investment order (${fundName})`;
-    const pendingTapInfo =
-      displayStatus === "pending" && settlement.phase !== "confirming"
-        ? getPendingPurchaseOrderTapInfo(order, fundName)
-        : null;
+    const pendingTapInfo = shouldShowPendingPurchaseOrderTapInfo(
+      order,
+      displayStatus,
+      settlement.phase
+    )
+      ? getPendingPurchaseOrderTapInfo(order, fundName)
+      : null;
 
     const chainConfirmed =
       row.status === "confirmed" || row.status.toLowerCase() === "success";

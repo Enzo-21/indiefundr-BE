@@ -397,6 +397,8 @@ export async function completeOrder(order: PurchaseOrder): Promise<void> {
 
   const subscribedAt = new Date();
 
+  const wasPending = investment.status === InvestmentStatus.pending;
+
   const updatedInvestment = await prisma.investment.update({
     where: { id: investment.id },
     data: {
@@ -459,14 +461,27 @@ export async function completeOrder(order: PurchaseOrder): Promise<void> {
     );
   }
 
-  const fundName = fund?.name || order.fundId;
-
-  await sendPushNotification(
-    order.device,
-    "Investment confirmed",
-    `Your position in ${fundName} is now active for 90 days.`,
-    { type: "SUBSCRIBE_FUND_SUCCESS" }
-  );
+  if (wasPending) {
+    try {
+      const { notifyInvestmentApproved } = await import(
+        "@/services/mailing/notifyInvestmentApproved"
+      );
+      const freshOrder = await prisma.purchaseOrder.findUnique({
+        where: { id: order.id },
+      });
+      if (freshOrder) {
+        await notifyInvestmentApproved({
+          investment: updatedInvestment,
+          order: freshOrder,
+          fund,
+        });
+      }
+    } catch (notifyErr) {
+      const message =
+        notifyErr instanceof Error ? notifyErr.message : String(notifyErr);
+      console.error("[mail] notifyInvestmentApproved failed:", message);
+    }
+  }
 
   console.log("[purchaseOrder] completed", {
     orderId: order.id,
