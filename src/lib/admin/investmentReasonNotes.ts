@@ -1,6 +1,6 @@
 import { InvestmentStatus } from "@prisma/client";
 import type { AdminInvestmentRow } from "@/services/admin/investmentAdminTypes";
-import { isSurplusPayoutTrigger } from "@/services/revenueEngine/payoutScheduler";
+import { isSurplusPayoutTrigger } from "@/services/revenueEngine/payoutTriggers";
 import { investmentShortId } from "./investmentTableIds";
 
 function formatUnlockedAfterInvestmentIds(investmentIds: string[]): string {

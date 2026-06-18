@@ -29,20 +29,12 @@ const INVESTED_STATUSES: InvestmentStatus[] = [
   InvestmentStatus.redeemed,
 ];
 
-export type PayoutTrigger =
-  | "admin"
-  | "cron"
-  | "admin_surplus"
-  | "cron_surplus"
-  | "admin_surplus_liquidity"
-  | "cron_surplus_liquidity";
-
-const SURPLUS_LIQUIDITY_TRIGGERS = new Set<PayoutTrigger>([
-  "admin_surplus",
-  "cron_surplus",
-  "admin_surplus_liquidity",
-  "cron_surplus_liquidity",
-]);
+export type { PayoutTrigger } from "./payoutTriggers";
+export { isSurplusPayoutTrigger } from "./payoutTriggers";
+import {
+  isSurplusPayoutTrigger,
+  type PayoutTrigger,
+} from "./payoutTriggers";
 
 export type PayoutUnlocker = Pick<
   Investment,
@@ -53,21 +45,6 @@ export type PayoutUnlocker = Pick<
 
 function isPayoutCandidateStatus(status: InvestmentStatus): boolean {
   return PAYOUT_CANDIDATE_STATUSES.includes(status);
-}
-
-export function isSurplusPayoutTrigger(
-  trigger?: string | null
-): trigger is Extract<
-  PayoutTrigger,
-  | "admin_surplus"
-  | "cron_surplus"
-  | "admin_surplus_liquidity"
-  | "cron_surplus_liquidity"
-> {
-  return (
-    trigger != null &&
-    SURPLUS_LIQUIDITY_TRIGGERS.has(trigger as PayoutTrigger)
-  );
 }
 
 export function getSurplusPayoutAvailableAt(
