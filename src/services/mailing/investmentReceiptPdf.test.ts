@@ -37,6 +37,11 @@ describe("investment receipt pdf", () => {
     assert.equal(document.heading, "Transaction receipt");
     assert.match(document.description, /Balanced Growth/);
     assert.equal(document.sections.length, 2);
+    const transactionLines = document.sections[0]?.lines ?? [];
+    assert.ok(
+      transactionLines.every((line) => line.label !== "TronScan"),
+      "email receipt should not include TronScan"
+    );
   });
 
   it("generates a non-empty PDF buffer", () => {

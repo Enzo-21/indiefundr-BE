@@ -1,7 +1,6 @@
 import type { Investment, PurchaseOrder } from "@prisma/client";
 import type { InvestmentFund } from "@/lib/config/investmentFunds";
 import { APP_NAME } from "@/lib/constants/appBranding";
-import { getTronscanTxUrl } from "@/lib/wallets/helpers";
 import { insightsFromInvestment } from "@/services/wallets/transactionInsights";
 
 export type ReceiptDocumentLine = {
@@ -58,7 +57,6 @@ export function buildInvestmentReceiptDocument(params: {
 
   if (txId) {
     transactionLines.push({ label: "Transaction ID", value: txId });
-    transactionLines.push({ label: "TronScan", value: getTronscanTxUrl(txId) });
   }
 
   transactionLines.push({ label: "Investment ID", value: investment.id });
