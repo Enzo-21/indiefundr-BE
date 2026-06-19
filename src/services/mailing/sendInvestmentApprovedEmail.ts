@@ -13,6 +13,7 @@ import {
   getResendErrorMessage,
   mailingFromAddress,
 } from "./resendClient";
+import { resolveMailingLogoUrl } from "./mailingLogoUrl";
 
 export async function sendInvestmentApprovedEmail(params: {
   user: Pick<User, "email" | "name">;
@@ -43,7 +44,7 @@ export async function sendInvestmentApprovedEmail(params: {
         fundName: fund.name,
         amountUsdt: investment.amountUsdt,
         projectedPayoutUsdt: investment.projectedPayoutUsdt,
-        logoUrl: env.mailingLogoUrl,
+        logoUrl: resolveMailingLogoUrl(),
       })
     );
 

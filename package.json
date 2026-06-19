@@ -22,6 +22,7 @@
     "backfill:usernames": "tsx scripts/backfill-usernames.ts",
     "resync:wallet-activity": "tsx scripts/resync-wallet-activity.ts",
     "cron:maturity": "tsx scripts/run-cron-maturity.ts",
+    "icons:generate": "tsx scripts/generate-brand-icons.ts",
     "test": "node --experimental-test-module-mocks --import tsx --test $(find src -name '*.test.ts' -print | sort)"
   },
   "prisma": {
@@ -68,7 +69,9 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "prisma": "^6.19.0",
+    "sharp": "^0.35.2",
     "tailwindcss": "^4",
+    "to-ico": "^1.1.5",
     "tsx": "^4.19.0",
     "typescript": "^5"
   }

@@ -26,7 +26,7 @@ export default async function MarketingHomePage() {
         <FaqSection />
         <CtaSection requestHost={requestHost} />
       </main>
-      <Footer requestHost={requestHost} />
+      <Footer />
     </div>
   );
 }

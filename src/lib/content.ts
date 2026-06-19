@@ -10,17 +10,26 @@ import {
   testimonialsCopy,
   MARKETING_BRAND,
 } from "@/lib/marketing/copy";
+import {
+  formatInvestmentTermHyphenated,
+  formatInvestmentTermLabel,
+  getInvestmentTermApproxDays,
+} from "@/lib/config/investmentTiming";
+
+const investmentTermDays = getInvestmentTermApproxDays();
+const investmentTermLabel = formatInvestmentTermLabel(investmentTermDays);
+const investmentTermHyphenated = formatInvestmentTermHyphenated(investmentTermDays);
 
 export const siteConfig = {
   name: MARKETING_BRAND,
-  title: "IndieFundr — Multiply your money in 90 days",
+  title: `IndieFundr — Multiply your money in ${investmentTermLabel}`,
   description:
-    "Put your money to work in five studied, unconventional 90-day funds with illustrative targets from 6% to 40%. Start from $25. Fund and withdraw globally with USDT.",
+    `Put your money to work in five studied, unconventional ${investmentTermHyphenated} funds with illustrative targets from 6% to 40%. Start from $25. Fund and withdraw globally with USDT.`,
   keywords: [
     "invest money",
     "multiply money",
     "unconventional investing",
-    "90 day investment",
+    `${investmentTermDays} day investment`,
     "high yield funds",
     "mobile investing",
     "IndieFundr",
@@ -33,8 +42,8 @@ export const siteConfig = {
 
 export const heroStats = [
   "From $25 per fund",
-  "Five studied, 90-day funds",
-  "Targets up to 40% in 90 days",
+  `Five studied, ${investmentTermHyphenated} funds`,
+  `Targets up to 40% in ${investmentTermLabel}`,
   "Beyond traditional investing",
   "Unconventional strategies, vetted funds",
 ];
@@ -210,15 +219,11 @@ export const footerLinks = {
     label: link.label,
     href: link.href.startsWith("#") ? `/${link.href}` : link.href,
   })),
-  company: footerCopy.help.map((link) => ({
-    label: link.label,
-    href: link.href,
-  })),
 };
 
-export const footerTagline = footerCopy.tagline;
 export const footerShareLine = footerCopy.shareLine;
 export const footerShareHint = footerCopy.shareHint;
+export const footerTagline = footerCopy.tagline;
 
 export const quoteParts = [
   "Your",

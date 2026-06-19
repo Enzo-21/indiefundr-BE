@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-const DEFAULT_MAILING_LOGO_URL =
-  "https://res.cloudinary.com/vectrals-cloudinary/image/upload/v1718580949/vpass/brand/icon-192x192-bg-white_b0chyw.png";
+const DEFAULT_MAILING_LOGO_URL = "/images/indiefundr-logo-192.png";
 
 const envFlag = (value: string | undefined, defaultEnabled = true) => {
   if (value === undefined || value === "") return defaultEnabled;

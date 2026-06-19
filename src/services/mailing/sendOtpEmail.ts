@@ -2,6 +2,7 @@ import { render } from "@react-email/render";
 import { Resend } from "resend";
 import OtpCodeEmail, { type OtpEmailPurpose } from "@/emails/OtpCodeEmail";
 import { getEnv } from "@/lib/env";
+import { resolveMailingLogoUrl } from "./mailingLogoUrl";
 
 function getResendClient() {
   const apiKey = getEnv().resendApiKey;
@@ -65,7 +66,7 @@ export async function sendOtpEmail({
         username: displayName,
         otpCode,
         purpose,
-        logoUrl: env.mailingLogoUrl,
+        logoUrl: resolveMailingLogoUrl(),
       })
     );
 

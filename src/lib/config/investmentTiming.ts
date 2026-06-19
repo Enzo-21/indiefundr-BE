@@ -44,6 +44,18 @@ export function getInvestmentTermApproxDays(): number {
   return durationToApproxDays(getInvestmentTermSpec());
 }
 
+/** e.g. `4 days`, `1 day`, `90 days` — for marketing and UI copy. */
+export function formatInvestmentTermLabel(days?: number): string {
+  const n = days ?? getInvestmentTermApproxDays();
+  return `${n} day${n === 1 ? "" : "s"}`;
+}
+
+/** e.g. `4-day`, `90-day` — for compound adjectives in copy. */
+export function formatInvestmentTermHyphenated(days?: number): string {
+  const n = days ?? getInvestmentTermApproxDays();
+  return `${n}-day`;
+}
+
 /** @deprecated Prefer `getInvestmentTermApproxDays()` — kept for imports that expect a number constant. */
 export const INVESTMENT_TERM_DAYS = getInvestmentTermApproxDays();
 

@@ -7,6 +7,7 @@ import {
   getResendErrorMessage,
   mailingFromAddress,
 } from "./resendClient";
+import { resolveMailingLogoUrl } from "./mailingLogoUrl";
 import {
   buildUserPaymentReceiptDocument,
   type BuildUserPaymentReceiptDocumentParams,
@@ -116,7 +117,7 @@ export async function sendUserPaymentEmail(
         principalUsdt: params.emailProps?.principalUsdt,
         earningsUsdt: params.emailProps?.earningsUsdt,
         destinationAddress: params.emailProps?.destinationAddress,
-        logoUrl: env.mailingLogoUrl,
+        logoUrl: resolveMailingLogoUrl(),
       })
     );
 

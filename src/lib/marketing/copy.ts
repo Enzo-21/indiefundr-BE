@@ -1,4 +1,14 @@
+import {
+  formatInvestmentTermHyphenated,
+  formatInvestmentTermLabel,
+  getInvestmentTermApproxDays,
+} from "@/lib/config/investmentTiming";
+
 export const MARKETING_BRAND = "IndieFundr";
+
+const investmentTermDays = getInvestmentTermApproxDays();
+const investmentTermLabel = formatInvestmentTermLabel(investmentTermDays);
+const investmentTermHyphenated = formatInvestmentTermHyphenated(investmentTermDays);
 
 export const marketingNav = [
   { label: "Features", href: "#features" },
@@ -8,10 +18,10 @@ export const marketingNav = [
 ] as const;
 
 export const heroCopy = {
-  eyebrow: "Unconventional investing, 90 days",
+  eyebrow: `Unconventional investing, ${investmentTermLabel}`,
   title: "What if your money actually multiplied?",
   subtitle:
-    "Your cash is probably sitting idle — earning less than inflation. IndieFundr deploys it into five studied 90-day funds built on unconventional strategies, with illustrative targets from 6% to 40%. We use USDT so you can fund and withdraw from anywhere in the world.",
+    `Your cash is probably sitting idle — earning less than inflation. IndieFundr deploys it into five studied ${investmentTermHyphenated} funds built on unconventional strategies, with illustrative targets from 6% to 40%. We use USDT so you can fund and withdraw from anywhere in the world.`,
   primaryCta: "Start now",
   secondaryCta: "See how it works",
   navCta: "Start now",
@@ -36,7 +46,7 @@ export const heroDecorCopy = {
 };
 
 export const featuresCopy = {
-  title: "Five studied funds. One app. 90 days each.",
+  title: `Five studied funds. One app. ${investmentTermLabel} each.`,
   subtitle:
     "We put your money to work in unconventional plays — you pick the fund, we handle the rest.",
   items: [
@@ -76,7 +86,7 @@ export const benefitsCopy = {
     {
       title: "Returns beyond traditional investing",
       description:
-        "Our funds target 6% to 40% over 90 days through plays banks won't touch — arbitrage, syndicates, promo lanes, and more.",
+        `Our funds target 6% to 40% over ${investmentTermLabel} through plays banks won't touch — arbitrage, syndicates, promo lanes, and more.`,
     },
     {
       title: "Studied before you invest",
@@ -140,9 +150,9 @@ export const howItWorksCopy = {
       step: 2,
       name: "Subscribe to a fund",
       description:
-        "We invest your money for up to 90 days. Once we hit the promised return, we mark your payout ready — usually well before day 90. Most users collect early.",
+        `We invest your money for up to ${investmentTermLabel}. Once we hit the promised return, we mark your payout ready — usually well before day ${investmentTermDays}. Most users collect early.`,
       highlights: [
-        "Up to 90-day term",
+        `Up to ${investmentTermHyphenated} term`,
         "Payout ready when target is hit",
         "Most users collect early",
         "Illustrative targets up to 40%",
@@ -169,14 +179,14 @@ export const faqCopy = {
   supportCard: {
     title: "Can't find answers?",
     description:
-      "Open the app and explore five studied funds, 90-day terms, and full portfolio visibility.",
+      `Open the app and explore five studied funds, ${investmentTermHyphenated} terms, and full portfolio visibility.`,
     cta: "Download the app",
   },
   items: [
     {
       question: "What is IndieFundr?",
       answer:
-        "IndieFundr is a mobile app that deploys your money into five studied 90-day investment funds — unconventional strategies with illustrative targets from 6% to 40%. From $25 per fund. Built-in wallet, portfolio tracking, and withdrawals included.",
+        `IndieFundr is a mobile app that deploys your money into five studied ${investmentTermHyphenated} investment funds — unconventional strategies with illustrative targets from 6% to 40%. From $25 per fund. Built-in wallet, portfolio tracking, and withdrawals included.`,
     },
     {
       question: "Why do you use USDT?",
@@ -196,7 +206,7 @@ export const faqCopy = {
     {
       question: "Are returns guaranteed?",
       answer:
-        "No. Fund cards show illustrative target returns for the 90-day term. Actual outcomes depend on fund performance and operational processes.",
+        `No. Fund cards show illustrative target returns for the ${investmentTermHyphenated} term. Actual outcomes depend on fund performance and operational processes.`,
     },
     {
       question: "Can I withdraw while orders are open?",
@@ -209,7 +219,7 @@ export const faqCopy = {
 export const ctaCopy = {
   title: "Your money isn't going to multiply itself.",
   subtitle:
-    "$25 minimum. Five studied funds. 90-day terms. Open the app and pick your first strategy.",
+    `$25 minimum. Five studied funds. ${investmentTermHyphenated} terms. Open the app and pick your first strategy.`,
   primary: "Start now",
   appStore: "App Store",
   playStore: "Google Play",
@@ -219,16 +229,13 @@ export const ctaCopy = {
 
 export const footerCopy = {
   tagline:
-    "Deploy your money into studied, unconventional 90-day funds — from your phone.",
-  shareLine: "$25 in. 90 days. Returns beyond traditional.",
+    `Deploy your money into studied, unconventional ${investmentTermHyphenated} funds.`,
+  shareLine: `$25 in. ${investmentTermLabel}. Returns beyond traditional.`,
   shareHint: "Know someone sitting on idle cash? Send them this.",
   company: [
     { label: "Features", href: "#features" },
     { label: "Benefits", href: "#benefits" },
     { label: "How it works", href: "#how-it-works" },
     { label: "FAQ", href: "#faq" },
-  ],
-  help: [
-    { label: "Admin", href: "/admin/login" },
   ],
 };
