@@ -7,14 +7,17 @@ import {
 } from "@prisma/client";
 import { defaultTypicalPayoutDays } from "@/services/funds/typicalPayoutDays";
 import {
+  insightsFromInvestment,
   insightsFromPurchaseOrder,
   insightsFromRedemption,
 } from "./transactionInsights";
+import { needsUnpaidMaturityChoiceFromInvestment } from "@/services/investments/maturityNotifications";
 
 describe("transactionInsights", () => {
   it("builds projected payout for purchase order without linked investment", () => {
     const insights = insightsFromPurchaseOrder(
       {
+        id: "ord-1",
         fundId: "growth-partners",
         costUsdt: 25,
         date: new Date("2026-01-01T00:00:00.000Z"),
@@ -146,5 +149,61 @@ describe("transactionInsights", () => {
 
     assert.equal(insights.purchaseOrderId, "ord-abc");
     assert.equal(insights.investmentId, "inv-2");
+  });
+
+  it("includes lifecycle status on matured investment insights", () => {
+    const now = new Date();
+    const deadline = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+    const investment = {
+      id: "inv-matured",
+      userId: "u1",
+      walletId: "w1",
+      fundId: "growth-partners",
+      amountUsdt: 25,
+      returnPercent90d: 25,
+      projectedPayoutUsdt: 31.25,
+      status: InvestmentStatus.matured,
+      purchaseOrderId: "ord-1",
+      transaction: null,
+      redemptionTransaction: null,
+      subscribedAt: new Date("2026-01-01T00:00:00.000Z"),
+      maturesAt: new Date("2026-06-01T00:00:00.000Z"),
+      redeemedAt: null,
+      payabilityStatus: "pending_liquidity" as const,
+      payoutEligibleAt: null,
+      markedPayableAt: null,
+      payoutUnlockedAt: null,
+      autoPayoutAt: null,
+      payoutUnlockingInvestmentIds: [],
+      payoutUnlockingUserIds: [],
+      payoutReason: null,
+      payoutTriggeredBy: null,
+      payoutFailureReason: null,
+      globalQueueRank: null,
+      newSubscribersNeeded: null,
+      chainMemo: null,
+      recoveryEligibleAt: null,
+      sympathyNotifiedAt: null,
+      maturityNotifiedAt: null,
+      referralRecoveryCompletedAt: null,
+      unpaidMaturityResolution: null,
+      unpaidMaturityResolvedAt: null,
+      unpaidMaturityChoiceDeadlineAt: deadline,
+      termExtensionDays: null,
+      forfeitedAt: null,
+      forfeitureReason: null,
+      excludedFromTriadUnlock: false,
+      date: new Date("2026-01-01T00:00:00.000Z"),
+    };
+
+    assert.equal(
+      needsUnpaidMaturityChoiceFromInvestment(investment, now),
+      true
+    );
+
+    const insights = insightsFromInvestment(investment);
+    assert.equal(insights.investmentStatus, "matured");
+    assert.equal(insights.statusLabel, "Choose next step");
+    assert.equal(insights.needsUnpaidMaturityChoice, true);
   });
 });

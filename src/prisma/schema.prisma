@@ -322,6 +322,7 @@ model Investment {
   chainMemo             String?
   recoveryEligibleAt    DateTime?
   sympathyNotifiedAt    DateTime?
+  maturityNotifiedAt    DateTime?
   referralRecoveryCompletedAt DateTime?
   unpaidMaturityResolution   UnpaidMaturityResolution?
   unpaidMaturityResolvedAt   DateTime?

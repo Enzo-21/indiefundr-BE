@@ -7,6 +7,10 @@ import {
 import { prisma } from "@/lib/prisma";
 import { forfeitInvestment } from "@/services/investments/investmentForfeiture";
 import { processNewlyMaturedInvestments } from "@/services/investments/postMaturityProcessing";
+import {
+  notifyNewlyMaturedInvestments,
+  type MaturityNotificationResult,
+} from "@/services/investments/maturityNotifications";
 import { onInvestmentMatured } from "@/services/revenueEngine/onInvestmentMatured";
 
 export const MATURITY_CRON_BATCH_SIZE = 5;
@@ -21,6 +25,7 @@ export type MarkMaturedInvestmentsResult = {
   count: number;
   matured: MaturedInvestmentSummary[];
   pendingCount: number;
+  notifications: MaturityNotificationResult;
 };
 
 function overdueActiveWhere(now: Date) {
@@ -89,6 +94,18 @@ export async function markMaturedInvestments(options?: {
     await processNewlyMaturedInvestments(maturedIds, now);
   }
 
+  const notifications =
+    maturedIds.length > 0
+      ? await notifyNewlyMaturedInvestments(maturedIds)
+      : {
+          emailsSent: 0,
+          emailsFailed: 0,
+          emailsSkipped: 0,
+          pushSent: 0,
+          pushSkippedNoDevice: 0,
+          pushFailed: 0,
+        };
+
   if (toMature.length > 0) {
     await onInvestmentMatured();
   }
@@ -99,5 +116,6 @@ export async function markMaturedInvestments(options?: {
     count: matured.length,
     matured,
     pendingCount,
+    notifications,
   };
 }

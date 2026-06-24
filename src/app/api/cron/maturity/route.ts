@@ -7,7 +7,6 @@ import {
   markMaturedInvestments,
   MATURITY_CRON_BATCH_SIZE,
 } from "@/services/investments/maturity";
-import { notifyMaturedInvestments } from "@/services/investments/maturityNotifications";
 
 export const maxDuration = 60;
 
@@ -17,7 +16,8 @@ export async function GET(request: Request) {
   }
 
   const startedAt = new Date().toISOString();
-  const { count, matured, pendingCount } = await markMaturedInvestments({
+  const { count, matured, pendingCount, notifications } =
+    await markMaturedInvestments({
     limit: MATURITY_CRON_BATCH_SIZE,
   });
 
@@ -29,11 +29,6 @@ export async function GET(request: Request) {
     limit: FORFEITURE_CRON_BATCH_SIZE,
   });
 
-  const { notifiedCount, skippedNoDevice } =
-    count > 0
-      ? await notifyMaturedInvestments(matured)
-      : { notifiedCount: 0, skippedNoDevice: 0 };
-
   return Response.json({
     ok: true,
     maturedCount: count,
@@ -43,8 +38,10 @@ export async function GET(request: Request) {
     forfeitedIds,
     batchLimit: MATURITY_CRON_BATCH_SIZE,
     forfeitureBatchLimit: FORFEITURE_CRON_BATCH_SIZE,
-    notifiedCount,
-    skippedNoDevice,
+    notifiedCount: notifications.pushSent,
+    skippedNoDevice: notifications.pushSkippedNoDevice,
+    emailsSent: notifications.emailsSent,
+    emailsFailed: notifications.emailsFailed,
     maturedIds: matured.map((row) => row.id),
     startedAt,
     finishedAt: new Date().toISOString(),

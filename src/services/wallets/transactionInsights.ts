@@ -2,6 +2,8 @@ import type { Investment, PurchaseOrder } from "@prisma/client";
 import type { InvestmentFund } from "@/lib/config/investmentFunds";
 import { getFundById } from "@/lib/config/investmentFunds";
 import { projectedPayoutUsdt } from "@/lib/config/pricing";
+import { getUserStatusLabel } from "@/lib/investments/presentation";
+import { needsUnpaidMaturityChoiceFromInvestment } from "@/services/investments/maturityNotifications";
 import {
   defaultTypicalPayoutDays,
   payoutDaysBetweenFloor,
@@ -29,6 +31,9 @@ export type TransactionInsights = {
   creditedUsdt: number | null;
   investmentId: string | null;
   purchaseOrderId: string | null;
+  investmentStatus: string | null;
+  statusLabel: string | null;
+  needsUnpaidMaturityChoice: boolean;
 };
 
 function roundUsdt(value: number): number {
@@ -76,6 +81,9 @@ function baseInsights(
       | "typicalPayoutDays"
       | "investmentId"
       | "purchaseOrderId"
+      | "investmentStatus"
+      | "statusLabel"
+      | "needsUnpaidMaturityChoice"
     >
   >
 ): TransactionInsights {
@@ -99,6 +107,24 @@ function baseInsights(
     creditedUsdt: extras?.creditedUsdt ?? null,
     investmentId: extras?.investmentId ?? null,
     purchaseOrderId: extras?.purchaseOrderId ?? null,
+    investmentStatus: extras?.investmentStatus ?? null,
+    statusLabel: extras?.statusLabel ?? null,
+    needsUnpaidMaturityChoice: extras?.needsUnpaidMaturityChoice ?? false,
+  };
+}
+
+function investmentLifecycleInsights(
+  investment: Investment
+): Pick<
+  TransactionInsights,
+  "investmentStatus" | "statusLabel" | "needsUnpaidMaturityChoice"
+> {
+  const needsUnpaidMaturityChoice =
+    needsUnpaidMaturityChoiceFromInvestment(investment);
+  return {
+    investmentStatus: investment.status,
+    statusLabel: getUserStatusLabel(investment, { needsUnpaidMaturityChoice }),
+    needsUnpaidMaturityChoice,
   };
 }
 
@@ -123,6 +149,7 @@ export function insightsFromInvestment(
       typicalPayoutDays,
       investmentId: investment.id,
       purchaseOrderId: investment.purchaseOrderId,
+      ...investmentLifecycleInsights(investment),
     }
   );
 }
@@ -153,6 +180,7 @@ export function insightsFromPurchaseOrder(
         typicalPayoutDays,
         investmentId: linkedInvestment.id,
         purchaseOrderId: linkedInvestment.purchaseOrderId ?? order.id,
+        ...investmentLifecycleInsights(linkedInvestment),
       }
     );
   }
@@ -168,6 +196,9 @@ export function insightsFromPurchaseOrder(
       typicalPayoutDays,
       purchaseOrderId: order.id,
       investmentId: order.investmentId,
+      investmentStatus: null,
+      statusLabel: null,
+      needsUnpaidMaturityChoice: false,
     }
   );
 }
@@ -202,6 +233,7 @@ export function insightsFromRedemption(
       typicalPayoutDays,
       investmentId: investment.id,
       purchaseOrderId: investment.purchaseOrderId,
+      ...investmentLifecycleInsights(investment),
     }
   );
 }

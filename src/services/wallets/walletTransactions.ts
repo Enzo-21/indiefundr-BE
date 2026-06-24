@@ -265,6 +265,11 @@ export async function buildAppTransactions(
   mainWalletId?: string | null,
   { skipOrderReconcile = false }: { skipOrderReconcile?: boolean } = {}
 ): Promise<AppTransaction[]> {
+  const { markMaturedInvestments } = await import(
+    "@/services/investments/maturity"
+  );
+  await markMaturedInvestments();
+
   const investmentWhere = buildWalletActivityWhere(
     userId,
     walletId,
