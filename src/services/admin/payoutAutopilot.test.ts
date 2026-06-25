@@ -4,6 +4,25 @@ import { InvestmentStatus } from "@prisma/client";
 import type { AdminInvestmentRow } from "@/services/admin/investmentAdminTypes";
 import { buildAutopilotPayoutCandidatesFromRows } from "./payoutAutopilot";
 
+const adminMaturityDefaults = {
+  payoutUnlockPrincipalRequiredUsdt: null,
+  payoutUnlockPrincipalReceivedUsdt: null,
+  payoutUnlockerDetails: [] as AdminInvestmentRow["payoutUnlockerDetails"],
+  maturitySituation: "active",
+  userPathLabel: "None",
+  statusDetail: "",
+  chosenPath: null,
+  unpaidMaturityResolution: null,
+  unpaidMaturityChoiceDeadlineAt: null,
+  termExtensionDays: null,
+  recoveryQualifiedCount: null,
+  recoveryRequiredCount: null,
+  nextDeadlineAt: null,
+  nextDeadlineLabel: null,
+  globalQueueRank: null,
+  newSubscribersNeeded: null,
+} as const;
+
 const mockRows: AdminInvestmentRow[] = [
   {
     id: "inv-normal-1",
@@ -46,6 +65,7 @@ const mockRows: AdminInvestmentRow[] = [
     canConfirmRedemption: false,
     confirmRedemptionBlockReason: null,
     redemptionTxId: null,
+    ...adminMaturityDefaults,
   },
   {
     id: "inv-normal-2",
@@ -88,6 +108,7 @@ const mockRows: AdminInvestmentRow[] = [
     canConfirmRedemption: false,
     confirmRedemptionBlockReason: null,
     redemptionTxId: null,
+    ...adminMaturityDefaults,
   },
   {
     id: "inv-surplus-1",
@@ -130,6 +151,7 @@ const mockRows: AdminInvestmentRow[] = [
     canConfirmRedemption: false,
     confirmRedemptionBlockReason: null,
     redemptionTxId: null,
+    ...adminMaturityDefaults,
   },
 ];
 

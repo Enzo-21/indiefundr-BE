@@ -12,7 +12,7 @@ describe("Aggressive Alpha CSV ledger parity", () => {
   const rows = loadAggressiveAlphaSimulationCsv();
 
   it("surplusPerSubscription matches CSV slice 3.33", () => {
-    assert.equal(surplusPerSubscription(35), 3.33);
+    assert.equal(surplusPerSubscription(35, 25), 3.33);
   });
 
   it("after 3 subscriptions matches CSV step 3", () => {

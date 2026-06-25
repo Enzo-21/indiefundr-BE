@@ -2,6 +2,7 @@ import type { Investment } from "@prisma/client";
 import {
   REVENUE_ENGINE_ENABLED,
 } from "@/lib/config/revenueEngine";
+import { scheduleUserLevelRecalculation } from "@/services/playerLevels/scheduleUserLevelRecalculation";
 import { drawSurplus, getLedgerSnapshot, recordPayoutOutflow } from "./ledger";
 import { canFundFromPool, getPoolMin } from "./pool";
 import { calculateTriadPayoutAccounting } from "./accounting";
@@ -9,6 +10,7 @@ import { isSurplusPayoutTrigger } from "./payoutScheduler";
 
 export async function onRedeemCompleted(investment: Investment): Promise<void> {
   if (!REVENUE_ENGINE_ENABLED()) {
+    scheduleUserLevelRecalculation(investment.userId);
     return;
   }
 
@@ -52,4 +54,5 @@ export async function onRedeemCompleted(investment: Investment): Promise<void> {
   });
 
   // Surplus is credited per subscription (subscribe_triad_slice); do not credit again on payout.
+  scheduleUserLevelRecalculation(investment.userId);
 }

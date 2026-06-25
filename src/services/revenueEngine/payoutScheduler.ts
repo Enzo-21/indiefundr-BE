@@ -3,7 +3,12 @@ import {
   InvestmentStatus,
   type Investment,
 } from "@prisma/client";
-import { REVENUE_ENGINE_ENABLED } from "@/lib/config/revenueEngine";
+import { isExcludedFromNormalPayout } from "@/lib/investments/referralRecoveryNormalPayout";
+import {
+  unlockPrincipalRequired,
+  unlockSlotEquivalent,
+} from "@/lib/config/investmentCohort";
+import { INVESTMENT_AMOUNT_USDT, REVENUE_ENGINE_ENABLED } from "@/lib/config/revenueEngine";
 import { ledgerTruncateUsdt } from "@/lib/money/formatUsdt";
 import { prisma } from "@/lib/prisma";
 import { fieldIsNullOrUnset } from "@/lib/prisma/mongoFieldFilters";
@@ -38,7 +43,7 @@ import {
 
 export type PayoutUnlocker = Pick<
   Investment,
-  "id" | "userId" | "subscribedAt" | "excludedFromTriadUnlock"
+  "id" | "userId" | "subscribedAt" | "excludedFromTriadUnlock" | "amountUsdt"
 > & {
   user?: { name: string; email: string };
 };
@@ -61,10 +66,23 @@ export function getSurplusPayoutEligibility(
     | "projectedPayoutUsdt"
     | "payoutUnlockedAt"
     | "redemptionTransaction"
+    | "unpaidMaturityResolution"
+    | "referralRecoveryCompletedAt"
   >,
   ledger: Pick<LedgerSnapshot, "treasurySurplus">,
   _now = new Date()
 ) {
+  if (isExcludedFromNormalPayout(investment)) {
+    return {
+      eligibleForLiquiditySurplusPay: false,
+      eligibleForAdminSurplusPay: false,
+      eligibleForCronSurplusPay: false,
+      surplusShortfallUsdt: 0,
+      surplusPayoutAvailableAt: getSurplusPayoutAvailableAt(investment),
+      reason: "referral_recovery_path" as const,
+    };
+  }
+
   const payoutAmount = Number(investment.projectedPayoutUsdt || 0);
   const shortfall = Math.max(
     0,
@@ -121,6 +139,8 @@ export type FifoSurplusPayoutCandidate = Pick<
   | "payoutUnlockedAt"
   | "redemptionTransaction"
   | "maturesAt"
+  | "unpaidMaturityResolution"
+  | "referralRecoveryCompletedAt"
 >;
 
 function sortFifoSurplusCandidates(
@@ -162,6 +182,9 @@ export function computeFifoSurplusEligibleInvestmentIds(
   const eligible = new Set<string>();
 
   for (const investment of ordered) {
+    if (isExcludedFromNormalPayout(investment)) {
+      continue;
+    }
     if (!passesSurplusPayoutPreconditions(investment, now)) {
       continue;
     }
@@ -223,12 +246,18 @@ export function pickNextFifoSurplusPayoutInvestmentId(
 }
 
 export function findUnlockingInvestments<T extends PayoutUnlocker>(
-  candidate: Pick<Investment, "id" | "userId" | "subscribedAt">,
+  candidate: Pick<Investment, "id" | "userId" | "subscribedAt" | "amountUsdt">,
   investments: T[],
   consumedUnlockingInvestmentIds: ReadonlySet<string> = new Set()
 ): T[] {
   if (!candidate.subscribedAt) return [];
 
+  const headAmount =
+    candidate.amountUsdt > 0
+      ? candidate.amountUsdt
+      : INVESTMENT_AMOUNT_USDT();
+  const requiredPrincipal = unlockPrincipalRequired(headAmount);
+  let receivedPrincipal = 0;
   const selected: T[] = [];
 
   for (const investment of investments) {
@@ -238,11 +267,18 @@ export function findUnlockingInvestments<T extends PayoutUnlocker>(
     if (investment.subscribedAt <= candidate.subscribedAt) continue;
     if (investment.excludedFromTriadUnlock) continue;
 
+    const unlockerAmount =
+      investment.amountUsdt > 0
+        ? investment.amountUsdt
+        : INVESTMENT_AMOUNT_USDT();
     selected.push(investment);
-    if (selected.length === 2) break;
+    receivedPrincipal += unlockerAmount;
+    if (receivedPrincipal >= requiredPrincipal) {
+      break;
+    }
   }
 
-  return selected;
+  return receivedPrincipal >= requiredPrincipal ? selected : [];
 }
 
 export function buildPayoutReadinessClaimWhere(investmentId: string) {
@@ -259,16 +295,33 @@ export function buildSurplusPayoutClaimWhere(investmentId: string) {
   return buildPayoutReadinessClaimWhere(investmentId);
 }
 
-function buildPayoutReason(unlockers: PayoutUnlocker[]) {
-  if (unlockers.length < 2) {
+export function buildPayoutReason(
+  headAmountUsdt: number,
+  unlockers: PayoutUnlocker[]
+): string | null {
+  if (unlockers.length === 0) {
     return null;
   }
-  const uniqueUserIds = new Set(unlockers.map((inv) => inv.userId));
-  if (uniqueUserIds.size === 1) {
-    return "Two later investments by the same user unlocked this payout.";
-  }
-  const labels = unlockers.map((inv) => inv.user?.name || inv.user?.email || inv.userId);
-  return `Two later investments (${labels[0]} and ${labels[1]}) unlocked this payout.`;
+
+  const required = unlockPrincipalRequired(headAmountUsdt);
+  const received = unlockers.reduce(
+    (sum, inv) => sum + (inv.amountUsdt || 0),
+    0
+  );
+  const equivalent = unlockSlotEquivalent(received, headAmountUsdt);
+  const amountParts = unlockers
+    .map((inv) => `${inv.amountUsdt} USDT`)
+    .join(" + ");
+  const countLabel =
+    unlockers.length === 1
+      ? "1 later investment"
+      : `${unlockers.length} later investments`;
+
+  return (
+    `Unlocked after ${countLabel} (${amountParts}). ` +
+    `Head invested ${headAmountUsdt} USDT; required ${required} USDT from newer investors (2× cohort). ` +
+    `Received ${received} USDT (${equivalent}× equivalent).`
+  );
 }
 
 function hasBroadcastRedemption(result: { investment: Investment }) {
@@ -302,7 +355,8 @@ export async function evaluatePayoutReadiness({
     (inv) =>
       PAYOUT_CANDIDATE_STATUSES.includes(inv.status) &&
       !inv.payoutUnlockedAt &&
-      !inv.redemptionTransaction
+      !inv.redemptionTransaction &&
+      !isExcludedFromNormalPayout(inv)
   );
   const consumedUnlockingInvestmentIds = new Set(
     investments.flatMap((inv) => inv.payoutUnlockingInvestmentIds)
@@ -317,9 +371,15 @@ export async function evaluatePayoutReadiness({
       investments,
       consumedUnlockingInvestmentIds
     );
-    if (unlockers.length < 2) {
+    if (unlockers.length === 0) {
       continue;
     }
+
+    const principalRequired = unlockPrincipalRequired(candidate.amountUsdt);
+    const principalReceived = unlockers.reduce(
+      (sum, inv) => sum + (inv.amountUsdt || 0),
+      0
+    );
 
     const result = await prisma.investment.updateMany({
       where: buildPayoutReadinessClaimWhere(candidate.id),
@@ -328,7 +388,9 @@ export async function evaluatePayoutReadiness({
         payoutUnlockedAt: now,
         payoutUnlockingInvestmentIds: unlockers.map((inv) => inv.id),
         payoutUnlockingUserIds: unlockers.map((inv) => inv.userId),
-        payoutReason: buildPayoutReason(unlockers),
+        payoutUnlockPrincipalRequiredUsdt: principalRequired,
+        payoutUnlockPrincipalReceivedUsdt: principalReceived,
+        payoutReason: buildPayoutReason(candidate.amountUsdt, unlockers),
         payoutFailureReason: null,
       },
     });

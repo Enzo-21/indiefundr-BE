@@ -44,8 +44,8 @@ export const PLAYER_LEVELS: PlayerLevelDefinition[] = [
     title: "Builder",
     subtitle: "Your first investments are live",
     requirements: [
-      "Complete your first investment",
-      "Keep at least one active position for 7 days",
+      "Complete at least 1 investment (paid or recovered)",
+      "Make at least 3 lifetime investments",
     ],
     benefits: [
       "2 open slots per fund",
@@ -104,7 +104,6 @@ export const PLAYER_LEVELS: PlayerLevelDefinition[] = [
     title: "Master",
     subtitle: "Maximum flexibility across the platform",
     requirements: [
-      "Reach level 3",
       "Invite a friend who completes their first investment",
     ],
     benefits: [
@@ -124,9 +123,9 @@ export const PLAYER_LEVELS: PlayerLevelDefinition[] = [
     title: "Elite",
     subtitle: "Unlimited capacity for top investors",
     requirements: [
-      "Reach level 4",
       "Hold investments in at least 4 different funds",
       "Complete 10+ successful investments lifetime",
+      "Invite 3 friends who qualify for referral rewards (both invested)",
     ],
     benefits: [
       "Unlimited open slots per fund",

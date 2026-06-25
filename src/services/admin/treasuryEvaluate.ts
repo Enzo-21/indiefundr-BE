@@ -1,11 +1,24 @@
-import {
-  reconcileTreasuryLedgerFromExpected,
-  type LedgerReconciliationResult,
-} from "@/services/revenueEngine/ledgerReconcile";
+import { evaluateAll } from "@/services/revenueEngine/evaluateAll";
 
-export type AdminTreasuryReconcileResult = LedgerReconciliationResult;
+export type AdminTreasuryEvaluateResult = {
+  updated: number;
+  headId: string | null;
+  poolAvailable?: number;
+};
 
-/** Optional admin repair: realign stored ledger with event-derived expected values. */
-export async function runAdminTreasuryReconcile(): Promise<AdminTreasuryReconcileResult> {
-  return reconcileTreasuryLedgerFromExpected();
+/** Re-evaluate global payout queue ranks (no ledger auto-reconcile). */
+export async function runAdminTreasuryEvaluate(): Promise<AdminTreasuryEvaluateResult> {
+  const result = await evaluateAll();
+  return {
+    updated: result.updated,
+    headId: result.headId ?? null,
+    poolAvailable: result.poolAvailable,
+  };
+}
+
+/** @deprecated Auto-reconcile removed — use runAdminTreasuryEvaluate. */
+export async function runAdminTreasuryReconcile(): Promise<never> {
+  throw new Error(
+    "Treasury auto-reconcile is disabled. The ledger is event-sourced; use Evaluate payout queue instead."
+  );
 }

@@ -22,21 +22,19 @@ export function EvaluateButton({
         startTransition(async () => {
           const result = await action();
           if (result.ok) {
-            const { updated, adjustedFields } = result.data;
-            if (updated) {
-              toast.success(
-                `Ledger reconciled (${adjustedFields.join(", ") || "fields updated"})`
-              );
-            } else {
-              toast.success("Ledger already matches expected values");
-            }
+            const { updated, headId } = result.data;
+            toast.success(
+              headId
+                ? `Queue evaluated (${updated} slot${updated === 1 ? "" : "s"}); head ${headId.slice(-6)}`
+                : `Queue evaluated (${updated} matured investment${updated === 1 ? "" : "s"})`
+            );
           } else {
             toast.error(result.error.msg);
           }
         });
       }}
     >
-      {pending ? "Running…" : "Reconcile treasury"}
+      {pending ? "Running…" : "Evaluate payout queue"}
     </Button>
   );
 }

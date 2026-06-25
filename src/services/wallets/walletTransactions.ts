@@ -317,6 +317,11 @@ export async function buildAppTransactions(
     ...investments.map((inv) => inv.fundId),
     ...orders.map((order) => order.fundId),
   ]);
+  const { loadFifoEligibleIds } = await import(
+    "@/services/investments/unpaidMaturityChoice"
+  );
+  const fifoEligibleIds = await loadFifoEligibleIds();
+  const insightsContext = { fifoEligibleIds };
 
   for (const inv of investments) {
     const linkedOrder = inv.purchaseOrderId
@@ -368,7 +373,8 @@ export async function buildAppTransactions(
           inv.fundId,
           fund?.termDays ?? 90,
           typicalByFund
-        )
+        ),
+        insightsContext
       ),
     });
 
@@ -401,7 +407,8 @@ export async function buildAppTransactions(
             inv.fundId,
             fund?.termDays ?? 90,
             typicalByFund
-          )
+          ),
+          insightsContext
         ),
       });
     }
@@ -563,7 +570,8 @@ export async function buildAppTransactions(
           order.fundId,
           fund?.termDays ?? 90,
           typicalByFund
-        )
+        ),
+        insightsContext
       ),
     });
   }

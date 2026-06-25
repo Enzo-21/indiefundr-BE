@@ -8,7 +8,6 @@ import { prisma } from "@/lib/prisma";
 import { getLedgerSnapshot } from "./ledger";
 import { buildGlobalQueue, getQueueHead } from "./queue";
 import { canFundFromPool, getPoolMin, sumObligationsRest } from "./pool";
-import { reconcileTreasuryLedgerFromExpected } from "./ledgerReconcile";
 
 export type LastEvaluation = {
   queue: string[];
@@ -37,7 +36,6 @@ export async function evaluateAll(): Promise<{
     return { updated: 0 };
   }
 
-  await reconcileTreasuryLedgerFromExpected();
   const ledger = await getLedgerSnapshot();
   const matured = await prisma.investment.findMany({
     where: { status: InvestmentStatus.matured },

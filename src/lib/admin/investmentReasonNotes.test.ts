@@ -15,6 +15,9 @@ function baseRow(
     ledgerAfterPayout: null,
     ledgerEventKind: "subscription",
     payoutUnlockingInvestmentIds: [],
+    payoutUnlockPrincipalRequiredUsdt: null,
+    payoutUnlockPrincipalReceivedUsdt: null,
+    payoutUnlockerDetails: [],
     userId: "u1",
     userEmail: "a@test.com",
     userName: null,
@@ -48,17 +51,48 @@ function baseRow(
     canConfirmRedemption: false,
     confirmRedemptionBlockReason: null,
     redemptionTxId: null,
+    maturitySituation: "awaiting_admin_payout",
+    userPathLabel: "None",
+    statusDetail: "",
+    chosenPath: null,
+    unpaidMaturityResolution: null,
+    unpaidMaturityChoiceDeadlineAt: null,
+    termExtensionDays: null,
+    recoveryQualifiedCount: null,
+    recoveryRequiredCount: null,
+    nextDeadlineAt: null,
+    nextDeadlineLabel: null,
+    globalQueueRank: 1,
+    newSubscribersNeeded: 0,
     ...overrides,
   };
 }
 
 describe("buildInvestmentReasonNote", () => {
-  it("shows unlock investment ids, not stored payoutReason users", () => {
+  it("prefers stored payoutReason when unlocked", () => {
+    const detailedReason =
+      "Unlocked after 2 later investments (25 USDT + 25 USDT). Head invested 25 USDT; required 50 USDT from newer investors (2× cohort). Received 50 USDT (2× equivalent).";
     const note = buildInvestmentReasonNote(
       baseRow({
         id: "inv-head",
         payoutUnlockedAt: new Date(),
         payoutUnlockingInvestmentIds: ["inv-bbbbbbbbbbbb", "inv-cccccccccccc"],
+        payoutReason: detailedReason,
+        payoutStatus: "ready",
+        surplusPayoutReason: "normal_payout_unlocked",
+        surplusShortfallUsdt: 5,
+      })
+    );
+    assert.equal(note, detailedReason);
+  });
+
+  it("shows unlock investment ids when unlocked without payoutReason", () => {
+    const note = buildInvestmentReasonNote(
+      baseRow({
+        id: "inv-head",
+        payoutUnlockedAt: new Date(),
+        payoutUnlockingInvestmentIds: ["inv-bbbbbbbbbbbb", "inv-cccccccccccc"],
+        payoutReason: null,
         payoutStatus: "ready",
         surplusPayoutReason: "normal_payout_unlocked",
         surplusShortfallUsdt: 5,
@@ -83,10 +117,24 @@ describe("buildInvestmentReasonNote", () => {
     const note = buildInvestmentReasonNote(
       baseRow({
         id: "inv-1",
+        maturitySituation: "waiting_unlock",
+        statusDetail:
+          "Your term ended. Two newer investments are needed to unlock your payout through the normal queue.",
         surplusPayoutReason: "insufficient_surplus",
         surplusShortfallUsdt: 28,
       })
     );
-    assert.equal(note, null);
+    assert.match(note ?? "", /Two newer investments/);
+  });
+
+  it("shows choice open with deadline", () => {
+    const note = buildInvestmentReasonNote(
+      baseRow({
+        id: "inv-choice",
+        maturitySituation: "choice_required",
+        unpaidMaturityChoiceDeadlineAt: new Date("2099-06-05T12:00:00.000Z"),
+      })
+    );
+    assert.match(note ?? "", /48h choice open/);
   });
 });

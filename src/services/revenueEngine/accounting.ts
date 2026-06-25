@@ -1,25 +1,13 @@
 import type { Investment } from "@prisma/client";
 import {
-  APP_NET_REVENUE_PER_SUBSCRIBER_USDT,
-  INVESTMENT_AMOUNT_USDT,
-} from "@/lib/config/revenueEngine";
+  protectedRevenueForTriadLegs,
+  surplusPerSubscription,
+  triadSurplusForPayout,
+} from "@/lib/config/investmentCohort";
 import { ledgerTruncateUsdt } from "@/lib/money/formatUsdt";
 import { prisma } from "@/lib/prisma";
 
-/** Triad surplus for a completed payout: 3×principal − 3×protected − payout. */
-export function triadSurplusForPayout(payoutAmountUsdt: number): number {
-  const principal = INVESTMENT_AMOUNT_USDT();
-  const protectedPerTriad = 3 * APP_NET_REVENUE_PER_SUBSCRIBER_USDT();
-  const grossTriadInflow = 3 * principal;
-  return ledgerTruncateUsdt(
-    Math.max(0, grossTriadInflow - protectedPerTriad - payoutAmountUsdt)
-  );
-}
-
-/** Surplus slice credited on each subscription (triad surplus ÷ 3, 2dp per spec CSV). */
-export function surplusPerSubscription(projectedPayoutUsdt: number): number {
-  return ledgerTruncateUsdt(triadSurplusForPayout(projectedPayoutUsdt) / 3);
-}
+export { surplusPerSubscription, triadSurplusForPayout };
 
 export type TriadAccountingInvestment = Pick<
   Investment,
@@ -55,10 +43,6 @@ export function calculateTriadPayoutAccountingFromInvestments(
       Boolean(inv)
     );
   const missingUnlockingInvestmentIds = expectedIds.filter((id) => !byId.has(id));
-  const complete =
-    expectedIds.length >= 2 &&
-    orderedUnlockers.length >= 2 &&
-    missingUnlockingInvestmentIds.length === 0;
   const payoutAmount = ledgerTruncateUsdt(
     paidInvestment.projectedPayoutUsdt || 0
   );
@@ -66,6 +50,10 @@ export function calculateTriadPayoutAccountingFromInvestments(
     paidInvestment.amountUsdt +
       orderedUnlockers.reduce((sum, inv) => sum + (inv.amountUsdt || 0), 0)
   );
+
+  const hasUnlockers = orderedUnlockers.length > 0;
+  const complete =
+    hasUnlockers && missingUnlockingInvestmentIds.length === 0;
 
   if (!complete) {
     return {
@@ -82,9 +70,11 @@ export function calculateTriadPayoutAccountingFromInvestments(
     };
   }
 
-  const protectedRevenueAmount = ledgerTruncateUsdt(
-    (1 + orderedUnlockers.length) * APP_NET_REVENUE_PER_SUBSCRIBER_USDT()
-  );
+  const triadLegs = [
+    { amountUsdt: paidInvestment.amountUsdt },
+    ...orderedUnlockers.map((inv) => ({ amountUsdt: inv.amountUsdt })),
+  ];
+  const protectedRevenueAmount = protectedRevenueForTriadLegs(triadLegs);
   const triadSurplus = ledgerTruncateUsdt(
     Math.max(0, grossTriadInflow - protectedRevenueAmount - payoutAmount)
   );

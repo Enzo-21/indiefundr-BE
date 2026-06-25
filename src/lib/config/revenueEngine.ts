@@ -1,4 +1,5 @@
 import { getEnv } from "@/lib/env";
+import { getInvestmentAmountUsdt } from "@/lib/config/pricing";
 
 function cfg() {
   const e = getEnv();
@@ -43,10 +44,15 @@ export const additionalInflowNeeded = (
 export const newSubscribersNeeded = (
   poolAvailable: number,
   pHead: number,
-  mFloor: number = MIN_APP_MARGIN_USDT()
+  mFloor: number = MIN_APP_MARGIN_USDT(),
+  currentSubscriptionAmount: number = getInvestmentAmountUsdt()
 ) => {
   const needed = additionalInflowNeeded(poolAvailable, pHead, mFloor);
-  return Math.ceil(needed / INVESTMENT_AMOUNT_USDT());
+  const unit =
+    currentSubscriptionAmount > 0
+      ? currentSubscriptionAmount
+      : getInvestmentAmountUsdt();
+  return Math.ceil(needed / unit);
 };
 
 export const surplusPerSubscriber = (poolAfter: number, n = 3) => {

@@ -12,11 +12,11 @@ import {
 
 describe("triadSimulation", () => {
   it("Aggressive triad surplus is 10 USDT", () => {
-    assert.equal(triadSurplusForPayout(35), 10);
+    assert.equal(triadSurplusForPayout(35, 25), 10);
   });
 
   it("Growth Partners triad surplus is 13.75 USDT", () => {
-    assert.equal(triadSurplusForPayout(31.25), 13.75);
+    assert.equal(triadSurplusForPayout(31.25, 25), 13.75);
   });
 
   it("9-user sequential cohort unlocks 4 heads (orders 1–4)", () => {
@@ -40,7 +40,7 @@ describe("triadSimulation", () => {
       payoutPerHead: 35,
     });
     const expected = cohortToExpectedLedger(projection);
-    const surplusOnSubscribe = roundUsdt(100 * surplusPerSubscription(35));
+    const surplusOnSubscribe = roundUsdt(100 * surplusPerSubscription(35, 25));
 
     assert.equal(unlocks.length, 49);
     assert.equal(projection.triadCount, 49);

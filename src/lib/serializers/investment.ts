@@ -2,9 +2,10 @@ import type { Investment } from "@prisma/client";
 import { getFundById } from "@/lib/config/investmentFunds";
 import { isChoiceDeadlineActive } from "@/lib/config/unpaidMaturityChoice";
 import { recoveryExpiresAt } from "@/lib/config/referralRecovery";
+import type { MaturityChosenPath, MaturitySituation } from "@/lib/investments/maturitySituation";
 import {
   canUserClaim,
-  getUserStatusLabel,
+  resolveInvestmentMaturitySituation,
 } from "@/lib/investments/presentation";
 
 export type EnrichedInvestmentJson = {
@@ -29,7 +30,12 @@ export type EnrichedInvestmentJson = {
   newSubscribersNeeded: number | null;
   date: string;
   fundName: string;
+  situation: MaturitySituation;
   statusLabel: string;
+  statusDetail: string;
+  chosenPath: MaturityChosenPath | null;
+  nextDeadlineAt: string | null;
+  nextDeadlineLabel: string | null;
   canClaim: boolean;
   recoveryEligibleAt: string | null;
   recoveryExpiresAt: string | null;
@@ -56,6 +62,7 @@ export type EnrichedInvestmentJson = {
 };
 
 export type EnrichInvestmentOptions = {
+  fifoEligibleIds?: ReadonlySet<string>;
   recoveryQualifiedCount?: number | null;
   recoveryRequiredCount?: number | null;
   needsUnpaidMaturityChoice?: boolean;
@@ -70,6 +77,12 @@ export function enrichInvestment(
   options: EnrichInvestmentOptions = {}
 ): EnrichedInvestmentJson {
   const fund = getFundById(investment.fundId);
+  const maturity = resolveInvestmentMaturitySituation(investment, {
+    fifoEligibleIds: options.fifoEligibleIds,
+    recoveryQualifiedCount: options.recoveryQualifiedCount,
+    recoveryRequiredCount: options.recoveryRequiredCount,
+  });
+
   return {
     _id: investment.id,
     userId: investment.userId,
@@ -88,13 +101,16 @@ export function enrichInvestment(
     payabilityStatus: investment.payabilityStatus,
     payoutEligibleAt: investment.payoutEligibleAt?.toISOString() ?? null,
     markedPayableAt: investment.markedPayableAt?.toISOString() ?? null,
-    globalQueueRank: investment.globalQueueRank,
-    newSubscribersNeeded: investment.newSubscribersNeeded,
+    globalQueueRank: maturity.globalQueueRank,
+    newSubscribersNeeded: maturity.newSubscribersNeeded,
     date: investment.date.toISOString(),
     fundName: fund?.name || investment.fundId,
-    statusLabel: getUserStatusLabel(investment, {
-      needsUnpaidMaturityChoice: options.needsUnpaidMaturityChoice ?? false,
-    }),
+    situation: maturity.situation,
+    statusLabel: maturity.statusLabel,
+    statusDetail: maturity.statusDetail,
+    chosenPath: maturity.chosenPath,
+    nextDeadlineAt: maturity.nextDeadlineAt,
+    nextDeadlineLabel: maturity.nextDeadlineLabel,
     canClaim: canUserClaim(investment),
     recoveryEligibleAt: investment.recoveryEligibleAt?.toISOString() ?? null,
     recoveryExpiresAt: investment.recoveryEligibleAt
@@ -103,14 +119,13 @@ export function enrichInvestment(
     recoveryQualifiedCount: options.recoveryQualifiedCount ?? null,
     recoveryRequiredCount: options.recoveryRequiredCount ?? null,
     unpaidMaturityResolution: investment.unpaidMaturityResolution ?? null,
-    needsUnpaidMaturityChoice: options.needsUnpaidMaturityChoice ?? false,
+    needsUnpaidMaturityChoice: maturity.needsUnpaidMaturityChoice,
     canChooseReferralRecovery: options.canChooseReferralRecovery ?? false,
     canChooseTermExtension: options.canChooseTermExtension ?? false,
     extensionMinDays: options.extensionMinDays ?? null,
     extensionMaxDays: options.extensionMaxDays ?? null,
-    termExtensionDays: investment.termExtensionDays ?? null,
-    unpaidMaturityChoiceDeadlineAt:
-      investment.unpaidMaturityChoiceDeadlineAt?.toISOString() ?? null,
+    termExtensionDays: maturity.termExtensionDays,
+    unpaidMaturityChoiceDeadlineAt: maturity.unpaidMaturityChoiceDeadlineAt,
     choiceDeadlineExpired: investment.unpaidMaturityChoiceDeadlineAt
       ? !isChoiceDeadlineActive(investment.unpaidMaturityChoiceDeadlineAt)
       : false,

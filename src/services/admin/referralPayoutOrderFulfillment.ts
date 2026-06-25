@@ -20,6 +20,7 @@ import {
   recordReferralPrincipalRecovery,
 } from "@/services/revenueEngine/ledger";
 import * as tron from "@/services/tron/client";
+import { scheduleUserLevelRecalculation } from "@/services/playerLevels/scheduleUserLevelRecalculation";
 
 const OPEN_STATUSES: ReferralPayoutOrderStatus[] = [
   ReferralPayoutOrderStatus.queued,
@@ -288,6 +289,10 @@ export async function completeReferralPayoutOrder(
     ) {
       await clearInviterReferralPendingActivity(order.referralInviteId);
     }
+  }
+
+  if (order.kind === ReferralPayoutOrderKind.principal_recovery) {
+    scheduleUserLevelRecalculation(order.userId);
   }
 
   try {

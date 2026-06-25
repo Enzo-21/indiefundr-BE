@@ -156,7 +156,7 @@ function enrichLedgerSurplusDeltas(
       const credit =
         ledgerView?.subscribeSurplusCredit ??
         (source != null
-          ? surplusPerSubscription(source.projectedPayoutUsdt)
+          ? surplusPerSubscription(source.projectedPayoutUsdt, source.amountUsdt)
           : null);
       row.ledgerSurplusDelta = credit;
       continue;

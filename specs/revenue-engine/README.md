@@ -27,16 +27,18 @@ Canonical business rules and triad math for the treasury payout engine implement
 
 | Symbol | Code | Value |
 |--------|------|-------|
-| **A** | `INVESTMENT_AMOUNT_USDT` | **25** USDT principal per completed investment |
-| **P_prot** | `APP_NET_REVENUE_PER_SUBSCRIBER_USDT` | **10** USDT platform share per triad (surplus math only; not a per-sub withdrawable cap) |
-| **P_head** | `projectedPayoutUsdt` | `A × (1 + R/100)` where **R** is fund `returnPercent90d` |
+| **A** | `INVESTMENT_AMOUNT_USDT` | **Current** subscribe price (env); new orders only |
+| **A_inv** | `Investment.amountUsdt` | **Frozen** principal per investment (cohort) |
+| **P_prot_ref** | `APP_NET_REVENUE_PER_SUBSCRIBER_USDT` | **10** USDT platform share at reference amount **A** |
+| **P_prot(inv)** | `protectedRevenueForAmount(A_inv)` | `A_inv × (P_prot_ref / A)` — proportional per investment |
+| **P_head** | `projectedPayoutUsdt` | `A_inv × (1 + R/100)` where **R** is fund `returnPercent90d` |
 
-**Triad structure** (one payout head + two unlocker investments):
+**Triad structure** (one payout head + unlockers whose principal sums to **2 × A_head**):
 
-- Gross inflow: **G_triad = 3 × A = 75** USDT
-- Protected (platform) in triad: **3 × P_prot = 30** USDT
-- User payout: fund-specific **P_head**
-- **Triad surplus** (total margin above protected + payout): **S_triad = G_triad − 3×P_prot − P_head**
+- Gross inflow (homogeneous triad at amount **A_leg**): **G_triad = 3 × A_leg**
+- Protected (platform) in triad: **Σ P_prot(leg)** across head + unlockers (or **3 × P_prot(A_leg)** when all legs share the same amount)
+- User payout: fund-specific **P_head** on the head investment
+- **Triad surplus**: **S_triad = G_triad − protected − P_head** (see [`investmentCohort.ts`](../../src/lib/config/investmentCohort.ts))
 
 ---
 
@@ -57,10 +59,11 @@ Canonical business rules and triad math for the treasury payout engine implement
 Implemented in [`payoutScheduler.ts`](../../src/services/revenueEngine/payoutScheduler.ts) (`findUnlockingInvestments`, `evaluatePayoutReadiness`):
 
 1. Investments ordered by `subscribedAt` ascending.
-2. Each candidate gets the **first two later** investments not already consumed as unlockers.
-3. Unlockers are one-shot (cannot unlock two payouts).
+2. Each candidate head with principal **A_head** requires **2 × A_head** USDT of principal from **later** investments (FIFO prefix of unlockers not already consumed).
+3. One unlocker investment is consumed in full when selected (excess principal stays in the pool via subscribe inflow; it does not roll to another head).
+4. Mixed cohorts: e.g. head **25** USDT unlocks after a single **50** USDT later investment; head **50** USDT needs **100** USDT from later investors (two **50** or one **100**, etc.).
 
-**Max triads in one pass** (sequential cohort 1…N): `T_max = floor((N − 1) / 2)` (e.g. **N = 100 → 49** triad heads).
+**Max triad heads in one pass** (sequential cohort, all **A_inv = A**): `T_max = floor((N − 1) / 2)` (e.g. **N = 100 → 49**).
 
 ---
 
@@ -83,11 +86,11 @@ Surplus is **not** extra cash on top of the treasury — it labels liquidity res
 On each completed subscribe ([`recordSubscribeInflow`](../../src/services/revenueEngine/ledger.ts)):
 
 ```
-poolAvailable += A
-treasurySurplus += S_sub     where S_sub = round(S_triad / 3, 2)
+poolAvailable += A_inv
+treasurySurplus += S_sub     where S_sub = round(S_triad(A_inv) / 3, 2)
 ```
 
-`S_triad` uses that investment’s `projectedPayoutUsdt` (fund-specific). Surplus is **not** credited again when a triad payout completes.
+`S_triad` uses that investment’s `projectedPayoutUsdt` and **A_inv** (`amountUsdt`). Surplus is **not** credited again when a triad payout completes.
 
 ---
 
@@ -115,8 +118,8 @@ Given **N** subscriptions and fund-specific **S_sub**:
 
 | Quantity | Formula |
 |----------|---------|
-| Gross subscribed | **G = N × A** |
-| Surplus credited (subscribe) | **S_total ≈ N × S_sub** |
+| Gross subscribed | **G = Σ A_inv** |
+| Surplus credited (subscribe) | **S_total ≈ Σ S_sub(inv)** per investment |
 | Triad payouts | up to **T_max = floor((N−1)/2)** per fund mix |
 | Pool (no withdrawals) | **pool ≈ G − Σ payouts − W** |
 | Withdrawable | **pool − surplus** |
@@ -151,12 +154,17 @@ Reference CSVs under [`simulations/`](simulations/) (columns: `event`, `fund`, `
 | Area | Tests / code |
 |------|----------------|
 | Triad accounting | `accounting.test.ts` |
-| Unlock selection | `payoutScheduler.test.ts` |
+| Unlock selection | `payoutScheduler.test.ts`, `payoutScheduler.cohort.test.ts` |
+| Cohort math | `investmentCohort.test.ts`, `accounting.test.ts` |
 | Cohort simulation | `triadSimulation.test.ts` |
-| Expected ledger | `ledgerReconcile.test.ts`, `computeExpectedLedger()` |
+| Expected ledger (read-only) | `ledgerReconcile.test.ts`, `buildLedgerIntegrityReport()` |
+
+**Ledger integrity:** `computeExpectedLedger` and admin Treasury integrity UI are **read-only**. Auto-reconcile (`reconcileTreasuryLedgerFromExpected`) no longer writes DB state — the event-sourced ledger is authoritative.
 
 ---
 
 ## Migration note
 
-Ledgers populated before surplus-on-subscribe may show surplus only from historical payout `surplus_credit` rows. Run [`reconcileTreasurySurplusFromTriads`](../../src/services/revenueEngine/ledgerReconcile.ts) after deploy or accept drift until subscriptions/payouts move the ledger forward.
+Changing `INVESTMENT_AMOUNT_USDT` in env affects **new** subscriptions only. Existing rows keep `amountUsdt` / `projectedPayoutUsdt`. After deploy, run read-only integrity report to check drift; do **not** run legacy auto-reconcile against mixed cohorts.
+
+Ledgers populated before surplus-on-subscribe may show surplus only from historical payout `surplus_credit` rows.

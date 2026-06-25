@@ -3,19 +3,18 @@ import {
   INVESTMENT_AMOUNT_USDT,
   roundUsdt,
 } from "@/lib/config/revenueEngine";
-import {
-  surplusPerSubscription,
-  triadSurplusForPayout,
-} from "./accounting";
+import { protectedRevenueForAmount, surplusPerSubscription } from "@/lib/config/investmentCohort";
 import type { ExpectedLedgerValues } from "./ledgerReconcile";
 import { findUnlockingInvestments } from "./payoutScheduler";
 
-export { triadSurplusForPayout, surplusPerSubscription };
+export { surplusPerSubscription };
+export { triadSurplusForPayout } from "@/lib/config/investmentCohort";
 
 export type SimulatedInvestment = {
   id: string;
   userId: string;
   subscribedAt: Date;
+  amountUsdt: number;
   projectedPayoutUsdt: number;
   excludedFromTriadUnlock: boolean;
 };
@@ -25,13 +24,13 @@ export function simulatePayoutReadinessUnlocks(
   investments: SimulatedInvestment[]
 ): Array<{
   headId: string;
-  unlockerIds: [string, string];
+  unlockerIds: string[];
 }> {
   const ordered = [...investments].sort(
     (a, b) => a.subscribedAt.getTime() - b.subscribedAt.getTime()
   );
   const consumedUnlockingInvestmentIds = new Set<string>();
-  const unlocked: Array<{ headId: string; unlockerIds: [string, string] }> = [];
+  const unlocked: Array<{ headId: string; unlockerIds: string[] }> = [];
 
   for (const candidate of ordered) {
     const unlockers = findUnlockingInvestments(
@@ -39,14 +38,14 @@ export function simulatePayoutReadinessUnlocks(
       ordered,
       consumedUnlockingInvestmentIds
     );
-    if (unlockers.length < 2) continue;
+    if (unlockers.length === 0) continue;
 
     for (const unlocker of unlockers) {
       consumedUnlockingInvestmentIds.add(unlocker.id);
     }
     unlocked.push({
       headId: candidate.id,
-      unlockerIds: [unlockers[0]!.id, unlockers[1]!.id],
+      unlockerIds: unlockers.map((inv) => inv.id),
     });
   }
 
@@ -67,15 +66,17 @@ export type CohortLedgerProjection = {
 export function projectCohortLedger({
   investmentCount,
   payoutPerHead,
+  principalPerInvestment,
   platformWithdrawn = 0,
 }: {
   investmentCount: number;
   payoutPerHead: number;
+  principalPerInvestment?: number;
   platformWithdrawn?: number;
 }): CohortLedgerProjection {
-  const principal = INVESTMENT_AMOUNT_USDT();
-  const platformPerInvestment = APP_NET_REVENUE_PER_SUBSCRIBER_USDT();
-  const surplusPerSub = surplusPerSubscription(payoutPerHead);
+  const principal = principalPerInvestment ?? INVESTMENT_AMOUNT_USDT();
+  const platformPerInvestment = protectedRevenueForAmount(principal);
+  const surplusPerSub = surplusPerSubscription(payoutPerHead, principal);
   const triadCount = Math.max(0, Math.floor((investmentCount - 1) / 2));
   const grossSubscribed = investmentCount * principal;
   const protectedCredited = investmentCount * platformPerInvestment;
@@ -109,11 +110,13 @@ export function buildSequentialCohort(
   count: number,
   options: {
     payoutUsdt?: number;
+    amountUsdt?: number;
     startMs?: number;
     msStep?: number;
   } = {}
 ): SimulatedInvestment[] {
-  const payoutUsdt = options.payoutUsdt ?? 35;
+  const amountUsdt = options.amountUsdt ?? INVESTMENT_AMOUNT_USDT();
+  const payoutUsdt = options.payoutUsdt ?? amountUsdt * 1.4;
   const startMs = options.startMs ?? Date.UTC(2026, 0, 1);
   const msStep = options.msStep ?? 60_000;
 
@@ -123,6 +126,7 @@ export function buildSequentialCohort(
       id: `inv-${n}`,
       userId: `user-${n}`,
       subscribedAt: new Date(startMs + index * msStep),
+      amountUsdt,
       projectedPayoutUsdt: payoutUsdt,
       excludedFromTriadUnlock: false,
     };

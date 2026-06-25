@@ -1,11 +1,14 @@
 import type { Investment } from "@prisma/client";
+import { isExcludedFromNormalPayout } from "@/lib/investments/referralRecoveryNormalPayout";
 import { riskRank } from "./riskRank";
 
 export const MATURED_UNPAID_STATUSES = ["matured"] as const;
 
 export function isMaturedUnpaid(inv: Investment): boolean {
-  return MATURED_UNPAID_STATUSES.includes(
-    inv.status as (typeof MATURED_UNPAID_STATUSES)[number]
+  return (
+    MATURED_UNPAID_STATUSES.includes(
+      inv.status as (typeof MATURED_UNPAID_STATUSES)[number]
+    ) && !isExcludedFromNormalPayout(inv)
   );
 }
 

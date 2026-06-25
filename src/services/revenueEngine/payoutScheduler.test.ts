@@ -534,7 +534,7 @@ describe("payout scheduler integration", () => {
           created[1].investment.id,
           created[2].investment.id,
         ]);
-        assert.match(first.payoutReason ?? "", /Two later investments/);
+        assert.match(first.payoutReason ?? "", /Unlocked after/);
         assert.equal(second.payoutUnlockedAt, null);
       } finally {
         await cleanup({
@@ -604,7 +604,7 @@ describe("payout scheduler integration", () => {
         ]);
         assert.match(
           firstAfter.payoutReason ?? "",
-          /same user|Two later investments/i
+          /same user|Unlocked after/i
         );
       } finally {
         await cleanup({

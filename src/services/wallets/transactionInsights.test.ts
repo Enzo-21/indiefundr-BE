@@ -11,7 +11,7 @@ import {
   insightsFromPurchaseOrder,
   insightsFromRedemption,
 } from "./transactionInsights";
-import { needsUnpaidMaturityChoiceFromInvestment } from "@/services/investments/maturityNotifications";
+import { isUnpaidMaturityChoicePending } from "@/services/investments/unpaidMaturityChoice";
 
 describe("transactionInsights", () => {
   it("builds projected payout for purchase order without linked investment", () => {
@@ -197,11 +197,17 @@ describe("transactionInsights", () => {
     };
 
     assert.equal(
-      needsUnpaidMaturityChoiceFromInvestment(investment, now),
+      isUnpaidMaturityChoicePending(
+        investment as Parameters<typeof isUnpaidMaturityChoicePending>[0],
+        new Set(),
+        now
+      ),
       true
     );
 
-    const insights = insightsFromInvestment(investment);
+    const insights = insightsFromInvestment(investment, undefined, undefined, {
+      fifoEligibleIds: new Set(),
+    });
     assert.equal(insights.investmentStatus, "matured");
     assert.equal(insights.statusLabel, "Choose next step");
     assert.equal(insights.needsUnpaidMaturityChoice, true);

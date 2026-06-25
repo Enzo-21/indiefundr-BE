@@ -6,7 +6,7 @@ import { isSurplusPayoutTrigger } from "@/services/revenueEngine/payoutScheduler
 
 export type InvestmentLedgerSource = Pick<
   Investment,
-  "id" | "payoutTriggeredBy" | "projectedPayoutUsdt"
+  "id" | "payoutTriggeredBy" | "projectedPayoutUsdt" | "amountUsdt"
 >;
 
 export type InvestmentLedgerSnapshot = {
@@ -97,7 +97,8 @@ function sumEventAmounts(
 
 function resolveSubscribeSurplusCredit(
   invEvents: TreasuryEvent[],
-  projectedPayoutUsdt: number
+  projectedPayoutUsdt: number,
+  amountUsdt: number
 ): number | null {
   const credited = sumEventAmounts(invEvents, TreasuryEventType.surplus_credit);
   if (credited > 0) {
@@ -109,7 +110,7 @@ function resolveSubscribeSurplusCredit(
   if (!hasSubscribe) {
     return null;
   }
-  return surplusPerSubscription(projectedPayoutUsdt);
+  return surplusPerSubscription(projectedPayoutUsdt, amountUsdt);
 }
 
 export function buildInvestmentLedgerViewsFromEvents(
@@ -141,7 +142,8 @@ export function buildInvestmentLedgerViewsFromEvents(
     const afterPayout = payoutEvent ? snapshotFromEvent(payoutEvent) : null;
     const subscribeSurplusCredit = resolveSubscribeSurplusCredit(
       invEvents,
-      investment.projectedPayoutUsdt
+      investment.projectedPayoutUsdt,
+      investment.amountUsdt
     );
     const payoutSurplusDraw = sumEventAmounts(
       invEvents,

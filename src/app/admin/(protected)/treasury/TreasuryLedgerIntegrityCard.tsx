@@ -85,11 +85,11 @@ export function TreasuryLedgerIntegrityCard({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Ledger vs subscriptions</CardTitle>
+        <CardTitle className="text-base">Ledger diagnostic (read-only)</CardTitle>
         <CardDescription>
-          Expected values are derived from completed investments and treasury
-          events (same formulas as simulation CSVs). On-chain wallet balance is
-          not included in pool or surplus.
+          Compares stored ledger to cohort-aware expectations (per-investment
+          amounts). Does not auto-adjust stored values. On-chain wallet balance
+          is not included in pool or surplus.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -136,11 +136,11 @@ export function TreasuryLedgerIntegrityCard({
         ) : null}
         {mismatch ? (
           <Alert>
-            <AlertTitle>Stored ledger differs from expected</AlertTitle>
+            <AlertTitle>Stored ledger differs from diagnostic expectation</AlertTitle>
             <AlertDescription>
-              Use <strong>Reconcile treasury</strong> above to align pool,
-              surplus, and slot counters with subscription math after subscribe
-              inflows are recorded.
+              Investigate treasury events and subscribe inflows. Auto-reconcile is
+              disabled for mixed investment cohorts — pool updates come from app
+              events only.
             </AlertDescription>
           </Alert>
         ) : (

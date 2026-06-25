@@ -4,10 +4,10 @@ import {
   TreasuryEventType,
   type TreasuryLedger,
 } from "@prisma/client";
-import { INVESTMENT_AMOUNT_USDT, roundUsdt } from "@/lib/config/revenueEngine";
+import { roundUsdt } from "@/lib/config/revenueEngine";
+import { surplusPerSubscription } from "@/lib/config/investmentCohort";
 import { getEnv } from "@/lib/env";
 import { GLOBAL_LEDGER_ID, prisma } from "@/lib/prisma";
-import { surplusPerSubscription } from "./accounting";
 import { ledgerTruncateUsdt } from "@/lib/money/formatUsdt";
 import { getOrCreateLedger } from "./ledger";
 
@@ -122,6 +122,7 @@ export async function computeExpectedLedger(): Promise<{
           id: true,
           status: true,
           subscribedAt: true,
+          amountUsdt: true,
           projectedPayoutUsdt: true,
           purchaseOrder: { select: { usdtTxId: true } },
         },
@@ -168,7 +169,7 @@ export async function computeExpectedLedger(): Promise<{
 
   // pool ≈ gross subscriptions − sum(redeemed payouts) − platform withdrawals
   // (see specs/revenue-engine/README.md — cohort formulas)
-  let poolAvailable = confirmedSubscriptionCount * INVESTMENT_AMOUNT_USDT();
+  let poolAvailable = subscribed.reduce((sum, inv) => sum + inv.amountUsdt, 0);
   for (const inv of redeemedInvestments) {
     poolAvailable -= inv.projectedPayoutUsdt || 0;
   }
@@ -182,7 +183,10 @@ export async function computeExpectedLedger(): Promise<{
   // Surplus = Σ subscribe slice per confirmed sub − surplus_draw (+ restores)
   let treasurySurplus = 0;
   for (const inv of subscribed) {
-    treasurySurplus += surplusPerSubscription(inv.projectedPayoutUsdt);
+    treasurySurplus += surplusPerSubscription(
+      inv.projectedPayoutUsdt,
+      inv.amountUsdt
+    );
   }
   for (const event of surplusEvents) {
     if (event.type === TreasuryEventType.surplus_draw) {
@@ -278,61 +282,18 @@ export async function reconcileTreasurySurplusFromTriads(): Promise<{
   return { updated: true, stored, expected: expectedSurplus, delta };
 }
 
+/** @deprecated Auto-reconcile disabled — ledger is event-sourced. Use buildLedgerIntegrityReport for diagnostics only. */
 export async function reconcileTreasuryLedgerFromExpected(): Promise<LedgerReconciliationResult> {
   const ledger = await getOrCreateLedger();
   const stored = ledgerFields(ledger);
   const { expected } = await computeExpectedLedger();
   const deltas = computeDeltas(stored, expected);
-  const fields = adjustedFields(deltas);
-
-  if (fields.length === 0) {
-    return {
-      updated: false,
-      stored,
-      expected,
-      deltas,
-      adjustedFields: [],
-    };
-  }
-
-  const updated = await prisma.treasuryLedger.update({
-    where: { id: GLOBAL_LEDGER_ID },
-    data: {
-      poolAvailable: expected.poolAvailable,
-      treasurySurplus: expected.treasurySurplus,
-      protectedRevenueWithdrawn: expected.protectedRevenueWithdrawn,
-      version: ledger.version + 1,
-      updatedAt: new Date(),
-    },
-  });
-
-  await prisma.treasuryEvent.create({
-    data: {
-      type: TreasuryEventType.ledger_adjustment,
-      amountUsdt:
-        deltas.poolAvailable !== 0
-          ? deltas.poolAvailable
-          : deltas.treasurySurplus,
-      poolAfter: updated.poolAvailable,
-      surplusAfter: updated.treasurySurplus,
-      protectedCreditedAfter: updated.protectedRevenueCredited,
-      protectedWithdrawnAfter: updated.protectedRevenueWithdrawn,
-      meta: {
-        reason: "full_ledger_reconcile",
-        fields,
-        stored,
-        expected,
-        deltas,
-      },
-    },
-  });
-
   return {
-    updated: true,
+    updated: false,
     stored,
     expected,
     deltas,
-    adjustedFields: fields,
+    adjustedFields: [],
   };
 }
 

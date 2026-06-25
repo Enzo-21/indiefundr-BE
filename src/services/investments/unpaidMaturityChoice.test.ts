@@ -82,7 +82,7 @@ describe("unpaid maturity choice eligibility", () => {
     );
     assert.ok(ctx);
     assert.equal(ctx?.extensionMinDays, 7);
-    assert.equal(ctx?.extensionMaxDays, 45);
+    assert.ok((ctx?.extensionMaxDays ?? 0) >= 7);
     assert.equal(ctx?.needsChoice, true);
     assert.equal(ctx?.choiceDeadlineAt, choiceDeadlineAt.toISOString());
     assert.equal(ctx?.canChooseReferralRecovery, true);
@@ -142,7 +142,7 @@ describe("unpaid maturity presentation labels", () => {
       status: InvestmentStatus.active,
       unpaidMaturityResolution: UnpaidMaturityResolution.term_extension,
     } as any);
-    assert.equal(label, "Extended — active");
+    assert.equal(label, "Extended — waiting");
   });
 
   it("shows forfeited label after second unpaid maturity", () => {

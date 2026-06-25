@@ -2,8 +2,11 @@ import type { Investment, PurchaseOrder } from "@prisma/client";
 import type { InvestmentFund } from "@/lib/config/investmentFunds";
 import { getFundById } from "@/lib/config/investmentFunds";
 import { projectedPayoutUsdt } from "@/lib/config/pricing";
-import { getUserStatusLabel } from "@/lib/investments/presentation";
-import { needsUnpaidMaturityChoiceFromInvestment } from "@/services/investments/maturityNotifications";
+import type {
+  MaturityChosenPath,
+  MaturitySituation,
+} from "@/lib/investments/maturitySituation";
+import { resolveInvestmentMaturitySituation } from "@/lib/investments/presentation";
 import {
   defaultTypicalPayoutDays,
   payoutDaysBetweenFloor,
@@ -13,6 +16,10 @@ export type TransactionInsightsKind =
   | "purchase_order"
   | "investment"
   | "redemption";
+
+export type TransactionInsightsContext = {
+  fifoEligibleIds?: ReadonlySet<string>;
+};
 
 export type TransactionInsights = {
   kind: TransactionInsightsKind;
@@ -32,7 +39,14 @@ export type TransactionInsights = {
   investmentId: string | null;
   purchaseOrderId: string | null;
   investmentStatus: string | null;
+  situation: MaturitySituation | null;
   statusLabel: string | null;
+  statusDetail: string | null;
+  chosenPath: MaturityChosenPath | null;
+  nextDeadlineAt: string | null;
+  nextDeadlineLabel: string | null;
+  globalQueueRank: number | null;
+  newSubscribersNeeded: number | null;
   needsUnpaidMaturityChoice: boolean;
 };
 
@@ -73,19 +87,7 @@ function baseInsights(
     maturesAt?: Date | null;
     redeemedAt?: Date | null;
   },
-  extras?: Partial<
-    Pick<
-      TransactionInsights,
-      | "payoutDaysElapsed"
-      | "creditedUsdt"
-      | "typicalPayoutDays"
-      | "investmentId"
-      | "purchaseOrderId"
-      | "investmentStatus"
-      | "statusLabel"
-      | "needsUnpaidMaturityChoice"
-    >
-  >
+  extras?: Partial<TransactionInsights>
 ): TransactionInsights {
   const principal = roundUsdt(principalUsdt);
   const projected = roundUsdt(projectedPayoutUsdtValue);
@@ -108,30 +110,56 @@ function baseInsights(
     investmentId: extras?.investmentId ?? null,
     purchaseOrderId: extras?.purchaseOrderId ?? null,
     investmentStatus: extras?.investmentStatus ?? null,
+    situation: extras?.situation ?? null,
     statusLabel: extras?.statusLabel ?? null,
+    statusDetail: extras?.statusDetail ?? null,
+    chosenPath: extras?.chosenPath ?? null,
+    nextDeadlineAt: extras?.nextDeadlineAt ?? null,
+    nextDeadlineLabel: extras?.nextDeadlineLabel ?? null,
+    globalQueueRank: extras?.globalQueueRank ?? null,
+    newSubscribersNeeded: extras?.newSubscribersNeeded ?? null,
     needsUnpaidMaturityChoice: extras?.needsUnpaidMaturityChoice ?? false,
   };
 }
 
 function investmentLifecycleInsights(
-  investment: Investment
+  investment: Investment,
+  context: TransactionInsightsContext = {}
 ): Pick<
   TransactionInsights,
-  "investmentStatus" | "statusLabel" | "needsUnpaidMaturityChoice"
+  | "investmentStatus"
+  | "situation"
+  | "statusLabel"
+  | "statusDetail"
+  | "chosenPath"
+  | "nextDeadlineAt"
+  | "nextDeadlineLabel"
+  | "globalQueueRank"
+  | "newSubscribersNeeded"
+  | "needsUnpaidMaturityChoice"
 > {
-  const needsUnpaidMaturityChoice =
-    needsUnpaidMaturityChoiceFromInvestment(investment);
+  const maturity = resolveInvestmentMaturitySituation(investment, {
+    fifoEligibleIds: context.fifoEligibleIds,
+  });
   return {
     investmentStatus: investment.status,
-    statusLabel: getUserStatusLabel(investment, { needsUnpaidMaturityChoice }),
-    needsUnpaidMaturityChoice,
+    situation: maturity.situation,
+    statusLabel: maturity.statusLabel,
+    statusDetail: maturity.statusDetail,
+    chosenPath: maturity.chosenPath,
+    nextDeadlineAt: maturity.nextDeadlineAt,
+    nextDeadlineLabel: maturity.nextDeadlineLabel,
+    globalQueueRank: maturity.globalQueueRank,
+    newSubscribersNeeded: maturity.newSubscribersNeeded,
+    needsUnpaidMaturityChoice: maturity.needsUnpaidMaturityChoice,
   };
 }
 
 export function insightsFromInvestment(
   investment: Investment,
   fund?: InvestmentFund | null,
-  typicalPayoutDays?: number
+  typicalPayoutDays?: number,
+  context: TransactionInsightsContext = {}
 ): TransactionInsights {
   const f = fund ?? fundOrFallback(investment.fundId);
   return baseInsights(
@@ -149,7 +177,7 @@ export function insightsFromInvestment(
       typicalPayoutDays,
       investmentId: investment.id,
       purchaseOrderId: investment.purchaseOrderId,
-      ...investmentLifecycleInsights(investment),
+      ...investmentLifecycleInsights(investment, context),
     }
   );
 }
@@ -161,7 +189,8 @@ export function insightsFromPurchaseOrder(
   >,
   fund?: InvestmentFund | null,
   linkedInvestment?: Investment | null,
-  typicalPayoutDays?: number
+  typicalPayoutDays?: number,
+  context: TransactionInsightsContext = {}
 ): TransactionInsights {
   const f = fund ?? fundOrFallback(order.fundId);
   if (linkedInvestment) {
@@ -180,7 +209,7 @@ export function insightsFromPurchaseOrder(
         typicalPayoutDays,
         investmentId: linkedInvestment.id,
         purchaseOrderId: linkedInvestment.purchaseOrderId ?? order.id,
-        ...investmentLifecycleInsights(linkedInvestment),
+        ...investmentLifecycleInsights(linkedInvestment, context),
       }
     );
   }
@@ -197,7 +226,14 @@ export function insightsFromPurchaseOrder(
       purchaseOrderId: order.id,
       investmentId: order.investmentId,
       investmentStatus: null,
+      situation: null,
       statusLabel: null,
+      statusDetail: null,
+      chosenPath: null,
+      nextDeadlineAt: null,
+      nextDeadlineLabel: null,
+      globalQueueRank: null,
+      newSubscribersNeeded: null,
       needsUnpaidMaturityChoice: false,
     }
   );
@@ -207,7 +243,8 @@ export function insightsFromRedemption(
   investment: Investment,
   fund?: InvestmentFund | null,
   creditedUsdt?: number,
-  typicalPayoutDays?: number
+  typicalPayoutDays?: number,
+  context: TransactionInsightsContext = {}
 ): TransactionInsights {
   const f = fund ?? fundOrFallback(investment.fundId);
   const credited = creditedUsdt ?? investment.projectedPayoutUsdt;
@@ -233,7 +270,7 @@ export function insightsFromRedemption(
       typicalPayoutDays,
       investmentId: investment.id,
       purchaseOrderId: investment.purchaseOrderId,
-      ...investmentLifecycleInsights(investment),
+      ...investmentLifecycleInsights(investment, context),
     }
   );
 }

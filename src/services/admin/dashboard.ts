@@ -2,6 +2,9 @@ import { InvestmentStatus, PurchaseOrderStatus } from "@prisma/client";
 import { getFundById } from "@/lib/config/investmentFunds";
 import { getEnv } from "@/lib/env";
 import { canUserClaim } from "@/lib/investments/presentation";
+import { resolveMaturitySituation } from "@/lib/investments/maturitySituation";
+import { unlockSlotEquivalent } from "@/lib/config/investmentCohort";
+import { REFERRAL_RECOVERY_INVITEES_REQUIRED } from "@/lib/config/referralRecovery";
 import * as tron from "@/services/tron/client";
 import { prisma } from "@/lib/prisma";
 import {
@@ -22,6 +25,7 @@ import {
 } from "@/services/admin/investmentAdminTypes";
 import { formatUsdtDisplay, truncateUsdt } from "@/lib/money/formatUsdt";
 import { deriveAdminPayoutStatus } from "@/services/admin/adminPayoutStatus";
+import { formatAdminUserPathLabel } from "@/lib/admin/investmentReasonNotes";
 import { buildInvestmentLedgerTimeline } from "@/services/admin/investmentLedgerTimeline";
 import { buildInvestmentLedgerSnapshotMap } from "@/services/admin/investmentLedgerSnapshots";
 
@@ -35,6 +39,7 @@ import {
   computeFifoSurplusEligibleInvestmentIds,
   getSurplusPayoutEligibilityWithFifo,
 } from "@/services/revenueEngine/payoutScheduler";
+import { isExcludedFromNormalPayout } from "@/lib/investments/referralRecoveryNormalPayout";
 import { getTronRateLimitStats } from "@/services/tron/rateLimit";
 
 export type AdminUserWalletFields = {
@@ -244,6 +249,8 @@ function surplusBlockReasonFromEligibility(
       return `Insufficient surplus (short ${formatUsdtDisplay(surplusShortfallUsdt)} USDT)`;
     case "fifo_surplus_blocked":
       return "Earlier investments reserve available surplus (FIFO)";
+    case "referral_recovery_path":
+      return "Referral recovery path (principal via qualified invites only)";
     case "not_payable_status":
       return "Not in a payable status";
     case "redemption_in_progress":
@@ -260,8 +267,13 @@ function payNowBlockReason(
     status: InvestmentStatus;
     payoutUnlockedAt: Date | null;
     payoutFailureReason: string | null;
+    unpaidMaturityResolution: import("@prisma/client").UnpaidMaturityResolution | null;
+    referralRecoveryCompletedAt: Date | null;
   }
 ): string | null {
+  if (isExcludedFromNormalPayout(inv)) {
+    return "Referral recovery path (principal via qualified invites only)";
+  }
   if (inv.status === InvestmentStatus.redeemed) {
     return "Already paid";
   }
@@ -309,7 +321,12 @@ function getConfirmRedemptionBlockReason(inv: {
 function showPayoutActionsForInvestment(inv: {
   status: InvestmentStatus;
   payoutFailureReason: string | null;
+  unpaidMaturityResolution: import("@prisma/client").UnpaidMaturityResolution | null;
+  referralRecoveryCompletedAt: Date | null;
 }): boolean {
+  if (isExcludedFromNormalPayout(inv)) {
+    return false;
+  }
   if (inv.status === InvestmentStatus.redeemed) {
     return false;
   }
@@ -343,9 +360,43 @@ async function mapInvestmentsToAdminRows(
   mappedRows: AdminInvestmentRow[];
   ledgerViews: Awaited<ReturnType<typeof buildInvestmentLedgerSnapshotMap>>;
 }> {
+  const recoveryIds = rows
+    .filter(
+      (inv) =>
+        inv.recoveryEligibleAt &&
+        !inv.referralRecoveryCompletedAt &&
+        inv.status === InvestmentStatus.matured
+    )
+    .map((inv) => inv.id);
+  const recoveryLinks =
+    recoveryIds.length > 0
+      ? await prisma.referralRecoveryLink.findMany({
+          where: { investmentId: { in: recoveryIds } },
+          select: { investmentId: true, inviteIds: true },
+        })
+      : [];
+  const recoveryQualifiedById = new Map(
+    recoveryLinks.map((link) => [link.investmentId, link.inviteIds.length])
+  );
+  const recoveryRequiredCount = REFERRAL_RECOVERY_INVITEES_REQUIRED();
+
   const ledgerViews = await buildInvestmentLedgerSnapshotMap(
     rows.map((inv) => inv.id),
     rows
+  );
+
+  const unlockerInvestmentIds = Array.from(
+    new Set(rows.flatMap((inv) => inv.payoutUnlockingInvestmentIds))
+  );
+  const unlockerInvestments =
+    unlockerInvestmentIds.length > 0
+      ? await prisma.investment.findMany({
+          where: { id: { in: unlockerInvestmentIds } },
+          select: { id: true, userId: true, amountUsdt: true },
+        })
+      : [];
+  const unlockerInvestmentMap = new Map(
+    unlockerInvestments.map((row) => [row.id, row])
   );
 
   const unlockerUserIds = Array.from(
@@ -388,6 +439,14 @@ async function mapInvestmentsToAdminRows(
     const redemptionTxId = tron.getTxId(
       inv.redemptionTransaction as Record<string, unknown> | null
     );
+    const recoveryQualifiedCount = recoveryQualifiedById.get(inv.id) ?? null;
+    const maturity = resolveMaturitySituation(inv, {
+      fifoEligibleIds,
+      recoveryQualifiedCount,
+      recoveryRequiredCount:
+        inv.recoveryEligibleAt != null ? recoveryRequiredCount : null,
+      now,
+    });
 
     return {
       id: inv.id,
@@ -397,6 +456,26 @@ async function mapInvestmentsToAdminRows(
       ledgerAfterPayout: ledgerView?.afterPayout ?? null,
       ledgerEventKind: ledgerView?.eventKind ?? "subscription",
       payoutUnlockingInvestmentIds: inv.payoutUnlockingInvestmentIds,
+      payoutUnlockPrincipalRequiredUsdt:
+        inv.payoutUnlockPrincipalRequiredUsdt ?? null,
+      payoutUnlockPrincipalReceivedUsdt:
+        inv.payoutUnlockPrincipalReceivedUsdt ?? null,
+      payoutUnlockerDetails: inv.payoutUnlockingInvestmentIds.map(
+        (investmentId) => {
+          const unlockerInv = unlockerInvestmentMap.get(investmentId);
+          const userId = unlockerInv?.userId ?? "";
+          const user = unlockerMap.get(userId);
+          const amount = unlockerInv?.amountUsdt ?? 0;
+          return {
+            investmentId,
+            userId,
+            amountUsdt: amount,
+            slotEquivalent: unlockSlotEquivalent(amount, inv.amountUsdt),
+            name: user?.name ?? null,
+            email: user?.email ?? null,
+          };
+        }
+      ),
       userId: inv.userId,
       userEmail: inv.user.email,
       userName: inv.user.name,
@@ -437,6 +516,22 @@ async function mapInvestmentsToAdminRows(
       canConfirmRedemption,
       confirmRedemptionBlockReason,
       redemptionTxId,
+      maturitySituation: maturity.situation,
+      userPathLabel: formatAdminUserPathLabel(maturity),
+      statusDetail: maturity.statusDetail,
+      chosenPath: maturity.chosenPath,
+      unpaidMaturityResolution: inv.unpaidMaturityResolution ?? null,
+      unpaidMaturityChoiceDeadlineAt: inv.unpaidMaturityChoiceDeadlineAt,
+      termExtensionDays: inv.termExtensionDays,
+      recoveryQualifiedCount,
+      recoveryRequiredCount:
+        inv.recoveryEligibleAt != null ? recoveryRequiredCount : null,
+      nextDeadlineAt: maturity.nextDeadlineAt
+        ? new Date(maturity.nextDeadlineAt)
+        : null,
+      nextDeadlineLabel: maturity.nextDeadlineLabel,
+      globalQueueRank: maturity.globalQueueRank,
+      newSubscribersNeeded: maturity.newSubscribersNeeded,
     };
   });
   return { mappedRows, ledgerViews };

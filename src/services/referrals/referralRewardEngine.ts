@@ -20,6 +20,7 @@ import {
   hasIssuedInviteeBonus,
 } from "./referralPayoutEligibility";
 import { enqueueReferralPayoutOrder } from "./referralPayoutOrderQueue";
+import { scheduleUserLevelRecalculation } from "@/services/playerLevels/scheduleUserLevelRecalculation";
 import {
   clearInviterReferralPendingActivity,
   clearReferralPendingActivity,
@@ -137,6 +138,7 @@ export async function issueReferralRewards(
         invite.inviterUserId,
         referralInviteId
       );
+      scheduleUserLevelRecalculation(invite.inviterUserId);
       return;
     }
   }
@@ -148,6 +150,7 @@ export async function issueReferralRewards(
     amountUsdt: inviterBonus,
     investmentId,
   });
+  scheduleUserLevelRecalculation(invite.inviterUserId);
 }
 
 export async function onReferralQualified(
@@ -168,6 +171,7 @@ export async function onReferralQualified(
         qualifiedAt: new Date(),
       },
     });
+    scheduleUserLevelRecalculation(invite.inviterUserId);
   }
 
   if (await hasIssuedInviteeBonus(referralInviteId)) {

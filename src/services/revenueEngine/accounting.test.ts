@@ -6,6 +6,7 @@ import {
   surplusPerSubscription,
   triadSurplusForPayout,
 } from "./accounting";
+import { triadSurplusForPayout as cohortTriadSurplus } from "@/lib/config/investmentCohort";
 
 const baseInvestment = {
   id: "paid",
@@ -18,8 +19,9 @@ const baseInvestment = {
 
 describe("triad payout accounting", () => {
   it("surplusPerSubscription is one third of triad surplus at 2dp", () => {
-    assert.equal(triadSurplusForPayout(35), 10);
-    assert.equal(surplusPerSubscription(35), 3.33);
+    assert.equal(cohortTriadSurplus(35, 25), 10);
+    assert.equal(triadSurplusForPayout(35, 25), 10);
+    assert.equal(surplusPerSubscription(35, 25), 3.33);
   });
 
   it("high-risk triad produces 10 USDT surplus", () => {
@@ -82,22 +84,19 @@ describe("triad payout accounting", () => {
     assert.equal(APP_NET_REVENUE_PER_SUBSCRIBER_USDT(), 10);
   });
 
-  it("triad with same-user unlockers uses investment count for protected revenue", () => {
+  it("mixed cohort: one 50 USDT unlocker completes triad for 25 USDT head", () => {
     const accounting = calculateTriadPayoutAccountingFromInvestments(
       {
         ...baseInvestment,
-        payoutUnlockingInvestmentIds: ["unlock-b", "unlock-c"],
-        payoutUnlockingUserIds: ["user-b", "user-b"],
+        payoutUnlockingInvestmentIds: ["unlock-b"],
+        payoutUnlockingUserIds: ["user-b"],
       },
-      [
-        { id: "unlock-b", userId: "user-b", amountUsdt: 25 },
-        { id: "unlock-c", userId: "user-b", amountUsdt: 25 },
-      ]
+      [{ id: "unlock-b", userId: "user-b", amountUsdt: 50 }]
     );
 
     assert.equal(accounting.complete, true);
+    assert.equal(accounting.grossTriadInflow, 75);
     assert.equal(accounting.protectedRevenueAmount, 30);
     assert.equal(accounting.triadSurplus, 10);
-    assert.deepEqual(accounting.unlockingUserIds, ["user-b", "user-b"]);
   });
 });

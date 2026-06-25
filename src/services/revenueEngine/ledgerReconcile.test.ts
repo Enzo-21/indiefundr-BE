@@ -112,7 +112,7 @@ describe("expected ledger math", () => {
     assert.equal(csvFinal.treasurySurplus, 18);
     assert.equal(
       expected.treasurySurplus,
-      roundUsdt(n * surplusPerSubscription(payoutPerHead))
+      roundUsdt(n * surplusPerSubscription(payoutPerHead, INVESTMENT_AMOUNT_USDT()))
     );
     assert.equal(
       expected.poolAvailable,
@@ -135,7 +135,7 @@ describe("expected ledger math", () => {
     assert.equal(projection.totalPayouts, 140);
     assert.equal(
       expected.treasurySurplus,
-      roundUsdt(n * surplusPerSubscription(35))
+      roundUsdt(n * surplusPerSubscription(35, INVESTMENT_AMOUNT_USDT()))
     );
     assert.equal(expected.poolAvailable, 85);
   });

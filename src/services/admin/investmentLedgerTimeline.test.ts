@@ -26,6 +26,9 @@ function baseRow(
     ledgerAfterPayout: null,
     ledgerEventKind: "subscription",
     payoutUnlockingInvestmentIds: [],
+    payoutUnlockPrincipalRequiredUsdt: null,
+    payoutUnlockPrincipalReceivedUsdt: null,
+    payoutUnlockerDetails: [],
     userId: `user-${overrides.id}`,
     userEmail: `${overrides.id}@test.com`,
     userName: null,
@@ -59,6 +62,19 @@ function baseRow(
     canConfirmRedemption: false,
     confirmRedemptionBlockReason: null,
     redemptionTxId: null,
+    maturitySituation: "active",
+    userPathLabel: "None",
+    statusDetail: "",
+    chosenPath: null,
+    unpaidMaturityResolution: null,
+    unpaidMaturityChoiceDeadlineAt: null,
+    termExtensionDays: null,
+    recoveryQualifiedCount: null,
+    recoveryRequiredCount: null,
+    nextDeadlineAt: null,
+    nextDeadlineLabel: null,
+    globalQueueRank: null,
+    newSubscribersNeeded: null,
     ...overrides,
   };
 }
@@ -114,7 +130,7 @@ describe("buildInvestmentLedgerTimeline", () => {
     assert.equal(display[3]?.investment, null);
     assert.equal(
       display[0]?.ledgerSurplusDelta,
-      surplusPerSubscription(28.75)
+      surplusPerSubscription(28.75, 25)
     );
     assert.equal(display[3]?.ledger?.surplus, 16.26);
     assert.equal(display[3]?.ledgerSurplusDelta, 0);

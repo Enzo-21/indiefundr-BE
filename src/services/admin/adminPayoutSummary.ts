@@ -1,4 +1,5 @@
 import { InvestmentStatus } from "@prisma/client";
+import { isExcludedFromNormalPayout } from "@/lib/investments/referralRecoveryNormalPayout";
 import { prisma } from "@/lib/prisma";
 import type {
   AdminInvestmentsCurrentLedger,
@@ -21,7 +22,12 @@ function payNowBlockReason(inv: {
   status: InvestmentStatus;
   payoutUnlockedAt: Date | null;
   payoutFailureReason: string | null;
+  unpaidMaturityResolution: import("@prisma/client").UnpaidMaturityResolution | null;
+  referralRecoveryCompletedAt: Date | null;
 }): string | null {
+  if (isExcludedFromNormalPayout(inv)) {
+    return "Referral recovery path (principal via qualified invites only)";
+  }
   if (inv.status === InvestmentStatus.redeemed) {
     return "Already paid";
   }
@@ -82,6 +88,8 @@ async function loadFifoSurplusCandidates() {
       payoutUnlockedAt: true,
       redemptionTransaction: true,
       maturesAt: true,
+      unpaidMaturityResolution: true,
+      referralRecoveryCompletedAt: true,
     },
   });
 }
@@ -104,6 +112,8 @@ async function loadPayoutActionInvestments() {
       projectedPayoutUsdt: true,
       redemptionTransaction: true,
       maturesAt: true,
+      unpaidMaturityResolution: true,
+      referralRecoveryCompletedAt: true,
     },
   });
 }

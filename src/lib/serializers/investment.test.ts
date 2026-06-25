@@ -25,8 +25,28 @@ const baseInvestment: Investment = {
   payabilityStatus: InvestmentPayabilityStatus.payable,
   payoutEligibleAt: new Date("2020-01-01T00:00:00.000Z"),
   markedPayableAt: null,
+  payoutUnlockedAt: new Date("2024-04-02T00:00:00.000Z"),
+  autoPayoutAt: null,
+  payoutUnlockingInvestmentIds: [],
+  payoutUnlockingUserIds: [],
+  payoutReason: null,
+  payoutTriggeredBy: null,
+  payoutFailureReason: null,
   globalQueueRank: 1,
   newSubscribersNeeded: 0,
+  chainMemo: null,
+  recoveryEligibleAt: null,
+  sympathyNotifiedAt: null,
+  maturityNotifiedAt: null,
+  choiceReminderNotifiedAt: null,
+  referralRecoveryCompletedAt: null,
+  unpaidMaturityResolution: null,
+  unpaidMaturityResolvedAt: null,
+  unpaidMaturityChoiceDeadlineAt: null,
+  termExtensionDays: null,
+  forfeitedAt: null,
+  forfeitureReason: null,
+  excludedFromTriadUnlock: false,
   date: new Date("2024-01-01T00:00:00.000Z"),
 };
 
@@ -36,6 +56,8 @@ describe("enrichInvestment", () => {
     assert.equal(json._id, baseInvestment.id);
     assert.equal(json.fundName, "Hustle Collective");
     assert.equal(json.statusLabel, "Awaiting admin payout");
+    assert.equal(json.situation, "awaiting_admin_payout");
+    assert.ok(json.statusDetail);
     assert.equal(json.canClaim, false);
     assert.equal(json.payabilityStatus, "payable");
     assert.ok(json.payoutEligibleAt);

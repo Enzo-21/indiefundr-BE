@@ -20,6 +20,7 @@
     "backfill:referral-payout-orders": "tsx scripts/backfill-referral-payout-orders.ts",
     "backfill:unpaid-maturity-resolution": "tsx scripts/backfill-unpaid-maturity-resolution.ts",
     "backfill:usernames": "tsx scripts/backfill-usernames.ts",
+    "backfill:user-levels": "tsx scripts/backfill-user-levels.ts",
     "resync:wallet-activity": "tsx scripts/resync-wallet-activity.ts",
     "cron:maturity": "tsx scripts/run-cron-maturity.ts",
     "icons:generate": "tsx scripts/generate-brand-icons.ts",

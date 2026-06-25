@@ -5,6 +5,7 @@ import {
   TreasuryEventType,
   type Investment,
 } from "@prisma/client";
+import { isExcludedFromNormalPayout } from "@/lib/investments/referralRecoveryNormalPayout";
 import { getEnv } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { getTronscanTxUrl, getMainWallet } from "@/lib/wallets/helpers";
@@ -154,6 +155,12 @@ export async function validateNormalPayoutEligibility(
     throw new Error("Investment is not payable");
   }
 
+  if (isExcludedFromNormalPayout(investment)) {
+    throw new Error(
+      "Investment is on the referral recovery path; principal is paid only after two qualified invites"
+    );
+  }
+
   if (!investment.payoutUnlockedAt) {
     throw new Error("Investment is not unlocked for payout");
   }
@@ -170,6 +177,12 @@ export async function validateSurplusPayoutEligibility(
 
   if (investment.status === InvestmentStatus.redeemed) {
     throw new Error("Investment is already paid");
+  }
+
+  if (isExcludedFromNormalPayout(investment)) {
+    throw new Error(
+      "Investment is on the referral recovery path; principal is paid only after two qualified invites"
+    );
   }
 
   if (
@@ -194,6 +207,8 @@ export async function validateSurplusPayoutEligibility(
       payoutUnlockedAt: true,
       redemptionTransaction: true,
       maturesAt: true,
+      unpaidMaturityResolution: true,
+      referralRecoveryCompletedAt: true,
     },
   });
   const fifoEligibleIds = computeFifoSurplusEligibleInvestmentIds(

@@ -68,7 +68,7 @@ export function applyCsvLedgerEvent(
 
   switch (row.event) {
     case "subscription": {
-      const surplusSlice = surplusPerSubscription(AGGRESSIVE_PAYOUT_USDT);
+      const surplusSlice = surplusPerSubscription(AGGRESSIVE_PAYOUT_USDT, principal);
       return {
         poolAvailable: ledgerTruncateUsdt(state.poolAvailable + principal),
         treasurySurplus: ledgerTruncateUsdt(

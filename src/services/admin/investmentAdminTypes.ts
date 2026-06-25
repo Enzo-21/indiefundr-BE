@@ -51,6 +51,16 @@ export type AdminInvestmentRow = {
   ledgerAfterPayout: InvestmentLedgerSnapshot | null;
   ledgerEventKind: InvestmentLedgerEventKind;
   payoutUnlockingInvestmentIds: string[];
+  payoutUnlockPrincipalRequiredUsdt: number | null;
+  payoutUnlockPrincipalReceivedUsdt: number | null;
+  payoutUnlockerDetails: {
+    investmentId: string;
+    userId: string;
+    amountUsdt: number;
+    slotEquivalent: number;
+    name: string | null;
+    email: string | null;
+  }[];
   userId: string;
   userEmail: string;
   userName: string | null;
@@ -88,6 +98,19 @@ export type AdminInvestmentRow = {
   canConfirmRedemption: boolean;
   confirmRedemptionBlockReason: string | null;
   redemptionTxId: string | null;
+  maturitySituation: string;
+  userPathLabel: string;
+  statusDetail: string;
+  chosenPath: string | null;
+  unpaidMaturityResolution: string | null;
+  unpaidMaturityChoiceDeadlineAt: Date | null;
+  termExtensionDays: number | null;
+  recoveryQualifiedCount: number | null;
+  recoveryRequiredCount: number | null;
+  nextDeadlineAt: Date | null;
+  nextDeadlineLabel: string | null;
+  globalQueueRank: number | null;
+  newSubscribersNeeded: number | null;
 };
 
 export type AdminInvestmentsPayoutAvailability = {

@@ -314,6 +314,8 @@ model Investment {
   autoPayoutAt          DateTime?
   payoutUnlockingInvestmentIds String[] @default([])
   payoutUnlockingUserIds       String[] @default([])
+  payoutUnlockPrincipalRequiredUsdt Float?
+  payoutUnlockPrincipalReceivedUsdt Float?
   payoutReason          String?
   payoutTriggeredBy     String?
   payoutFailureReason   String?
@@ -323,6 +325,7 @@ model Investment {
   recoveryEligibleAt    DateTime?
   sympathyNotifiedAt    DateTime?
   maturityNotifiedAt    DateTime?
+  choiceReminderNotifiedAt DateTime?
   referralRecoveryCompletedAt DateTime?
   unpaidMaturityResolution   UnpaidMaturityResolution?
   unpaidMaturityResolvedAt   DateTime?

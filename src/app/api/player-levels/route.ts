@@ -5,6 +5,7 @@ import {
 } from "@/lib/config/playerLevels";
 import { getTotalInvestmentUsage } from "@/lib/config/investmentSlots";
 import { prisma } from "@/lib/prisma";
+import { recalculateUserLevel } from "@/services/playerLevels/playerLevelProgress";
 import {
   getPowerInventory,
   serializePowerCards,
@@ -12,11 +13,8 @@ import {
 
 export async function GET(request: Request) {
   return withAuth(request, async (authUser) => {
-    const user = await prisma.user.findUnique({
-      where: { id: authUser.id },
-      select: { level: true },
-    });
-    const currentLevel = normalizePlayerLevel(user?.level);
+    const levelResult = await recalculateUserLevel(authUser.id);
+    const currentLevel = levelResult.newLevel;
     const totalUsage = await getTotalInvestmentUsage(
       authUser.id,
       prisma,
@@ -31,6 +29,11 @@ export async function GET(request: Request) {
       totalOpenCount: totalUsage.totalOpenCount,
       maxTotalOpenInvestments: totalUsage.maxTotalOpenInvestments,
       totalSlotsAvailable: totalUsage.totalSlotsAvailable,
+      levelProgress: {
+        earnedLevel: currentLevel,
+        changed: levelResult.changed,
+        stats: levelResult.stats,
+      },
     });
   });
 }

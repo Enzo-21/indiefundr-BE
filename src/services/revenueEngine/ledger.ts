@@ -5,12 +5,11 @@ import {
   type Investment,
   type TreasuryLedger,
 } from "@prisma/client";
-import { INVESTMENT_AMOUNT_USDT } from "@/lib/config/revenueEngine";
-import { ledgerTruncateUsdt } from "@/lib/money/formatUsdt";
+import { surplusPerSubscription } from "@/lib/config/investmentCohort";
 import { getEnv } from "@/lib/env";
+import { ledgerTruncateUsdt } from "@/lib/money/formatUsdt";
 import { GLOBAL_LEDGER_ID, prisma } from "@/lib/prisma";
 import { fieldIsNullOrUnset } from "@/lib/prisma/mongoFieldFilters";
-import { surplusPerSubscription } from "./accounting";
 
 export type LedgerSnapshot = {
   poolAvailable: number;
@@ -134,8 +133,11 @@ export async function recordSubscribeInflow(investment: Investment) {
   }
 
   const ledger = await getOrCreateLedger();
-  const amount = ledgerTruncateUsdt(INVESTMENT_AMOUNT_USDT());
-  const surplusSlice = surplusPerSubscription(investment.projectedPayoutUsdt);
+  const amount = ledgerTruncateUsdt(investment.amountUsdt);
+  const surplusSlice = surplusPerSubscription(
+    investment.projectedPayoutUsdt,
+    investment.amountUsdt
+  );
   const updated = await prisma.treasuryLedger.update({
     where: { id: GLOBAL_LEDGER_ID },
     data: {
@@ -155,7 +157,7 @@ export async function recordSubscribeInflow(investment: Investment) {
     {
       investmentId: investment.id,
       purchaseOrderId: investment.purchaseOrderId,
-      meta: { fundId: investment.fundId },
+      meta: { fundId: investment.fundId, amountUsdt: investment.amountUsdt },
     }
   );
 
@@ -167,6 +169,7 @@ export async function recordSubscribeInflow(investment: Investment) {
         fundId: investment.fundId,
         reason: "subscribe_triad_slice",
         projectedPayoutUsdt: investment.projectedPayoutUsdt,
+        amountUsdt: investment.amountUsdt,
       },
     });
   }

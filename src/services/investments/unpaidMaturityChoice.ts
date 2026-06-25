@@ -26,6 +26,39 @@ import {
   PlayerPowerUnavailableError,
   type PowerInventory,
 } from "@/services/playerPowers/playerPowers";
+import { sendUnpaidMaturityChoiceConfirmedEmail } from "@/services/mailing/sendUnpaidMaturityChoiceConfirmedEmail";
+
+async function notifyChoiceConfirmedEmail(
+  userId: string,
+  investment: Awaited<ReturnType<typeof prisma.investment.update>>
+) {
+  const [user, fund] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true },
+    }),
+    Promise.resolve(getFundById(investment.fundId)),
+  ]);
+  if (!user?.email?.trim() || !fund) return;
+  const result = await sendUnpaidMaturityChoiceConfirmedEmail({
+    user,
+    investment,
+    fund,
+  });
+  if (!result.ok) {
+    console.warn("[maturity] choice confirmed email failed", {
+      investmentId: investment.id,
+      error: result.error,
+    });
+  }
+}
+
+function enrichAfterChoice(
+  investment: Parameters<typeof enrichInvestment>[0],
+  fifoIds: ReadonlySet<string>
+) {
+  return enrichInvestment(investment, { fifoEligibleIds: fifoIds });
+}
 
 export type UnpaidMaturityChoice = "referral_recovery" | "term_extension";
 
@@ -81,6 +114,8 @@ export async function loadFifoEligibleIds(): Promise<Set<string>> {
       projectedPayoutUsdt: true,
       maturesAt: true,
       redemptionTransaction: true,
+      unpaidMaturityResolution: true,
+      referralRecoveryCompletedAt: true,
     },
   });
   return computeFifoSurplusEligibleInvestmentIds(allMatured, ledger);
@@ -103,8 +138,8 @@ export function isUnpaidMaturityChoicePending(
   now: Date = new Date()
 ): boolean {
   if (investment.unpaidMaturityResolution != null) return false;
+  if (!investment.unpaidMaturityChoiceDeadlineAt) return false;
   if (
-    investment.unpaidMaturityChoiceDeadlineAt &&
     !isChoiceDeadlineActive(investment.unpaidMaturityChoiceDeadlineAt, now)
   ) {
     return false;
@@ -290,11 +325,19 @@ export async function applyUnpaidMaturityChoice(
             unpaidMaturityResolution: UnpaidMaturityResolution.referral_recovery,
             unpaidMaturityResolvedAt: now,
             recoveryEligibleAt: now,
+            payoutUnlockedAt: null,
+            payoutUnlockingInvestmentIds: [],
+            payoutUnlockingUserIds: [],
+            payoutReason: null,
+            payabilityStatus: InvestmentPayabilityStatus.pending_liquidity,
+            globalQueueRank: null,
+            newSubscribersNeeded: null,
           },
         });
       });
 
-      return { ok: true, data: enrichInvestment(updated) };
+      await notifyChoiceConfirmedEmail(userId, updated);
+      return { ok: true, data: enrichAfterChoice(updated, fifoIds) };
     }
 
     const termDays = computeInvestmentTermDays(investment);
@@ -336,7 +379,8 @@ export async function applyUnpaidMaturityChoice(
       });
     });
 
-    return { ok: true, data: enrichInvestment(updated) };
+    await notifyChoiceConfirmedEmail(userId, updated);
+    return { ok: true, data: enrichAfterChoice(updated, fifoIds) };
   } catch (error) {
     if (error instanceof PlayerPowerUnavailableError) {
       return {

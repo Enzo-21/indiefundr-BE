@@ -2,13 +2,12 @@
 
 import { withAdminAction } from "@/actions/_lib/withAdminAction";
 import {
-  runAdminTreasuryReconcile,
-  type AdminTreasuryReconcileResult,
+  runAdminTreasuryEvaluate,
+  type AdminTreasuryEvaluateResult,
 } from "@/services/admin/treasuryEvaluate";
 
-export type EvaluateTreasuryResult = AdminTreasuryReconcileResult;
+export type EvaluateTreasuryResult = AdminTreasuryEvaluateResult;
 
-/** @deprecated Name kept for UI import — runs ledger reconcile only, not batch evaluate. */
 export async function triggerEvaluate() {
-  return withAdminAction(() => runAdminTreasuryReconcile());
+  return withAdminAction(() => runAdminTreasuryEvaluate());
 }

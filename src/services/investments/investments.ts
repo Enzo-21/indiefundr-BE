@@ -68,9 +68,9 @@ export async function getUserInvestments(userId: string) {
   return investments.map((investment) => {
     const choiceCtx = getUnpaidMaturityChoiceContext(investment, fifoIds, powers);
     return enrichInvestment(investment, {
+      fifoEligibleIds: fifoIds,
       recoveryQualifiedCount: qualifiedByInvestment.get(investment.id) ?? null,
       recoveryRequiredCount: investment.recoveryEligibleAt ? requiredCount : null,
-      needsUnpaidMaturityChoice: choiceCtx?.needsChoice ?? false,
       canChooseReferralRecovery: choiceCtx?.canChooseReferralRecovery ?? false,
       canChooseTermExtension: choiceCtx?.canChooseTermExtension ?? false,
       extensionMinDays: choiceCtx?.extensionMinDays ?? null,

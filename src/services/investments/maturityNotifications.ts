@@ -7,6 +7,10 @@ import {
 import { prisma } from "@/lib/prisma";
 import { sendInvestmentMaturedEmail } from "@/services/mailing/sendInvestmentMaturedEmail";
 import { sendPushNotification } from "@/services/orders/pushNotify";
+import {
+  isUnpaidMaturityChoicePending,
+  loadFifoEligibleIds,
+} from "@/services/investments/unpaidMaturityChoice";
 
 export type MaturityNotificationResult = {
   emailsSent: number;
@@ -106,6 +110,7 @@ export async function notifyNewlyMaturedInvestments(
 
   const result = { ...empty };
   const now = new Date();
+  const fifoIds = await loadFifoEligibleIds();
 
   for (const investment of investments) {
     if (investment.maturityNotifiedAt) {
@@ -113,7 +118,7 @@ export async function notifyNewlyMaturedInvestments(
       continue;
     }
 
-    const needsChoice = needsUnpaidMaturityChoiceFromInvestment(investment, now);
+    const needsChoice = isUnpaidMaturityChoicePending(investment, fifoIds, now);
     const fund = getFundById(investment.fundId);
     if (!fund) {
       console.warn("[maturity] unknown fund for notification", {

@@ -49,7 +49,7 @@ import { InvestmentsPayoutStatusBar } from "./InvestmentsPayoutStatusBar";
 import { PayoutRowTargetIdLink } from "./PayoutRowTargetIdLink";
 
 const REFRESH_MS = 20_000;
-const TABLE_COLUMN_COUNT = 17;
+const TABLE_COLUMN_COUNT = 18;
 
 const LEDGER_CONTINGENT_TOOLTIP =
   "Treasury at this event; pending payout(s) above not applied yet.";
@@ -413,6 +413,7 @@ export function InvestmentsTable({
               <TableHead>Maturity</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Payout status</TableHead>
+              <TableHead>User path</TableHead>
               <TableHead>Reason</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -573,6 +574,11 @@ export function InvestmentsTable({
                             {parent.payoutStatus}
                           </Badge>
                         </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {parent.userPathLabel !== "None"
+                            ? parent.userPathLabel
+                            : "—"}
+                        </TableCell>
                         <TableCell className="text-muted-foreground">—</TableCell>
                       </>
                     ) : inv ? (
@@ -606,6 +612,14 @@ export function InvestmentsTable({
                           ) : null}
                         </TableCell>
                         <TableCell>
+                          <Badge variant="outline">{inv.userPathLabel}</Badge>
+                          {inv.nextDeadlineAt && inv.nextDeadlineLabel ? (
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {inv.nextDeadlineLabel}: {formatDate(inv.nextDeadlineAt)}
+                            </div>
+                          ) : null}
+                        </TableCell>
+                        <TableCell>
                           <InvestmentReasonCell
                             note={buildInvestmentReasonNote(inv)}
                           />
@@ -613,6 +627,7 @@ export function InvestmentsTable({
                       </>
                     ) : (
                       <>
+                        <TableCell className="text-muted-foreground">—</TableCell>
                         <TableCell className="text-muted-foreground">—</TableCell>
                         <TableCell className="text-muted-foreground">—</TableCell>
                         <TableCell className="text-muted-foreground">—</TableCell>

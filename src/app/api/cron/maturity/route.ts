@@ -29,6 +29,13 @@ export async function GET(request: Request) {
     limit: FORFEITURE_CRON_BATCH_SIZE,
   });
 
+  const { notifyUnpaidMaturityChoiceReminders } = await import(
+    "@/services/investments/unpaidMaturityChoiceReminders"
+  );
+  const choiceReminders = await notifyUnpaidMaturityChoiceReminders({
+    limit: MATURITY_CRON_BATCH_SIZE,
+  });
+
   return Response.json({
     ok: true,
     maturedCount: count,
@@ -42,6 +49,8 @@ export async function GET(request: Request) {
     skippedNoDevice: notifications.pushSkippedNoDevice,
     emailsSent: notifications.emailsSent,
     emailsFailed: notifications.emailsFailed,
+    choiceRemindersSent: choiceReminders.remindersSent,
+    choiceRemindersFailed: choiceReminders.remindersFailed,
     maturedIds: matured.map((row) => row.id),
     startedAt,
     finishedAt: new Date().toISOString(),

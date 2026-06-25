@@ -1,9 +1,12 @@
 import type { Investment } from "@prisma/client";
 import { REVENUE_ENGINE_ENABLED } from "@/lib/config/revenueEngine";
+import { scheduleUserLevelRecalculation } from "@/services/playerLevels/scheduleUserLevelRecalculation";
 import { recordSubscribeInflow } from "./ledger";
 import { evaluatePayoutReadiness } from "./payoutScheduler";
 
 export async function onSubscribeCompleted(investment: Investment): Promise<void> {
+  scheduleUserLevelRecalculation(investment.userId);
+
   if (!REVENUE_ENGINE_ENABLED()) {
     return;
   }
