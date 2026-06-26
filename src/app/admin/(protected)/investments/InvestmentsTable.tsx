@@ -622,6 +622,7 @@ export function InvestmentsTable({
                         <TableCell>
                           <InvestmentReasonCell
                             note={buildInvestmentReasonNote(inv)}
+                            investmentId={inv.id}
                           />
                         </TableCell>
                       </>
