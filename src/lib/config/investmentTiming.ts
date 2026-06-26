@@ -25,7 +25,7 @@ import { addDuration, durationToApproxDays } from "@/lib/duration/parseDuration"
 import { getEnv } from "@/lib/env";
 
 /** Default investment term → `maturesAt` at subscribe. */
-export const DEFAULT_INVESTMENT_TERM = "4D";
+export const DEFAULT_INVESTMENT_TERM = "3D";
 
 function resolveDuration(
   envValue: string | undefined,
