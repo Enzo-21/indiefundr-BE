@@ -33,9 +33,9 @@ const skipDbTests = SKIP_DB_MUTATING_TESTS || !hasDatabase;
 
 describe("revenueEngine config math", () => {
   it("newSubscribersNeeded: Aggressive head coverage steps", () => {
-    assert.equal(newSubscribersNeeded(25, 35), 2);
-    assert.equal(newSubscribersNeeded(50, 35), 1);
-    assert.equal(newSubscribersNeeded(75, 35), 0);
+    assert.equal(newSubscribersNeeded(25, 35, undefined, 25), 2);
+    assert.equal(newSubscribersNeeded(50, 35, undefined, 25), 1);
+    assert.equal(newSubscribersNeeded(75, 35, undefined, 25), 0);
   });
 
   it("additionalInflowNeeded matches canonical triad", () => {
