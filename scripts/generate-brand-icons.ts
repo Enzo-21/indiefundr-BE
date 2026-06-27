@@ -7,7 +7,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import toIco from "to-ico";
-import { formatInvestmentTermLabel } from "../src/lib/config/investmentTiming";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND_ROOT = path.resolve(__dirname, "..");
@@ -213,24 +212,23 @@ async function composeSplash(
 async function composeOgImage(mark: sharp.Sharp): Promise<Buffer> {
   const width = 1200;
   const height = 630;
-  const logoSize = 200;
+  const logoSize = 280;
   const markBuf = await resizedMark(mark, logoSize, 1);
   const markMeta = await sharp(markBuf).metadata();
   const mw = markMeta.width ?? logoSize;
   const mh = markMeta.height ?? logoSize;
-  const left = 80;
+  const logoLeft = 72;
   const top = Math.round((height - mh) / 2);
+  const textX = logoLeft + mw + 48;
 
-  const termLabel = formatInvestmentTermLabel();
   const textSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-  <text x="320" y="${height / 2 + 12}" font-family="Helvetica, Arial, sans-serif" font-size="72" font-weight="600" fill="white">IndieFundr</text>
-  <text x="320" y="${height / 2 + 56}" font-family="Helvetica, Arial, sans-serif" font-size="28" fill="rgba(255,255,255,0.85)">Multiply your money in ${termLabel}</text>
+  <text x="${textX}" y="${height / 2 + 34}" font-family="Helvetica, Arial, sans-serif" font-size="96" font-weight="600" fill="white">IndieFundr</text>
 </svg>`);
 
   return sharp(gradientSvg(width, height))
     .resize(width, height)
     .composite([
-      { input: markBuf, left, top },
+      { input: markBuf, left: logoLeft, top },
       { input: textSvg, left: 0, top: 0 },
     ])
     .png()
@@ -284,6 +282,15 @@ async function main(): Promise<void> {
   await writeFile(path.join(FRONTEND_ROOT, "public/icon-512.png"), icon512);
   await writeFile(path.join(FRONTEND_ROOT, "assets/pwa/icon-192.png"), icon192);
   await writeFile(path.join(FRONTEND_ROOT, "assets/pwa/icon-512.png"), icon512);
+  await writeFile(path.join(FRONTEND_ROOT, "assets/pwa/apple-touch-icon.png"), appleTouch);
+
+  const fePublic = path.join(FRONTEND_ROOT, "public");
+  await writeFile(path.join(fePublic, "apple-touch-icon.png"), appleTouch);
+  await writeFile(path.join(fePublic, "favicon-16x16.png"), favicon16);
+  await writeFile(path.join(fePublic, "favicon-32x32.png"), favicon32);
+  await writeFile(path.join(fePublic, "android-chrome-192x192.png"), icon192);
+  await writeFile(path.join(fePublic, "android-chrome-512x512.png"), icon512);
+  await writeIco(path.join(fePublic, "favicon.ico"), [16, 32, 48]);
 
   const beFaviconDir = path.join(BACKEND_ROOT, "public/favicon");
   await writeFile(path.join(beFaviconDir, "favicon-16x16.png"), favicon16);
