@@ -7,7 +7,7 @@ import {
   TreasuryEventType,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { INVESTMENT_AMOUNT_USDT } from "@/lib/config/revenueEngine";
+import { COHORT_REFERENCE_INVESTMENT_USDT } from "@/lib/config/investmentCohort";
 import { onRedeemCompleted } from "./onRedeemCompleted";
 import {
   buildPayoutReadinessClaimWhere,
@@ -79,8 +79,8 @@ async function createInvestedUser({
       userId: user.id,
       walletId: wallet.id,
       fundId: "aggressive-alpha",
-      costUsdt: INVESTMENT_AMOUNT_USDT(),
-      reservedUsdt: INVESTMENT_AMOUNT_USDT(),
+      costUsdt: COHORT_REFERENCE_INVESTMENT_USDT,
+      reservedUsdt: COHORT_REFERENCE_INVESTMENT_USDT,
       status: PurchaseOrderStatus.completed,
       usdtTxId: `usdt-${label}-${Date.now()}`,
     },
@@ -90,7 +90,7 @@ async function createInvestedUser({
       userId: user.id,
       walletId: wallet.id,
       fundId: "aggressive-alpha",
-      amountUsdt: INVESTMENT_AMOUNT_USDT(),
+      amountUsdt: COHORT_REFERENCE_INVESTMENT_USDT,
       returnPercent90d: 40,
       projectedPayoutUsdt: 35,
       status,

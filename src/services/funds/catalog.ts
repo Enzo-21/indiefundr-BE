@@ -4,14 +4,11 @@ import {
   loadTypicalPayoutDaysByFundIds,
 } from "./typicalPayoutDays";
 
-import { getInvestmentAmountUsdt } from "@/lib/config/pricing";
-
 export async function getFundCatalog() {
   const fundIds = INVESTMENT_FUNDS.map((fund) => fund.id);
   const typicalByFund = await loadTypicalPayoutDaysByFundIds(fundIds);
 
   return {
-    investmentAmountUsdt: getInvestmentAmountUsdt(),
     funds: INVESTMENT_FUNDS.map((fund) => ({
       ...fund,
       typicalPayoutDays:

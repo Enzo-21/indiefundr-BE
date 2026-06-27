@@ -1,12 +1,15 @@
-import {
-  APP_NET_REVENUE_PER_SUBSCRIBER_USDT,
-  INVESTMENT_AMOUNT_USDT,
-} from "@/lib/config/revenueEngine";
+import { APP_NET_REVENUE_PER_SUBSCRIBER_USDT } from "@/lib/config/revenueEngine";
 import { ledgerTruncateUsdt } from "@/lib/money/formatUsdt";
 
-/** Platform revenue ratio at the configured reference investment amount. */
+/**
+ * Reference principal for APP_NET_REVENUE_PER_SUBSCRIBER_USDT (10 USDT per $25).
+ * Independent of per-user tier amounts — cohort math uses frozen Investment.amountUsdt.
+ */
+export const COHORT_REFERENCE_INVESTMENT_USDT = 25;
+
+/** Platform revenue ratio at the cohort reference amount (not current subscribe price). */
 export function platformRevenueRatio(): number {
-  const reference = INVESTMENT_AMOUNT_USDT();
+  const reference = COHORT_REFERENCE_INVESTMENT_USDT;
   if (reference <= 0) return 0;
   return APP_NET_REVENUE_PER_SUBSCRIBER_USDT() / reference;
 }

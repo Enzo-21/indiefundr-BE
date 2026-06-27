@@ -34,4 +34,10 @@ describe("investmentCohort", () => {
   it("triadSurplusForPayout at 25 matches legacy Aggressive example", () => {
     assert.equal(triadSurplusForPayout(35, 25), 10);
   });
+
+  it("surplus at 50 USDT principal uses fixed cohort ratio", () => {
+    assert.equal(protectedRevenueForAmount(50), 20);
+    assert.equal(surplusPerSubscription(70, 50), 6.66);
+    assert.equal(surplusPerSubscription(35, 25), 3.33);
+  });
 });

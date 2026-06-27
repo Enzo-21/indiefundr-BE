@@ -27,10 +27,11 @@ Canonical business rules and triad math for the treasury payout engine implement
 
 | Symbol | Code | Value |
 |--------|------|-------|
-| **A** | `INVESTMENT_AMOUNT_USDT` | **Current** subscribe price (env); new orders only |
+| **A_tier** | `getInvestmentAmountUsdtForLevel(user.level)` | **25 / 50 / 75 / 100** USDT by player level (new orders) |
+| **A_ref** | `COHORT_REFERENCE_INVESTMENT_USDT` | **25** USDT — fixed reference for `APP_NET` ratio (code constant) |
 | **A_inv** | `Investment.amountUsdt` | **Frozen** principal per investment (cohort) |
-| **P_prot_ref** | `APP_NET_REVENUE_PER_SUBSCRIBER_USDT` | **10** USDT platform share at reference amount **A** |
-| **P_prot(inv)** | `protectedRevenueForAmount(A_inv)` | `A_inv × (P_prot_ref / A)` — proportional per investment |
+| **P_prot_ref** | `APP_NET_REVENUE_PER_SUBSCRIBER_USDT` | **10** USDT platform share per **A_ref** (not per current **A**) |
+| **P_prot(inv)** | `protectedRevenueForAmount(A_inv)` | `A_inv × (P_prot_ref / A_ref)` — scales linearly with cohort principal |
 | **P_head** | `projectedPayoutUsdt` | `A_inv × (1 + R/100)` where **R** is fund `returnPercent90d` |
 
 **Triad structure** (one payout head + unlockers whose principal sums to **2 × A_head**):
@@ -90,7 +91,7 @@ poolAvailable += A_inv
 treasurySurplus += S_sub     where S_sub = round(S_triad(A_inv) / 3, 2)
 ```
 
-`S_triad` uses that investment’s `projectedPayoutUsdt` and **A_inv** (`amountUsdt`). Surplus is **not** credited again when a triad payout completes.
+`S_triad` uses that investment’s `projectedPayoutUsdt` and **A_inv** (`amountUsdt`). Ratio **P_prot_ref / A_ref** is **not** tied to the current env subscribe price — doubling **A_inv** doubles protected share and surplus slice. Surplus is **not** credited again when a triad payout completes.
 
 ---
 
@@ -165,6 +166,6 @@ Reference CSVs under [`simulations/`](simulations/) (columns: `event`, `fund`, `
 
 ## Migration note
 
-Changing `INVESTMENT_AMOUNT_USDT` in env affects **new** subscriptions only. Existing rows keep `amountUsdt` / `projectedPayoutUsdt`. After deploy, run read-only integrity report to check drift; do **not** run legacy auto-reconcile against mixed cohorts.
+Subscribe amount is tiered by player level (see [`pricing.ts`](../../src/lib/config/pricing.ts)); each row keeps frozen **A_inv**. Surplus/protected math uses **A_ref = 25** and scales with **A_inv**. After deploy, run read-only integrity report to check drift; do **not** run legacy auto-reconcile against mixed cohorts.
 
 Ledgers populated before surplus-on-subscribe may show surplus only from historical payout `surplus_credit` rows.

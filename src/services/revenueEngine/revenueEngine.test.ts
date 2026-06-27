@@ -6,10 +6,10 @@ import {
   PurchaseOrderStatus,
   TreasuryEventType,
 } from "@prisma/client";
+import { COHORT_REFERENCE_INVESTMENT_USDT } from "@/lib/config/investmentCohort";
 import {
   additionalInflowNeeded,
   APP_NET_REVENUE_PER_SUBSCRIBER_USDT,
-  INVESTMENT_AMOUNT_USDT,
   newSubscribersNeeded,
   roundUsdt,
   surplusPerSubscriber,
@@ -176,8 +176,8 @@ describe("revenueEngine ledger integration", () => {
           userId: user.id,
           walletId: wallet.id,
           fundId: "growth-partners",
-          costUsdt: INVESTMENT_AMOUNT_USDT(),
-          reservedUsdt: INVESTMENT_AMOUNT_USDT(),
+          costUsdt: COHORT_REFERENCE_INVESTMENT_USDT,
+          reservedUsdt: COHORT_REFERENCE_INVESTMENT_USDT,
           status: PurchaseOrderStatus.completed,
           usdtTxId: `test-tx-${Date.now()}`,
         },
@@ -188,7 +188,7 @@ describe("revenueEngine ledger integration", () => {
           userId: user.id,
           walletId: wallet.id,
           fundId: "growth-partners",
-          amountUsdt: INVESTMENT_AMOUNT_USDT(),
+          amountUsdt: COHORT_REFERENCE_INVESTMENT_USDT,
           returnPercent90d: 20,
           projectedPayoutUsdt: 30,
           status: InvestmentStatus.active,
@@ -206,7 +206,7 @@ describe("revenueEngine ledger integration", () => {
         });
         assert.equal(
           roundUsdt((after?.poolAvailable ?? 0) - ledgerBefore.poolAvailable),
-          INVESTMENT_AMOUNT_USDT()
+          COHORT_REFERENCE_INVESTMENT_USDT
         );
         const eventCount = await prisma.treasuryEvent.count({
           where: {
@@ -279,8 +279,8 @@ describe("revenueEngine ledger integration", () => {
               userId: user.id,
               walletId: wallet.id,
               fundId: "growth-partners",
-              costUsdt: INVESTMENT_AMOUNT_USDT(),
-              reservedUsdt: INVESTMENT_AMOUNT_USDT(),
+              costUsdt: COHORT_REFERENCE_INVESTMENT_USDT,
+              reservedUsdt: COHORT_REFERENCE_INVESTMENT_USDT,
               status: PurchaseOrderStatus.completed,
               usdtTxId: `test-tx-${Date.now()}-${i}`,
             },
@@ -290,7 +290,7 @@ describe("revenueEngine ledger integration", () => {
               userId: user.id,
               walletId: wallet.id,
               fundId: "growth-partners",
-              amountUsdt: INVESTMENT_AMOUNT_USDT(),
+              amountUsdt: COHORT_REFERENCE_INVESTMENT_USDT,
               returnPercent90d: 20,
               projectedPayoutUsdt: 30,
               status: InvestmentStatus.active,
@@ -307,7 +307,7 @@ describe("revenueEngine ledger integration", () => {
         });
         assert.equal(
           roundUsdt((after?.poolAvailable ?? 0) - ledgerBefore.poolAvailable),
-          roundUsdt(3 * INVESTMENT_AMOUNT_USDT())
+          roundUsdt(3 * COHORT_REFERENCE_INVESTMENT_USDT)
         );
         assert.ok(
           (after?.treasurySurplus ?? 0) > ledgerBefore.treasurySurplus
@@ -368,8 +368,8 @@ describe("revenueEngine ledger integration", () => {
           userId: user.id,
           walletId: wallet.id,
           fundId: "growth-partners",
-          costUsdt: INVESTMENT_AMOUNT_USDT(),
-          reservedUsdt: INVESTMENT_AMOUNT_USDT(),
+          costUsdt: COHORT_REFERENCE_INVESTMENT_USDT,
+          reservedUsdt: COHORT_REFERENCE_INVESTMENT_USDT,
           status: PurchaseOrderStatus.completed,
           usdtTxId: `test-concurrent-tx-${Date.now()}`,
         },
@@ -380,7 +380,7 @@ describe("revenueEngine ledger integration", () => {
           userId: user.id,
           walletId: wallet.id,
           fundId: "growth-partners",
-          amountUsdt: INVESTMENT_AMOUNT_USDT(),
+          amountUsdt: COHORT_REFERENCE_INVESTMENT_USDT,
           returnPercent90d: 20,
           projectedPayoutUsdt: 30,
           status: InvestmentStatus.active,
@@ -399,7 +399,7 @@ describe("revenueEngine ledger integration", () => {
         });
         assert.equal(
           roundUsdt((after?.poolAvailable ?? 0) - ledgerBefore.poolAvailable),
-          INVESTMENT_AMOUNT_USDT()
+          COHORT_REFERENCE_INVESTMENT_USDT
         );
         const eventCount = await prisma.treasuryEvent.count({
           where: {

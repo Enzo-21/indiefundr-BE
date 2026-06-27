@@ -1,5 +1,5 @@
 import { getEnv } from "@/lib/env";
-import { getInvestmentAmountUsdt } from "@/lib/config/pricing";
+import { COHORT_REFERENCE_INVESTMENT_USDT } from "@/lib/config/investmentCohort";
 
 /** Legacy liquidity slice for surplusPerSubscriber test helper only. */
 const LEGACY_PAYOUT_LIQUIDITY_RESERVE_PER_SUBSCRIBER_USDT = 10 / 3;
@@ -8,7 +8,6 @@ function cfg() {
   const e = getEnv();
   const appNet = e.appNetRevenuePerSubscriberUsdt;
   return {
-    INVESTMENT_AMOUNT_USDT: e.investmentAmountUsdt,
     MIN_APP_MARGIN_USDT: e.minAppMarginUsdt,
     APP_NET_REVENUE_PER_SUBSCRIBER_USDT: appNet,
     REVENUE_ENGINE_ENABLED: e.revenueEngineEnabled,
@@ -22,7 +21,6 @@ function legacyMinPlatformMarginPerSubscriberUsdt(): number {
   );
 }
 
-export const INVESTMENT_AMOUNT_USDT = () => cfg().INVESTMENT_AMOUNT_USDT;
 export const MIN_APP_MARGIN_USDT = () => cfg().MIN_APP_MARGIN_USDT;
 /** Platform share credited per completed investment (env: APP_NET_REVENUE_PER_SUBSCRIBER_USDT). */
 export const APP_NET_REVENUE_PER_SUBSCRIBER_USDT = () =>
@@ -44,13 +42,13 @@ export const newSubscribersNeeded = (
   poolAvailable: number,
   pHead: number,
   mFloor: number = MIN_APP_MARGIN_USDT(),
-  currentSubscriptionAmount: number = getInvestmentAmountUsdt()
+  currentSubscriptionAmount: number = COHORT_REFERENCE_INVESTMENT_USDT
 ) => {
   const needed = additionalInflowNeeded(poolAvailable, pHead, mFloor);
   const unit =
     currentSubscriptionAmount > 0
       ? currentSubscriptionAmount
-      : getInvestmentAmountUsdt();
+      : COHORT_REFERENCE_INVESTMENT_USDT;
   return Math.ceil(needed / unit);
 };
 

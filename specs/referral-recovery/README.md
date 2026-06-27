@@ -61,7 +61,7 @@ Recovery bonuses for invitees (**4 USDT**) are funded from **`treasurySurplus`**
 
 | Term | Meaning |
 |------|---------|
-| **A** | Principal per investment = **25 USDT** (`INVESTMENT_AMOUNT_USDT`) |
+| **A** | Principal per recovery investment = **25 USDT** (`REFERRAL_RECOVERY_PRINCIPAL_USDT`; base tier) |
 | **Triad** | Payout head + two later unlocker investments (see revenue engine) |
 | **Surplus (S_sub)** | Per-subscribe credit to `treasurySurplus` ≈ 3.33–6.17 USDT depending on fund |
 | **Recovery-eligible investment** | Matured, unpaid, no triad unlock, not surplus-FIFO-eligible, within **7-day recovery window** from `recoveryEligibleAt` |

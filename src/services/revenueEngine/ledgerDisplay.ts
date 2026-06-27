@@ -1,4 +1,3 @@
-import { INVESTMENT_AMOUNT_USDT } from "@/lib/config/revenueEngine";
 import type { LedgerSnapshot } from "./ledger";
 
 export type TreasuryLedgerHints = {
@@ -16,12 +15,10 @@ export function buildTreasuryLedgerHints(
     | "protectedRevenueAvailable"
   >
 ): TreasuryLedgerHints {
-  const investmentAmount = INVESTMENT_AMOUNT_USDT();
-
   const poolAvailable: string[] = [
     "Gross unpaid treasury pool after recorded payouts and platform withdrawals.",
     "Surplus and withdrawable liquidity are labels inside this pool, not separate on-chain balances.",
-    `Each subscription adds ${investmentAmount} USDT to the pool.`,
+    "Each subscription adds 25–100 USDT to the pool depending on the investor's tier.",
   ];
 
   const protectedRevenueAvailable = [

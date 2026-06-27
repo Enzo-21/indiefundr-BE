@@ -1,9 +1,12 @@
 import {
   APP_NET_REVENUE_PER_SUBSCRIBER_USDT,
-  INVESTMENT_AMOUNT_USDT,
   roundUsdt,
 } from "@/lib/config/revenueEngine";
-import { protectedRevenueForAmount, surplusPerSubscription } from "@/lib/config/investmentCohort";
+import {
+  COHORT_REFERENCE_INVESTMENT_USDT,
+  protectedRevenueForAmount,
+  surplusPerSubscription,
+} from "@/lib/config/investmentCohort";
 import type { ExpectedLedgerValues } from "./ledgerReconcile";
 import { findUnlockingInvestments } from "./payoutScheduler";
 
@@ -74,7 +77,7 @@ export function projectCohortLedger({
   principalPerInvestment?: number;
   platformWithdrawn?: number;
 }): CohortLedgerProjection {
-  const principal = principalPerInvestment ?? INVESTMENT_AMOUNT_USDT();
+  const principal = principalPerInvestment ?? COHORT_REFERENCE_INVESTMENT_USDT;
   const platformPerInvestment = protectedRevenueForAmount(principal);
   const surplusPerSub = surplusPerSubscription(payoutPerHead, principal);
   const triadCount = Math.max(0, Math.floor((investmentCount - 1) / 2));
@@ -115,7 +118,7 @@ export function buildSequentialCohort(
     msStep?: number;
   } = {}
 ): SimulatedInvestment[] {
-  const amountUsdt = options.amountUsdt ?? INVESTMENT_AMOUNT_USDT();
+  const amountUsdt = options.amountUsdt ?? COHORT_REFERENCE_INVESTMENT_USDT;
   const payoutUsdt = options.payoutUsdt ?? amountUsdt * 1.4;
   const startMs = options.startMs ?? Date.UTC(2026, 0, 1);
   const msStep = options.msStep ?? 60_000;

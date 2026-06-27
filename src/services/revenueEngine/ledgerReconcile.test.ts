@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { COHORT_REFERENCE_INVESTMENT_USDT } from "@/lib/config/investmentCohort";
 import {
   APP_NET_REVENUE_PER_SUBSCRIBER_USDT,
-  INVESTMENT_AMOUNT_USDT,
   roundUsdt,
 } from "@/lib/config/revenueEngine";
 import {
@@ -56,7 +56,7 @@ describe("LEDGER_RECONCILE_EPSILON", () => {
 
 describe("expected ledger math", () => {
   it("uses positive env-configured USDT constants", () => {
-    assert.ok(INVESTMENT_AMOUNT_USDT() > 0);
+    assert.ok(COHORT_REFERENCE_INVESTMENT_USDT > 0);
     assert.ok(APP_NET_REVENUE_PER_SUBSCRIBER_USDT() > 0);
   });
 
@@ -85,7 +85,7 @@ describe("expected ledger math", () => {
     const subscriptions = 19;
     const payoutTotal = 237.5;
     const withdrawalTotal = 180;
-    let poolAvailable = subscriptions * INVESTMENT_AMOUNT_USDT();
+    let poolAvailable = subscriptions * COHORT_REFERENCE_INVESTMENT_USDT;
     poolAvailable -= payoutTotal;
     poolAvailable -= withdrawalTotal;
     poolAvailable = roundUsdt(Math.max(0, poolAvailable));
@@ -112,11 +112,11 @@ describe("expected ledger math", () => {
     assert.equal(csvFinal.treasurySurplus, 18);
     assert.equal(
       expected.treasurySurplus,
-      roundUsdt(n * surplusPerSubscription(payoutPerHead, INVESTMENT_AMOUNT_USDT()))
+      roundUsdt(n * surplusPerSubscription(payoutPerHead, COHORT_REFERENCE_INVESTMENT_USDT))
     );
     assert.equal(
       expected.poolAvailable,
-      roundUsdt(n * INVESTMENT_AMOUNT_USDT() - projection.totalPayouts)
+      roundUsdt(n * COHORT_REFERENCE_INVESTMENT_USDT - projection.totalPayouts)
     );
   });
 
@@ -135,7 +135,7 @@ describe("expected ledger math", () => {
     assert.equal(projection.totalPayouts, 140);
     assert.equal(
       expected.treasurySurplus,
-      roundUsdt(n * surplusPerSubscription(35, INVESTMENT_AMOUNT_USDT()))
+      roundUsdt(n * surplusPerSubscription(35, COHORT_REFERENCE_INVESTMENT_USDT))
     );
     assert.equal(expected.poolAvailable, 85);
   });

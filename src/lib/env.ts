@@ -74,7 +74,6 @@ const rawEnvSchema = z.object({
     .enum(["off", "errors", "info", "debug"])
     .default("errors"),
   REVENUE_ENGINE_ENABLED: z.string().optional(),
-  INVESTMENT_AMOUNT_USDT: z.coerce.number().default(25),
   MIN_APP_MARGIN_USDT: z.coerce.number().default(40),
   APP_NET_REVENUE_PER_SUBSCRIBER_USDT: z.coerce.number().default(10),
   INVESTMENT_TERM: z.string().default(""),
@@ -162,7 +161,6 @@ function buildEnv(raw: z.infer<typeof rawEnvSchema>) {
     ),
     tronLimiterLogLevel: raw.TRON_LIMITER_LOG_LEVEL,
     revenueEngineEnabled: envFlag(raw.REVENUE_ENGINE_ENABLED, true),
-    investmentAmountUsdt: raw.INVESTMENT_AMOUNT_USDT,
     minAppMarginUsdt: raw.MIN_APP_MARGIN_USDT,
     appNetRevenuePerSubscriberUsdt: raw.APP_NET_REVENUE_PER_SUBSCRIBER_USDT,
     investmentTerm: raw.INVESTMENT_TERM,

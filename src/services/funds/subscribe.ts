@@ -1,6 +1,6 @@
 import {
   getFundById,
-  getInvestmentAmountUsdt,
+  getInvestmentAmountUsdtForLevel,
   isValidFundId,
   isValidInvestmentAmount,
 } from "@/lib/config/pricing";
@@ -32,12 +32,10 @@ export async function subscribeToFund(
   const { fundId, cost, device } = input;
   const baseFields = { userId, fundId, cost };
 
-  if (!isValidFundId(fundId) || !isValidInvestmentAmount(Number(cost))) {
+  if (!isValidFundId(fundId)) {
     logFundsRejected("subscribe", "invalid_input", {
       ...baseFields,
-      expectedCost: getInvestmentAmountUsdt(),
-      validFund: isValidFundId(fundId),
-      validCost: isValidInvestmentAmount(Number(cost)),
+      validFund: false,
     });
     return {
       ok: false,
@@ -55,6 +53,22 @@ export async function subscribeToFund(
         status: 404,
         body: "User not found",
         plainText: true,
+      };
+    }
+
+    const expectedCost = getInvestmentAmountUsdtForLevel(user.level);
+    if (!isValidInvestmentAmount(Number(cost), user.level)) {
+      logFundsRejected("subscribe", "invalid_input", {
+        ...baseFields,
+        expectedCost,
+        userLevel: user.level,
+        validFund: true,
+        validCost: false,
+      });
+      return {
+        ok: false,
+        status: 400,
+        body: { msg: "The provided values are not valid" },
       };
     }
 

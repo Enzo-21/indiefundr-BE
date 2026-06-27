@@ -9,9 +9,8 @@ import { isChoiceDeadlineActive } from "@/lib/config/unpaidMaturityChoice";
 import { recoveryExpiresAt } from "@/lib/config/referralRecovery";
 import {
   unlockPrincipalRequired,
-  unlockSlotEquivalent,
 } from "@/lib/config/investmentCohort";
-import { getInvestmentAmountUsdt } from "@/lib/config/pricing";
+import { BASE_INVESTMENT_AMOUNT_USDT } from "@/lib/config/pricing";
 import { isUnpaidMaturityChoicePending } from "@/services/investments/unpaidMaturityChoice";
 
 export type MaturitySituation =
@@ -312,24 +311,18 @@ export function resolveMaturitySituation(
     };
   }
 
+  const headAmount =
+    investment.amountUsdt > 0
+      ? investment.amountUsdt
+      : BASE_INVESTMENT_AMOUNT_USDT;
+
   return {
     ...base,
     situation: "waiting_unlock",
     statusLabel: "Waiting for newer investors",
     statusDetail: `Your term ended. Newer investors must contribute ${unlockPrincipalRequired(
-      investment.amountUsdt > 0
-        ? investment.amountUsdt
-        : getInvestmentAmountUsdt()
-    )} USDT total (2× your ${
-      investment.amountUsdt > 0
-        ? investment.amountUsdt
-        : getInvestmentAmountUsdt()
-    } USDT investment; e.g. one ${getInvestmentAmountUsdt()} USDT investor counts as ${unlockSlotEquivalent(
-      getInvestmentAmountUsdt(),
-      investment.amountUsdt > 0
-        ? investment.amountUsdt
-        : getInvestmentAmountUsdt()
-    )}× at today's price).`,
+      headAmount
+    )} USDT total (2× your ${headAmount} USDT investment; e.g. a 50 USDT investor counts as 2× toward a 25 USDT head).`,
   };
 }
 

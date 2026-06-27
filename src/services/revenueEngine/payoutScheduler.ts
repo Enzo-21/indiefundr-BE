@@ -5,10 +5,11 @@ import {
 } from "@prisma/client";
 import { isExcludedFromNormalPayout } from "@/lib/investments/referralRecoveryNormalPayout";
 import {
+  COHORT_REFERENCE_INVESTMENT_USDT,
   unlockPrincipalRequired,
   unlockSlotEquivalent,
 } from "@/lib/config/investmentCohort";
-import { INVESTMENT_AMOUNT_USDT, REVENUE_ENGINE_ENABLED } from "@/lib/config/revenueEngine";
+import { REVENUE_ENGINE_ENABLED } from "@/lib/config/revenueEngine";
 import { ledgerTruncateUsdt } from "@/lib/money/formatUsdt";
 import { prisma } from "@/lib/prisma";
 import { fieldIsNullOrUnset } from "@/lib/prisma/mongoFieldFilters";
@@ -255,7 +256,7 @@ export function findUnlockingInvestments<T extends PayoutUnlocker>(
   const headAmount =
     candidate.amountUsdt > 0
       ? candidate.amountUsdt
-      : INVESTMENT_AMOUNT_USDT();
+      : COHORT_REFERENCE_INVESTMENT_USDT;
   const requiredPrincipal = unlockPrincipalRequired(headAmount);
   let receivedPrincipal = 0;
   const selected: T[] = [];
@@ -270,7 +271,7 @@ export function findUnlockingInvestments<T extends PayoutUnlocker>(
     const unlockerAmount =
       investment.amountUsdt > 0
         ? investment.amountUsdt
-        : INVESTMENT_AMOUNT_USDT();
+        : COHORT_REFERENCE_INVESTMENT_USDT;
     selected.push(investment);
     receivedPrincipal += unlockerAmount;
     if (receivedPrincipal >= requiredPrincipal) {

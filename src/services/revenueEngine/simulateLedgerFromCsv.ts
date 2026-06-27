@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { INVESTMENT_AMOUNT_USDT } from "@/lib/config/revenueEngine";
+import { COHORT_REFERENCE_INVESTMENT_USDT } from "@/lib/config/investmentCohort";
 import {
   ledgerProtectedWithdrawable,
   ledgerTruncateUsdt,
@@ -63,7 +63,7 @@ export function applyCsvLedgerEvent(
   state: SimulatedLedgerState,
   row: Pick<CsvLedgerRow, "event" | "amountUsdt">
 ): SimulatedLedgerState {
-  const principal = INVESTMENT_AMOUNT_USDT();
+  const principal = COHORT_REFERENCE_INVESTMENT_USDT;
   const payoutAmount = ledgerTruncateUsdt(row.amountUsdt);
 
   switch (row.event) {

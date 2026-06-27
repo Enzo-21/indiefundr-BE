@@ -18,6 +18,31 @@ const skipDbTests = SKIP_DB_MUTATING_TESTS || !hasDatabase;
 
 describe("subscribeToFund", () => {
   it(
+    "rejects cost below tier for player level 2",
+    { skip: skipDbTests },
+    async () => {
+      const user = await prisma.user.create({
+        data: {
+          name: "Subscribe Level Test",
+          email: `subscribe-level-${Date.now()}@example.com`,
+          level: 2,
+        },
+      });
+
+      const result = await subscribeToFund(user.id, {
+        fundId: "aggressive-alpha",
+        cost: 25,
+      });
+      assert.equal(result.ok, false);
+      if (!result.ok) {
+        assert.equal(result.status, 400);
+      }
+
+      await prisma.user.delete({ where: { id: user.id } });
+    }
+  );
+
+  it(
     "rejects invalid fund",
     { skip: skipDbTests },
     async () => {

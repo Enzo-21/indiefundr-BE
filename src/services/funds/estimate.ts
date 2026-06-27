@@ -1,7 +1,7 @@
 import { APP_NAME } from "@/lib/constants/appBranding";
 import {
   getFundById,
-  getInvestmentAmountUsdt,
+  getInvestmentAmountUsdtForLevel,
   isValidFundId,
 } from "@/lib/config/pricing";
 import { formatTronTransferError } from "@/lib/utils/tronErrors";
@@ -40,7 +40,6 @@ export async function getSubscribeFeeEstimate(
   }
 
   try {
-    const cost = getInvestmentAmountUsdt();
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       logFundsRejected("estimate", "user_not_found", baseFields);
@@ -51,6 +50,8 @@ export async function getSubscribeFeeEstimate(
         plainText: true,
       };
     }
+
+    const cost = getInvestmentAmountUsdtForLevel(user.level);
 
     const sender = await getMainWallet(userId);
     if (!sender) {

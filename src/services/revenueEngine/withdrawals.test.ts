@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import {
-  INVESTMENT_AMOUNT_USDT,
-  roundUsdt,
-} from "@/lib/config/revenueEngine";
+import { COHORT_REFERENCE_INVESTMENT_USDT } from "@/lib/config/investmentCohort";
+import { roundUsdt } from "@/lib/config/revenueEngine";
 import { syncUnrecordedAppWithdrawalsFromAudit } from "./withdrawals";
 
 describe("syncUnrecordedAppWithdrawalsFromAudit", () => {
@@ -71,7 +69,7 @@ describe("withdrawal pool math", () => {
     const subscriptions = 19;
     const payoutTotal = 237.5;
     const withdrawalTotal = 180;
-    const gross = subscriptions * INVESTMENT_AMOUNT_USDT();
+    const gross = subscriptions * COHORT_REFERENCE_INVESTMENT_USDT;
     const poolAfterPayouts = roundUsdt(Math.max(0, gross - payoutTotal));
     const poolAfterWithdrawal = roundUsdt(
       Math.max(0, poolAfterPayouts - withdrawalTotal)
