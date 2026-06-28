@@ -7,8 +7,8 @@ import { isExcludedFromNormalPayout } from "@/lib/investments/referralRecoveryNo
 import {
   COHORT_REFERENCE_INVESTMENT_USDT,
   unlockPrincipalRequired,
-  unlockSlotEquivalent,
 } from "@/lib/config/investmentCohort";
+import { buildPayoutReason } from "@/lib/revenueEngine/payoutReasonCopy";
 import { REVENUE_ENGINE_ENABLED } from "@/lib/config/revenueEngine";
 import { ledgerTruncateUsdt } from "@/lib/money/formatUsdt";
 import { prisma } from "@/lib/prisma";
@@ -296,34 +296,7 @@ export function buildSurplusPayoutClaimWhere(investmentId: string) {
   return buildPayoutReadinessClaimWhere(investmentId);
 }
 
-export function buildPayoutReason(
-  headAmountUsdt: number,
-  unlockers: PayoutUnlocker[]
-): string | null {
-  if (unlockers.length === 0) {
-    return null;
-  }
-
-  const required = unlockPrincipalRequired(headAmountUsdt);
-  const received = unlockers.reduce(
-    (sum, inv) => sum + (inv.amountUsdt || 0),
-    0
-  );
-  const equivalent = unlockSlotEquivalent(received, headAmountUsdt);
-  const amountParts = unlockers
-    .map((inv) => `${inv.amountUsdt} USDT`)
-    .join(" + ");
-  const countLabel =
-    unlockers.length === 1
-      ? "1 later investment"
-      : `${unlockers.length} later investments`;
-
-  return (
-    `Unlocked after ${countLabel} (${amountParts}). ` +
-    `Head invested ${headAmountUsdt} USDT; required ${required} USDT from newer investors (2× cohort). ` +
-    `Received ${received} USDT (${equivalent}× equivalent).`
-  );
-}
+export { buildPayoutReason };
 
 function hasBroadcastRedemption(result: { investment: Investment }) {
   return (

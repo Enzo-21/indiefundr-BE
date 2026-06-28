@@ -1,5 +1,5 @@
 import type { AdminInvestmentsListResult } from "@/services/admin/investmentAdminTypes";
-import { reorderInvestmentDisplayRows } from "@/services/admin/investmentLedgerTimeline";
+import { reorderInvestmentDisplayRows } from "@/lib/admin/investmentDisplayRowOrder";
 
 export type InvestmentTableFilters = {
   showQueue: boolean;

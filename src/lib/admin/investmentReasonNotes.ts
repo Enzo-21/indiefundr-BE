@@ -2,7 +2,7 @@ import { unlockPrincipalRequired } from "@/lib/config/investmentCohort";
 import type { AdminInvestmentRow } from "@/services/admin/investmentAdminTypes";
 import type { MaturitySituationView } from "@/lib/investments/maturitySituation";
 import { isSurplusPayoutTrigger } from "@/services/revenueEngine/payoutTriggers";
-import { buildPayoutReason } from "@/services/revenueEngine/payoutScheduler";
+import { buildPayoutReason } from "@/lib/revenueEngine/payoutReasonCopy";
 import { investmentShortId } from "./investmentTableIds";
 
 export type InvestmentReasonUnlockerLine = {
