@@ -83,9 +83,11 @@ type AdvanceOutcome = {
 export function OrderAutopilotDialog({
   pendingInvestmentCount,
   pendingWithdrawalCount,
+  pendingReferralCount,
 }: {
   pendingInvestmentCount: number;
   pendingWithdrawalCount: number;
+  pendingReferralCount: number;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -102,8 +104,10 @@ export function OrderAutopilotDialog({
     phase,
     includeInvestment,
     includeWithdrawal,
+    includeReferral,
     setIncludeInvestment,
     setIncludeWithdrawal,
+    setIncludeReferral,
     initialTotal,
     completedCount,
     manualCheckItems,
@@ -121,10 +125,14 @@ export function OrderAutopilotDialog({
 
   const selectedInvestmentCount = includeInvestment ? pendingInvestmentCount : 0;
   const selectedWithdrawalCount = includeWithdrawal ? pendingWithdrawalCount : 0;
-  const selectedTotal = selectedInvestmentCount + selectedWithdrawalCount;
+  const selectedReferralCount = includeReferral ? pendingReferralCount : 0;
+  const selectedTotal =
+    selectedInvestmentCount + selectedWithdrawalCount + selectedReferralCount;
   const canStart =
-    selectedTotal > 0 && (includeInvestment || includeWithdrawal);
-  const pendingOrderCount = pendingInvestmentCount + pendingWithdrawalCount;
+    selectedTotal > 0 &&
+    (includeInvestment || includeWithdrawal || includeReferral);
+  const pendingOrderCount =
+    pendingInvestmentCount + pendingWithdrawalCount + pendingReferralCount;
   const processedCount = completedCount + manualCheckItems.length;
   const currentItemIndex = processedCount + 1;
   const nextItemIndex = processedCount + 1;
@@ -141,10 +149,15 @@ export function OrderAutopilotDialog({
         `${pendingWithdrawalCount} withdrawal order${pendingWithdrawalCount === 1 ? "" : "s"}`
       );
     }
+    if (includeReferral && pendingReferralCount > 0) {
+      parts.push(
+        `${pendingReferralCount} referral bonus${pendingReferralCount === 1 ? "" : "es"}`
+      );
+    }
     if (parts.length === 0) {
       return "Select at least one queue with pending orders.";
     }
-    const base = `Will run up to ${parts.join(" and ")} (${selectedTotal} total) in queue order (oldest first). Investment orders use the four-step Complete order workflow; withdrawals use TRX top-up, USDT to destination, and mark-success. Items that fail after retries are skipped and flagged for manual check; autopilot continues with the rest.`;
+    const base = `Will run up to ${parts.join(" and ")} (${selectedTotal} total) in queue order (oldest first). Investment orders use the four-step Complete order workflow; withdrawals use TRX top-up, USDT to destination, and mark-success; referral bonuses use treasury USDT payment, on-chain confirmation, and ledger settlement. Items that fail after retries are skipped and flagged for manual check; autopilot continues with the rest.`;
     if (selectedTotal > 1) {
       return `${base} There is a 10 second pause between each order.`;
     }
@@ -152,8 +165,10 @@ export function OrderAutopilotDialog({
   }, [
     includeInvestment,
     includeWithdrawal,
+    includeReferral,
     pendingInvestmentCount,
     pendingWithdrawalCount,
+    pendingReferralCount,
     selectedTotal,
   ]);
 
@@ -280,12 +295,12 @@ export function OrderAutopilotDialog({
               <DialogHeader className="gap-3 text-left">
                 <DialogTitle className="text-xl">Order autopilot</DialogTitle>
                 <DialogDescription className="text-base leading-relaxed">
-                  Run admin automation for pending investment and withdrawal
-                  orders in the queue.
+                  Run admin automation for pending investment, withdrawal, and
+                  referral orders in the queue.
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex flex-col gap-3 sm:grid sm:grid-cols-3">
                 <ModeCard
                   title="Investment orders"
                   description="Manual subscription orders: TRX top-up, USDT to treasury, recover sponsored TRX, mark successful."
@@ -305,6 +320,16 @@ export function OrderAutopilotDialog({
                   }
                   selected={includeWithdrawal}
                   onToggle={() => setIncludeWithdrawal((value) => !value)}
+                />
+                <ModeCard
+                  title="Referral bonuses"
+                  description="Pay invitee/inviter bonuses and principal recovery from treasury."
+                  count={pendingReferralCount}
+                  countLabel={
+                    pendingReferralCount === 1 ? "bonus" : "bonuses"
+                  }
+                  selected={includeReferral}
+                  onToggle={() => setIncludeReferral((value) => !value)}
                 />
               </div>
 

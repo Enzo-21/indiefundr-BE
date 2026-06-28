@@ -6,6 +6,7 @@ import {
   adminGetAutopilotOrderCandidates,
   adminMarkOrderAutopilotManualCheck,
 } from "@/actions/admin/purchaseOrders";
+import { adminMarkReferralAutopilotManualCheck } from "@/actions/admin/referralPayoutOrders";
 import { adminMarkWithdrawalAutopilotManualCheck } from "@/actions/admin/withdrawals";
 import type { AutopilotOrderCandidate } from "@/services/admin/orderAutopilot";
 import {
@@ -30,6 +31,10 @@ function manualCheckDetail(candidate: AutopilotOrderCandidate): string {
     const dest = candidate.destinationLabel ?? "destination";
     return `Withdrawal · ${dest} · ${amount}`;
   }
+  if (candidate.orderType === "referral") {
+    const kind = candidate.kindLabel ?? "Referral payout";
+    return `Referral · ${kind} · ${amount}`;
+  }
   return `Investment · ${candidate.fundName} · ${amount}`;
 }
 
@@ -38,6 +43,7 @@ export function useOrderAutopilot() {
   const [phase, setPhase] = useState<OrderAutopilotPhase>("configure");
   const [includeInvestment, setIncludeInvestment] = useState(true);
   const [includeWithdrawal, setIncludeWithdrawal] = useState(true);
+  const [includeReferral, setIncludeReferral] = useState(true);
   const [batchQueue, setBatchQueue] = useState<AutopilotOrderCandidate[]>([]);
   const [queueIndex, setQueueIndex] = useState(0);
   const [initialTotal, setInitialTotal] = useState(0);
@@ -51,7 +57,11 @@ export function useOrderAutopilot() {
     useState<AutopilotOrderCandidate | null>(null);
   const [countdownSecondsLeft, setCountdownSecondsLeft] = useState(0);
   const [configureError, setConfigureError] = useState<string | null>(null);
-  const modesRef = useRef({ includeInvestment: true, includeWithdrawal: true });
+  const modesRef = useRef({
+    includeInvestment: true,
+    includeWithdrawal: true,
+    includeReferral: true,
+  });
   const abortRef = useRef(false);
   const pendingCandidateRef = useRef<AutopilotOrderCandidate | null>(null);
   const manualCheckItemsRef = useRef<AutopilotManualCheckItem[]>([]);
@@ -59,7 +69,7 @@ export function useOrderAutopilot() {
   const queueIndexRef = useRef(0);
   const batchQueueRef = useRef<AutopilotOrderCandidate[]>([]);
 
-  modesRef.current = { includeInvestment, includeWithdrawal };
+  modesRef.current = { includeInvestment, includeWithdrawal, includeReferral };
   pendingCandidateRef.current = pendingCandidate;
   manualCheckItemsRef.current = manualCheckItems;
   completedCountRef.current = completedCount;
@@ -200,7 +210,12 @@ export function useOrderAutopilot() {
               candidate.orderId,
               error
             )
-          : await adminMarkOrderAutopilotManualCheck(candidate.orderId, error);
+          : candidate.orderType === "referral"
+            ? await adminMarkReferralAutopilotManualCheck(
+                candidate.orderId,
+                error
+              )
+            : await adminMarkOrderAutopilotManualCheck(candidate.orderId, error);
       if (!markResult.ok) {
         throw new Error(markResult.error.msg);
       }
@@ -256,8 +271,10 @@ export function useOrderAutopilot() {
     phase,
     includeInvestment,
     includeWithdrawal,
+    includeReferral,
     setIncludeInvestment,
     setIncludeWithdrawal,
+    setIncludeReferral,
     initialTotal,
     completedCount,
     manualCheckItems,

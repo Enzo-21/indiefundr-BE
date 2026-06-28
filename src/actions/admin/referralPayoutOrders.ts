@@ -7,6 +7,7 @@ import {
   broadcastReferralPayoutUsdt,
   completeReferralPayoutOrder,
   markReferralPayoutOrderFailed,
+  appendAdminReferralPayoutAutopilotManualCheckNote,
 } from "@/services/admin/referralPayoutOrderFulfillment";
 
 function revalidateOrderViews() {
@@ -50,6 +51,24 @@ export async function adminMarkReferralPayoutFailed(
   const session = await verifyAdminSession();
   const result = await withAdminAction(() =>
     markReferralPayoutOrderFailed(orderId, reason, session.email)
+  );
+  if (result.ok) {
+    revalidateOrderViews();
+  }
+  return result;
+}
+
+export async function adminMarkReferralAutopilotManualCheck(
+  orderId: string,
+  error: string
+) {
+  const session = await verifyAdminSession();
+  const result = await withAdminAction(() =>
+    appendAdminReferralPayoutAutopilotManualCheckNote(
+      orderId,
+      error,
+      session.email
+    )
   );
   if (result.ok) {
     revalidateOrderViews();

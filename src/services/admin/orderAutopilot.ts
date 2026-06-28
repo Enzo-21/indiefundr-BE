@@ -1,13 +1,16 @@
 import type { AdminQueueRow } from "@/services/admin/purchaseOrderFulfillment";
 import { listAdminSubscriptionQueue } from "@/services/admin/purchaseOrderFulfillment";
+import type { AdminReferralPayoutRow } from "@/services/admin/referralPayoutOrderFulfillment";
+import { listAdminReferralPayoutQueue } from "@/services/admin/referralPayoutOrderFulfillment";
 import { listAdminWithdrawalQueue } from "@/services/admin/withdrawalOrderFulfillment";
 
 export type AutopilotOrderCandidate = {
-  orderType: "invest" | "withdraw";
+  orderType: "invest" | "withdraw" | "referral";
   orderId: string;
   userEmail: string;
   userName: string;
   fundName: string;
+  kindLabel?: string;
   costUsdt: number;
   destinationLabel?: string;
   normalizedDateIso: string;
@@ -20,6 +23,7 @@ export type AutopilotOrderCandidate = {
 export type ListAutopilotOrderCandidatesOptions = {
   includeInvestment?: boolean;
   includeWithdrawal?: boolean;
+  includeReferral?: boolean;
 };
 
 function truncateDestinationAddress(address: string): string {
@@ -55,7 +59,12 @@ export function buildAutopilotOrderCandidateFromRow(
   }
 
   if (row.orderType === "referral") {
-    throw new Error("Referral payout orders are not supported in order autopilot");
+    return {
+      ...base,
+      orderType: "referral",
+      fundName: row.kindLabel,
+      kindLabel: row.kindLabel,
+    };
   }
 
   return {
@@ -71,11 +80,16 @@ export function buildAutopilotOrderCandidatesFromRows(
   return rows.map(buildAutopilotOrderCandidateFromRow);
 }
 
-export function mergeAutopilotOrderCandidates(
-  investment: AutopilotOrderCandidate[],
-  withdrawal: AutopilotOrderCandidate[]
+export function buildAutopilotOrderCandidatesFromReferralRows(
+  rows: AdminReferralPayoutRow[]
 ): AutopilotOrderCandidate[] {
-  const merged = [...investment, ...withdrawal];
+  return rows.map(buildAutopilotOrderCandidateFromRow);
+}
+
+export function mergeAutopilotOrderCandidates(
+  ...groups: AutopilotOrderCandidate[][]
+): AutopilotOrderCandidate[] {
+  const merged = groups.flat();
   merged.sort(
     (a, b) =>
       new Date(a.normalizedDateIso).getTime() -
@@ -89,14 +103,17 @@ export async function listAutopilotOrderCandidates(
 ): Promise<AutopilotOrderCandidate[]> {
   const includeInvestment = options.includeInvestment !== false;
   const includeWithdrawal = options.includeWithdrawal !== false;
+  const includeReferral = options.includeReferral !== false;
 
-  const [subscriptions, withdrawals] = await Promise.all([
+  const [subscriptions, withdrawals, referrals] = await Promise.all([
     includeInvestment ? listAdminSubscriptionQueue() : Promise.resolve([]),
     includeWithdrawal ? listAdminWithdrawalQueue() : Promise.resolve([]),
+    includeReferral ? listAdminReferralPayoutQueue() : Promise.resolve([]),
   ]);
 
   return mergeAutopilotOrderCandidates(
     buildAutopilotOrderCandidatesFromRows(subscriptions),
-    buildAutopilotOrderCandidatesFromRows(withdrawals)
+    buildAutopilotOrderCandidatesFromRows(withdrawals),
+    buildAutopilotOrderCandidatesFromReferralRows(referrals)
   );
 }

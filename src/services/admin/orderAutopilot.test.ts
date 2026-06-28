@@ -3,13 +3,17 @@ import { describe, it } from "node:test";
 import {
   PurchaseOrderStatus,
   PurchaseOrderStep,
+  ReferralPayoutOrderKind,
+  ReferralPayoutOrderStatus,
   WithdrawalOrderStatus,
   WithdrawalOrderStep,
 } from "@prisma/client";
 import type { AdminOrderRow } from "@/services/admin/purchaseOrderFulfillment";
+import type { AdminReferralPayoutRow } from "@/services/admin/referralPayoutOrderFulfillment";
 import type { AdminWithdrawalRow } from "@/services/admin/withdrawalOrderFulfillment";
 import {
   buildAutopilotOrderCandidateFromRow,
+  buildAutopilotOrderCandidatesFromReferralRows,
   buildAutopilotOrderCandidatesFromRows,
   mergeAutopilotOrderCandidates,
 } from "./orderAutopilot";
@@ -73,6 +77,36 @@ const mockWithdrawalRow: AdminWithdrawalRow = {
   updatedAt: "2026-01-01T00:00:00.000Z",
 };
 
+const mockReferralRow: AdminReferralPayoutRow = {
+  orderType: "referral",
+  orderId: "referral-1",
+  userId: "user-3",
+  userEmail: "third@example.com",
+  userName: "Third User",
+  kind: ReferralPayoutOrderKind.invitee_bonus,
+  kindLabel: "Invitee bonus",
+  referralInviteId: "invite-1",
+  investmentId: null,
+  costUsdt: 10,
+  reservedUsdt: 0,
+  status: ReferralPayoutOrderStatus.queued,
+  walletAddress: "TWallet3",
+  trxBalance: null,
+  usdtBalance: null,
+  balanceReadStatus: "ok",
+  estimatedTrx: null,
+  topUpTxId: null,
+  usdtTxId: null,
+  adminTrxTopUpTxId: null,
+  adminUsdtTxId: null,
+  adminNotes: null,
+  topUpTronscanUrl: null,
+  usdtTronscanUrl: null,
+  normalizedDateIso: "2026-01-03T00:00:00.000Z",
+  date: "2026-01-03T00:00:00.000Z",
+  updatedAt: "2026-01-03T00:00:00.000Z",
+};
+
 describe("buildAutopilotOrderCandidatesFromRows", () => {
   it("maps investment queue rows", () => {
     const candidates = buildAutopilotOrderCandidatesFromRows([mockInvestmentRow]);
@@ -106,6 +140,29 @@ describe("buildAutopilotOrderCandidatesFromRows", () => {
   });
 });
 
+describe("buildAutopilotOrderCandidatesFromReferralRows", () => {
+  it("maps referral queue rows with kindLabel", () => {
+    const candidates = buildAutopilotOrderCandidatesFromReferralRows([
+      mockReferralRow,
+    ]);
+    assert.equal(candidates.length, 1);
+    assert.deepEqual(candidates[0], {
+      orderType: "referral",
+      orderId: "referral-1",
+      userEmail: "third@example.com",
+      userName: "Third User",
+      fundName: "Invitee bonus",
+      kindLabel: "Invitee bonus",
+      costUsdt: 10,
+      normalizedDateIso: "2026-01-03T00:00:00.000Z",
+      topUpTxId: null,
+      topUpTronscanUrl: null,
+      usdtTxId: null,
+      usdtTronscanUrl: null,
+    });
+  });
+});
+
 describe("mergeAutopilotOrderCandidates", () => {
   it("sorts investment and withdrawal candidates oldest first", () => {
     const investment = buildAutopilotOrderCandidatesFromRows([mockInvestmentRow]);
@@ -114,5 +171,24 @@ describe("mergeAutopilotOrderCandidates", () => {
     assert.equal(merged.length, 2);
     assert.equal(merged[0]?.orderId, "withdraw-1");
     assert.equal(merged[1]?.orderId, "order-1");
+  });
+
+  it("sorts investment, withdrawal, and referral candidates oldest first", () => {
+    const investment = buildAutopilotOrderCandidatesFromRows([mockInvestmentRow]);
+    const withdrawal = buildAutopilotOrderCandidatesFromRows([mockWithdrawalRow]);
+    const referral = buildAutopilotOrderCandidatesFromReferralRows([
+      mockReferralRow,
+    ]);
+    const merged = mergeAutopilotOrderCandidates(
+      investment,
+      withdrawal,
+      referral
+    );
+    assert.equal(merged.length, 3);
+    assert.equal(merged[0]?.orderId, "withdraw-1");
+    assert.equal(merged[1]?.orderId, "order-1");
+    assert.equal(merged[2]?.orderId, "referral-1");
+    assert.equal(merged[2]?.orderType, "referral");
+    assert.equal(merged[2]?.kindLabel, "Invitee bonus");
   });
 });

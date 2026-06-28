@@ -57,7 +57,9 @@ export function OrderAutopilotCountdownPanel({
           <p className="mt-1 text-sm font-semibold text-foreground">
             {pendingCandidate.orderType === "withdraw"
               ? "Withdrawal"
-              : pendingCandidate.fundName}{" "}
+              : pendingCandidate.orderType === "referral"
+                ? pendingCandidate.kindLabel ?? "Referral payout"
+                : pendingCandidate.fundName}{" "}
             · {pendingCandidate.userEmail}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">

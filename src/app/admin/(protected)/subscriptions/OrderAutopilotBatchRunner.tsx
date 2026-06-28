@@ -17,6 +17,10 @@ import {
   type CompleteWithdrawalStepId,
   useCompleteWithdrawalWorkflow,
 } from "./useCompleteWithdrawalWorkflow";
+import {
+  type CompleteReferralPayoutStepId,
+  useCompleteReferralPayoutWorkflow,
+} from "./useCompleteReferralPayoutWorkflow";
 
 const INVEST_STEP_ORDER: CompleteOrderStepId[] = [
   "trx",
@@ -25,6 +29,11 @@ const INVEST_STEP_ORDER: CompleteOrderStepId[] = [
   "complete",
 ];
 const WITHDRAW_STEP_ORDER: CompleteWithdrawalStepId[] = ["trx", "usdt", "complete"];
+const REFERRAL_STEP_ORDER: CompleteReferralPayoutStepId[] = [
+  "broadcast",
+  "confirm",
+  "complete",
+];
 
 function InvestmentOrderAutopilotRunner({
   candidate,
@@ -101,6 +110,48 @@ function WithdrawalOrderAutopilotRunner({
       initialTotal={initialTotal}
       stepOrder={WITHDRAW_STEP_ORDER}
       workflowDescription="Running TRX top-up, USDT send to destination, and mark-success. Failed orders are skipped and flagged for manual check."
+      onSuccess={onSuccess}
+      onFailure={onFailure}
+      onCancel={onCancel}
+      onRegisterCancel={onRegisterCancel}
+      workflow={workflow}
+    />
+  );
+}
+
+function ReferralOrderAutopilotRunner({
+  candidate,
+  orderIndex,
+  initialTotal,
+  onSuccess,
+  onFailure,
+  onCancel,
+  onRegisterCancel,
+}: {
+  candidate: AutopilotOrderCandidate;
+  orderIndex: number;
+  initialTotal: number;
+  onSuccess: () => Promise<void>;
+  onFailure: (payload: { error: string }) => Promise<void>;
+  onCancel: () => void;
+  onRegisterCancel?: (cancelActiveWorkflow: (() => void) | null) => void;
+}) {
+  const workflow = useCompleteReferralPayoutWorkflow(
+    candidate.orderId,
+    candidate.costUsdt,
+    {
+      usdtTxId: candidate.usdtTxId,
+      usdtTronscanUrl: candidate.usdtTronscanUrl,
+    }
+  );
+
+  return (
+    <OrderAutopilotWorkflowShell
+      candidate={candidate}
+      orderIndex={orderIndex}
+      initialTotal={initialTotal}
+      stepOrder={REFERRAL_STEP_ORDER}
+      workflowDescription="Running treasury USDT payment, on-chain confirmation, and referral payout settlement. Failed orders are skipped and flagged for manual check."
       onSuccess={onSuccess}
       onFailure={onFailure}
       onCancel={onCancel}
@@ -282,7 +333,9 @@ function OrderAutopilotWorkflowShell({
             <span className="rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
               {candidate.orderType === "withdraw"
                 ? "Withdrawal"
-                : candidate.fundName}
+                : candidate.orderType === "referral"
+                  ? candidate.kindLabel ?? "Referral payout"
+                  : candidate.fundName}
             </span>
             {candidate.destinationLabel ? (
               <span
@@ -330,6 +383,20 @@ export function OrderAutopilotBatchRunner({
   if (candidate.orderType === "withdraw") {
     return (
       <WithdrawalOrderAutopilotRunner
+        candidate={candidate}
+        orderIndex={orderIndex}
+        initialTotal={initialTotal}
+        onSuccess={onSuccess}
+        onFailure={onFailure}
+        onCancel={onCancel}
+        onRegisterCancel={onRegisterCancel}
+      />
+    );
+  }
+
+  if (candidate.orderType === "referral") {
+    return (
+      <ReferralOrderAutopilotRunner
         candidate={candidate}
         orderIndex={orderIndex}
         initialTotal={initialTotal}

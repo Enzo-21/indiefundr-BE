@@ -50,6 +50,7 @@ export function SubscriptionsOrderStatusBar({
         <OrderAutopilotDialog
           pendingInvestmentCount={pendingInvestmentCount}
           pendingWithdrawalCount={pendingWithdrawalCount}
+          pendingReferralCount={pendingReferralCount}
         />
       </div>
     </div>

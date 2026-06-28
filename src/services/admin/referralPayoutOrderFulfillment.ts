@@ -7,6 +7,10 @@ import {
   type ReferralPayoutOrder,
 } from "@prisma/client";
 import { getEnv } from "@/lib/env";
+import {
+  appendAutopilotNote,
+  formatOrderAutopilotManualCheckNote,
+} from "@/lib/admin/autopilotBatch";
 import { getTronscanTxUrl } from "@/lib/wallets/helpers";
 import { prisma } from "@/lib/prisma";
 import { referralPayoutOrderKindLabel } from "@/services/referrals/referralPayoutOrderQueue";
@@ -336,4 +340,22 @@ export async function markReferralPayoutOrderFailed(
       data: { status: ReferralRewardStatus.failed },
     }),
   ]);
+}
+
+export async function appendAdminReferralPayoutAutopilotManualCheckNote(
+  orderId: string,
+  error: string,
+  adminEmail: string
+): Promise<void> {
+  const order = await loadOpenReferralOrder(orderId);
+  const line = formatOrderAutopilotManualCheckNote(error);
+  const notes = appendAutopilotNote(order.failureReason, line);
+  await prisma.referralPayoutOrder.update({
+    where: { id: orderId },
+    data: {
+      failureReason: notes,
+      adminSettledBy: adminEmail,
+      updatedAt: new Date(),
+    },
+  });
 }
