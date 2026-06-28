@@ -341,10 +341,7 @@ export async function validateNormalPayoutEligibility(
     throw new Error("Investment is already paid");
   }
 
-  if (
-    investment.status === InvestmentStatus.redeeming &&
-    !investment.payoutFailureReason
-  ) {
+  if (investment.status === InvestmentStatus.redeeming) {
     return { investment };
   }
 
@@ -382,10 +379,7 @@ export async function validateSurplusPayoutEligibility(
     );
   }
 
-  if (
-    investment.status === InvestmentStatus.redeeming &&
-    !investment.payoutFailureReason
-  ) {
+  if (investment.status === InvestmentStatus.redeeming) {
     return { investment };
   }
 
