@@ -267,15 +267,13 @@ export function useInvestmentPayoutWorkflow(
         if (result.data.status === "failed") {
           const message =
             result.data.message ?? "Transaction failed on-chain";
-          if (!result.data.retryable) {
-            const resetResult =
-              await adminResetInvestmentPayoutUsdtForRetry(investmentId);
-            if (!resetResult.ok) {
-              console.warn(
-                "[admin-investment-payout] reset after failed tx:",
-                resetResult.error.msg
-              );
-            }
+          const resetResult =
+            await adminResetInvestmentPayoutUsdtForRetry(investmentId);
+          if (!resetResult.ok) {
+            console.warn(
+              "[admin-investment-payout] reset after failed tx:",
+              resetResult.error.msg
+            );
           }
           logPayoutWorkflow(investmentId, "broadcast", "poll_failed", {
             txId,

@@ -16,6 +16,7 @@ export function InvestmentPayoutWorkflowPanel({
   batchBanner,
   header,
   onClose,
+  onCancel,
   onPrimaryAction,
   primaryDisabled = false,
   showPrimary = true,
@@ -31,6 +32,7 @@ export function InvestmentPayoutWorkflowPanel({
   batchBanner?: ReactNode;
   header: ReactNode;
   onClose: () => void;
+  onCancel?: () => void;
   onPrimaryAction: () => void;
   primaryDisabled?: boolean;
   showPrimary?: boolean;
@@ -84,6 +86,16 @@ export function InvestmentPayoutWorkflowPanel({
       </div>
 
       <DialogFooter className="mx-0 mb-0 border-t bg-muted/30 px-6 py-4 sm:justify-end">
+        {running && onCancel ? (
+          <Button
+            variant="destructive"
+            onClick={() => {
+              onCancel();
+            }}
+          >
+            Cancel
+          </Button>
+        ) : null}
         <Button variant="outline" disabled={blockClose} onClick={onClose}>
           {blockClose ? "Running…" : closeLabel}
         </Button>

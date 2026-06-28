@@ -13,7 +13,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
-import { isAdminWorkflowDismissBlocked } from "@/lib/admin/workflowStepUi";
 import { cn } from "@/lib/utils";
 import type { InvestmentPayoutMode } from "@/services/admin/investmentPayoutFulfillment";
 import { InvestmentPayoutWorkflowPanel } from "./InvestmentPayoutWorkflowPanel";
@@ -94,10 +93,7 @@ export function InvestmentPayoutDialog({
     }
   }, [open, cancel, resetSteps, applySeed]);
 
-  const blockClose = isAdminWorkflowDismissBlocked({
-    running,
-    steps,
-  });
+  const blockClose = running;
 
   const handleOpenChange = (next: boolean) => {
     if (blockClose && !next) {
@@ -166,6 +162,9 @@ export function InvestmentPayoutDialog({
             </DialogHeader>
           }
           onClose={() => setOpen(false)}
+          onCancel={() => {
+            cancel();
+          }}
           onPrimaryAction={() => {
             void handleStart();
           }}

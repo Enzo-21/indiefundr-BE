@@ -237,6 +237,58 @@ async function hasSurplusDrawForInvestment(
   return Boolean(event);
 }
 
+async function reconcileInvestmentRedemptionForSeed(
+  investmentId: string,
+  investment: {
+    status: InvestmentStatus;
+    payoutFailureReason: string | null;
+    redemptionTransaction: unknown;
+  }
+): Promise<{
+  redemptionTxId: string | null;
+  payoutFailureReason: string | null;
+}> {
+  const redemptionTxId = tron.getTxId(
+    investment.redemptionTransaction as Record<string, unknown> | null
+  );
+  if (
+    !redemptionTxId ||
+    investment.status !== InvestmentStatus.redeeming
+  ) {
+    return {
+      redemptionTxId,
+      payoutFailureReason: investment.payoutFailureReason,
+    };
+  }
+
+  const inspection = await tron.inspectTransactionOnChain(redemptionTxId);
+  if (inspection.usdtTransferSuccessful || inspection.status === "pending") {
+    return {
+      redemptionTxId,
+      payoutFailureReason: investment.payoutFailureReason,
+    };
+  }
+
+  if (inspection.status === "failed") {
+    const failure = await tron.getTransactionFailureReason(redemptionTxId);
+    await resetInvestmentPayoutUsdtForRetry(investmentId, {
+      appendNote:
+        "Previous USDT broadcast failed on-chain; cleared tx id for retry",
+    });
+    return {
+      redemptionTxId: null,
+      payoutFailureReason:
+        failure.message ||
+        "Previous USDT payment failed on-chain; retry when treasury is funded.",
+    };
+  }
+
+  return {
+    redemptionTxId,
+    payoutFailureReason: investment.payoutFailureReason,
+  };
+}
+
 export async function getInvestmentPayoutWorkflowSeed(
   investmentId: string
 ): Promise<InvestmentPayoutWorkflowSeed> {
@@ -254,8 +306,9 @@ export async function getInvestmentPayoutWorkflowSeed(
     throw new Error("Investment not found");
   }
 
-  const redemptionTxId = tron.getTxId(
-    investment.redemptionTransaction as Record<string, unknown> | null
+  const reconciled = await reconcileInvestmentRedemptionForSeed(
+    investmentId,
+    investment
   );
   const surplusDrawn = await hasSurplusDrawForInvestment(investmentId);
   const mode: InvestmentPayoutMode | null = isSurplusPayoutTrigger(
@@ -269,10 +322,10 @@ export async function getInvestmentPayoutWorkflowSeed(
   return {
     status: investment.status,
     payoutTriggeredBy: investment.payoutTriggeredBy,
-    payoutFailureReason: investment.payoutFailureReason,
-    redemptionTxId,
-    redemptionTronscanUrl: redemptionTxId
-      ? getTronscanTxUrl(redemptionTxId)
+    payoutFailureReason: reconciled.payoutFailureReason,
+    redemptionTxId: reconciled.redemptionTxId,
+    redemptionTronscanUrl: reconciled.redemptionTxId
+      ? getTronscanTxUrl(reconciled.redemptionTxId)
       : null,
     surplusDrawn,
     mode,
