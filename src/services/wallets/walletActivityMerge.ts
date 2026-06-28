@@ -23,6 +23,11 @@ export type WalletActivityTx = {
   senderAddress?: string | null;
   recipientAddress?: string | null;
   referralRequisites?: ReferralRequisite[];
+  referralMeta?: {
+    perspective: "invitee" | "inviter";
+    counterpartyDisplayName: string;
+    referralCode?: string;
+  };
 };
 
 function mergeOnChainFields(

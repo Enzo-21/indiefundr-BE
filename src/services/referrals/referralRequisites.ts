@@ -59,7 +59,7 @@ function buildCompletedRequisites(
   return buildInviterRequisites(true, true);
 }
 
-async function resolveInviteFromEntity(
+export async function resolveInviteFromEntity(
   entityId: string,
   viewerUserId: string
 ): Promise<{

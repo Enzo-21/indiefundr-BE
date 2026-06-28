@@ -21,11 +21,6 @@ import {
 } from "./referralPayoutEligibility";
 import { enqueueReferralPayoutOrder } from "./referralPayoutOrderQueue";
 import { scheduleUserLevelRecalculation } from "@/services/playerLevels/scheduleUserLevelRecalculation";
-import {
-  clearInviterReferralPendingActivity,
-  clearReferralPendingActivity,
-} from "./referralWalletActivity";
-
 export function shouldUseRecoverySlot(
   link: { completedAt: Date | null; inviteIds: string[] } | null,
   inviteId: string,
@@ -117,9 +112,6 @@ export async function issueReferralRewards(
     amountUsdt: inviteeBonus,
     investmentId,
   });
-
-  await clearReferralPendingActivity(invite.inviteeUserId);
-  await clearInviterReferralPendingActivity(invite.id);
 
   const recoveryCtx = await getRecoveryContextForInviter(invite.inviterUserId);
   if (recoveryCtx.mode === "recovery" && recoveryCtx.recovery) {

@@ -17,7 +17,25 @@ export const REFERRAL_WALLET_ACTIVITY_KINDS = [
   "referral_principal_recovery",
 ] as const;
 
+const REFERRAL_LIFECYCLE_KINDS = [
+  "referral_bonus_pending",
+  "referral_bonus_processing",
+  "referral_bonus_credited",
+] as const;
+
 type WalletActivityDb = Prisma.TransactionClient | typeof prisma;
+
+export function inviteeReferralActivityEntityId(userId: string): string {
+  return `${PENDING_ENTITY_PREFIX}${userId}`;
+}
+
+export function inviterReferralActivityEntityId(inviteId: string): string {
+  return `${INVITER_PENDING_ENTITY_PREFIX}${inviteId}`;
+}
+
+export function principalRecoveryActivityEntityId(investmentId: string): string {
+  return `referral-principal-processing:principal-${investmentId}`;
+}
 
 function buildReferralPendingTapInfo(amount: number) {
   const formatted = amount.toFixed(2);
@@ -37,6 +55,99 @@ function buildInviterReferralPendingTapInfo(amount: number) {
       `You've earned ${formatted} USDT for inviting a friend. ` +
       "This reward will be added to your balance after they complete their first investment.",
   };
+}
+
+function buildReferralProcessingTapInfo(amount: number) {
+  const formatted = amount.toFixed(2);
+  return {
+    title: "Referral payout queued",
+    message:
+      `${formatted} USDT is queued for treasury payout. ` +
+      "It will appear in your wallet after the transfer completes.",
+  };
+}
+
+export async function findReferralActivityByEntityId(
+  userId: string,
+  walletId: string,
+  entityId: string,
+  db: WalletActivityDb = prisma
+) {
+  return db.walletActivity.findFirst({
+    where: {
+      userId,
+      walletId,
+      entityId,
+      kind: { in: [...REFERRAL_LIFECYCLE_KINDS] },
+    },
+  });
+}
+
+type ReferralActivityTransitionData = {
+  type: string;
+  amountUsdt: number;
+  status: string;
+  label: string;
+  detail?: string | null;
+  pendingTapInfo?: { title: string; message: string } | null;
+  occurredAt?: Date;
+  chainFinal: boolean;
+  txId?: string | null;
+  tronscanUrl?: string | null;
+};
+
+export async function transitionReferralActivity(
+  params: {
+    userId: string;
+    walletId: string;
+    entityId: string;
+    nextKind: (typeof REFERRAL_LIFECYCLE_KINDS)[number];
+    data: ReferralActivityTransitionData;
+  },
+  db: WalletActivityDb = prisma
+): Promise<string> {
+  const occurredAt = params.data.occurredAt ?? new Date();
+  const existing = await findReferralActivityByEntityId(
+    params.userId,
+    params.walletId,
+    params.entityId,
+    db
+  );
+
+  const updateData = {
+    kind: params.nextKind,
+    type: params.data.type,
+    amountUsdt: params.data.amountUsdt,
+    status: params.data.status,
+    label: params.data.label,
+    detail: params.data.detail ?? null,
+    occurredAt,
+    chainFinal: params.data.chainFinal,
+    txId: params.data.txId ?? null,
+    tronscanUrl: params.data.tronscanUrl ?? null,
+    updatedAt: new Date(),
+    ...(params.data.pendingTapInfo === undefined
+      ? {}
+      : { pendingTapInfo: params.data.pendingTapInfo }),
+  };
+
+  if (existing) {
+    await db.walletActivity.update({
+      where: { id: existing.id },
+      data: updateData,
+    });
+    return existing.id;
+  }
+
+  const created = await db.walletActivity.create({
+    data: {
+      userId: params.userId,
+      walletId: params.walletId,
+      entityId: params.entityId,
+      ...updateData,
+    },
+  });
+  return created.id;
 }
 
 async function upsertWalletActivityByEntity(
@@ -97,7 +208,21 @@ export async function upsertReferralPendingActivity(
   code: string,
   db?: Prisma.TransactionClient
 ) {
-  const entityId = `${PENDING_ENTITY_PREFIX}${userId}`;
+  const entityId = inviteeReferralActivityEntityId(userId);
+  const client = db ?? prisma;
+  const existing = await findReferralActivityByEntityId(
+    userId,
+    walletId,
+    entityId,
+    client
+  );
+  if (
+    existing &&
+    existing.kind !== "referral_bonus_pending"
+  ) {
+    return;
+  }
+
   const amount = REFERRAL_INVITEE_BONUS_USDT();
   const now = new Date();
   const pendingTapInfo = buildReferralPendingTapInfo(amount);
@@ -115,16 +240,16 @@ export async function upsertReferralPendingActivity(
         label: "Referral bonus",
         detail: code,
         pendingTapInfo,
-        occurredAt: now,
+        occurredAt: existing?.occurredAt ?? now,
         chainFinal: true,
       },
     },
-    db ?? prisma
+    client
   );
 }
 
 export async function clearReferralPendingActivity(userId: string) {
-  const entityId = `${PENDING_ENTITY_PREFIX}${userId}`;
+  const entityId = inviteeReferralActivityEntityId(userId);
   await prisma.walletActivity.deleteMany({
     where: {
       userId,
@@ -143,7 +268,21 @@ export async function upsertInviterReferralPendingActivity(
   },
   db?: Prisma.TransactionClient
 ) {
-  const entityId = `${INVITER_PENDING_ENTITY_PREFIX}${params.inviteId}`;
+  const entityId = inviterReferralActivityEntityId(params.inviteId);
+  const client = db ?? prisma;
+  const existing = await findReferralActivityByEntityId(
+    params.inviterUserId,
+    params.walletId,
+    entityId,
+    client
+  );
+  if (
+    existing &&
+    existing.kind !== "referral_bonus_pending"
+  ) {
+    return;
+  }
+
   const amount = REFERRAL_INVITER_BONUS_USDT();
   const now = new Date();
   const pendingTapInfo = buildInviterReferralPendingTapInfo(amount);
@@ -161,11 +300,11 @@ export async function upsertInviterReferralPendingActivity(
         label: "Referral reward",
         detail: params.inviteeDisplayName,
         pendingTapInfo,
-        occurredAt: now,
+        occurredAt: existing?.occurredAt ?? now,
         chainFinal: true,
       },
     },
-    db ?? prisma
+    client
   );
 }
 
@@ -191,7 +330,7 @@ export async function ensureInviterReferralPendingActivity(
 }
 
 export async function clearInviterReferralPendingActivity(inviteId: string) {
-  const entityId = `${INVITER_PENDING_ENTITY_PREFIX}${inviteId}`;
+  const entityId = inviterReferralActivityEntityId(inviteId);
   await prisma.walletActivity.deleteMany({
     where: {
       kind: "referral_bonus_pending",
@@ -200,35 +339,31 @@ export async function clearInviterReferralPendingActivity(inviteId: string) {
   });
 }
 
-function buildReferralProcessingTapInfo(amount: number) {
-  const formatted = amount.toFixed(2);
-  return {
-    title: "Referral payout queued",
-    message:
-      `${formatted} USDT is queued for treasury payout. ` +
-      "It will appear in your wallet after the transfer completes.",
-  };
-}
-
 export async function markInviteeReferralProcessingActivity(
   userId: string,
   walletId: string
 ) {
-  const entityId = `${PENDING_ENTITY_PREFIX}${userId}`;
+  const entityId = inviteeReferralActivityEntityId(userId);
   const amount = REFERRAL_INVITEE_BONUS_USDT();
-  await upsertWalletActivityByEntity({
+  const existing = await findReferralActivityByEntityId(
     userId,
     walletId,
-    kind: "referral_bonus_processing",
+    entityId
+  );
+
+  await transitionReferralActivity({
+    userId,
+    walletId,
     entityId,
+    nextKind: "referral_bonus_processing",
     data: {
       type: "in",
       amountUsdt: amount,
       status: "processing",
       label: "Referral bonus",
-      detail: "Payout queued",
+      detail: existing?.detail ?? null,
       pendingTapInfo: buildReferralProcessingTapInfo(amount),
-      occurredAt: new Date(),
+      occurredAt: existing?.occurredAt,
       chainFinal: false,
     },
   });
@@ -242,17 +377,24 @@ export async function markInviterReferralProcessingActivity(
   const entityId = inviteKey.startsWith(INVITER_PENDING_ENTITY_PREFIX)
     ? inviteKey
     : inviteKey.startsWith("principal-")
-      ? `referral-principal-processing:${inviteKey}`
-      : `${INVITER_PENDING_ENTITY_PREFIX}${inviteKey}`;
+      ? principalRecoveryActivityEntityId(
+          inviteKey.slice("principal-".length)
+        )
+      : inviterReferralActivityEntityId(inviteKey);
   const amount = inviteKey.startsWith("principal-")
     ? REFERRAL_RECOVERY_PRINCIPAL_USDT()
     : REFERRAL_INVITER_BONUS_USDT();
-
-  await upsertWalletActivityByEntity({
+  const existing = await findReferralActivityByEntityId(
     userId,
     walletId,
-    kind: "referral_bonus_processing",
+    entityId
+  );
+
+  await transitionReferralActivity({
+    userId,
+    walletId,
     entityId,
+    nextKind: "referral_bonus_processing",
     data: {
       type: "in",
       amountUsdt: amount,
@@ -260,14 +402,51 @@ export async function markInviterReferralProcessingActivity(
       label: inviteKey.startsWith("principal-")
         ? "Principal recovery"
         : "Referral reward",
-      detail: "Payout queued",
+      detail: existing?.detail ?? null,
       pendingTapInfo: buildReferralProcessingTapInfo(amount),
-      occurredAt: new Date(),
+      occurredAt: existing?.occurredAt,
       chainFinal: false,
     },
   });
 }
 
+export async function creditReferralWalletActivity(params: {
+  userId: string;
+  walletId: string;
+  entityId: string;
+  amountUsdt: number;
+  label: string;
+  detail?: string | null;
+  txId: string;
+  tronscanUrl: string;
+}) {
+  const existing = await findReferralActivityByEntityId(
+    params.userId,
+    params.walletId,
+    params.entityId
+  );
+
+  await transitionReferralActivity({
+    userId: params.userId,
+    walletId: params.walletId,
+    entityId: params.entityId,
+    nextKind: "referral_bonus_credited",
+    data: {
+      type: "in",
+      amountUsdt: params.amountUsdt,
+      status: "confirmed",
+      label: params.label,
+      detail: params.detail ?? existing?.detail ?? null,
+      pendingTapInfo: null,
+      occurredAt: new Date(),
+      chainFinal: true,
+      txId: params.txId,
+      tronscanUrl: params.tronscanUrl,
+    },
+  });
+}
+
+/** @deprecated Use creditReferralWalletActivity */
 export async function createReferralBonusActivity(params: {
   userId: string;
   walletId: string;
@@ -275,13 +454,11 @@ export async function createReferralBonusActivity(params: {
   amountUsdt: number;
   label: string;
 }) {
-  const entityId = `referral-reward-${params.rewardId}`;
-
   await upsertWalletActivityByEntity({
     userId: params.userId,
     walletId: params.walletId,
     kind: "referral_bonus_credited",
-    entityId,
+    entityId: `referral-reward-${params.rewardId}`,
     data: {
       type: "in",
       amountUsdt: params.amountUsdt,

@@ -15,9 +15,10 @@ import { getTronscanTxUrl } from "@/lib/wallets/helpers";
 import { prisma } from "@/lib/prisma";
 import { referralPayoutOrderKindLabel } from "@/services/referrals/referralPayoutOrderQueue";
 import {
-  clearInviterReferralPendingActivity,
-  clearReferralPendingActivity,
-  createReferralBonusActivity,
+  creditReferralWalletActivity,
+  inviteeReferralActivityEntityId,
+  inviterReferralActivityEntityId,
+  principalRecoveryActivityEntityId,
 } from "@/services/referrals/referralWalletActivity";
 import {
   recordReferralBonusOutflow,
@@ -213,13 +214,45 @@ export async function completeReferralPayoutOrder(
     (await prisma.referralReward.findFirst({
       where: { referralPayoutOrderId: orderId },
     }));
-  const rewardId = reward?.id ?? order.id;
   const label =
     order.kind === ReferralPayoutOrderKind.principal_recovery
       ? "Principal recovered"
       : order.kind === ReferralPayoutOrderKind.invitee_bonus
         ? "Referral bonus"
         : "Referral reward";
+
+  let activityEntityId: string;
+  if (order.kind === ReferralPayoutOrderKind.invitee_bonus) {
+    activityEntityId = inviteeReferralActivityEntityId(order.userId);
+  } else if (order.kind === ReferralPayoutOrderKind.inviter_bonus) {
+    if (!order.referralInviteId) {
+      throw new Error("Inviter bonus order is missing referral invite id");
+    }
+    activityEntityId = inviterReferralActivityEntityId(order.referralInviteId);
+  } else if (!order.investmentId) {
+    throw new Error("Principal recovery order is missing investment id");
+  } else {
+    activityEntityId = principalRecoveryActivityEntityId(order.investmentId);
+  }
+
+  let activityDetail: string | null = null;
+  if (order.referralInviteId) {
+    const invite = await prisma.referralInvite.findUnique({
+      where: { id: order.referralInviteId },
+      include: {
+        invitee: { select: { name: true } },
+        inviter: { select: { name: true } },
+        referralCode: { select: { code: true } },
+      },
+    });
+    if (invite) {
+      if (order.kind === ReferralPayoutOrderKind.invitee_bonus) {
+        activityDetail = invite.referralCode.code;
+      } else if (order.kind === ReferralPayoutOrderKind.inviter_bonus) {
+        activityDetail = invite.invitee.name;
+      }
+    }
+  }
 
   await prisma.$transaction(async (tx) => {
     await tx.referralPayoutOrder.update({
@@ -271,29 +304,16 @@ export async function completeReferralPayoutOrder(
     }
   });
 
-  await createReferralBonusActivity({
+  await creditReferralWalletActivity({
     userId: order.userId,
     walletId: order.wallet.id,
-    rewardId,
+    entityId: activityEntityId,
     amountUsdt: order.amountUsdt,
     label,
+    detail: activityDetail,
+    txId,
+    tronscanUrl: getTronscanTxUrl(txId),
   });
-
-  if (order.referralInviteId) {
-    const invite = await prisma.referralInvite.findUnique({
-      where: { id: order.referralInviteId },
-      select: { inviteeUserId: true },
-    });
-    if (invite && order.kind === ReferralPayoutOrderKind.invitee_bonus) {
-      await clearReferralPendingActivity(invite.inviteeUserId);
-    }
-    if (
-      order.kind === ReferralPayoutOrderKind.inviter_bonus ||
-      order.kind === ReferralPayoutOrderKind.invitee_bonus
-    ) {
-      await clearInviterReferralPendingActivity(order.referralInviteId);
-    }
-  }
 
   if (order.kind === ReferralPayoutOrderKind.principal_recovery) {
     scheduleUserLevelRecalculation(order.userId);

@@ -262,7 +262,7 @@ export async function buildMaterializedActivityRows(
 
   const rows: MaterializedRow[] = [];
 
-  const [investments, orders, withdrawalOrders, failed, chainTransfers] =
+  const [investments, orders, withdrawalOrders, referralPayoutOrders, failed, chainTransfers] =
     await Promise.all([
     prisma.investment.findMany({
       where: investmentWhere,
@@ -275,6 +275,10 @@ export async function buildMaterializedActivityRows(
     prisma.withdrawalOrder.findMany({
       where: { userId, walletId },
       orderBy: { date: "desc" },
+    }),
+    prisma.referralPayoutOrder.findMany({
+      where: { userId, walletId, usdtTxId: { not: null } },
+      select: { usdtTxId: true },
     }),
     prisma.failedInvestment.findMany({
       where: failedWhere,
@@ -309,6 +313,11 @@ export async function buildMaterializedActivityRows(
     const payTx = wOrder.usdtTxId ?? wOrder.adminUsdtTxId;
     if (payTx) {
       fundPaymentTxIds.add(payTx);
+    }
+  }
+  for (const referralOrder of referralPayoutOrders) {
+    if (referralOrder.usdtTxId) {
+      fundPaymentTxIds.add(referralOrder.usdtTxId);
     }
   }
 
@@ -657,7 +666,8 @@ export function walletActivityRecordToTx(row: {
     senderAddress: string | null;
     recipientAddress: string;
   } | null,
-  referralRequisites?: import("@/services/referrals/referralRequisites").ReferralRequisite[]
+  referralRequisites?: import("@/services/referrals/referralRequisites").ReferralRequisite[],
+  referralMeta?: import("./hydrateReferralMeta").ReferralActivityMeta
 ): WalletActivityTx {
   const isReferralKind =
     row.kind === "referral_bonus_pending" ||
@@ -714,5 +724,6 @@ export function walletActivityRecordToTx(row: {
     senderAddress: withdrawalMeta?.senderAddress ?? null,
     recipientAddress: withdrawalMeta?.recipientAddress ?? null,
     referralRequisites,
+    referralMeta,
   };
 }
