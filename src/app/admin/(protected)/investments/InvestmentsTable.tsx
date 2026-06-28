@@ -44,7 +44,6 @@ import {
   fetchInvestmentsForFilters,
   getInvestmentTableEmptyMessage,
   resolveFetchMode,
-  type InvestmentStreamSnapshots,
   type InvestmentTableFilters,
   type InvestmentTableStreamCursors,
 } from "./investmentTableFilters";
@@ -180,10 +179,6 @@ export function InvestmentsTable({
     showQueue: true,
     showArchive: false,
   });
-  const [streams, setStreams] = useState<InvestmentStreamSnapshots>({
-    queue: initialData,
-    archive: null,
-  });
   const [streamCursors, setStreamCursors] = useState<InvestmentTableStreamCursors>(
     () => extractStreamCursors(initialData, null)
   );
@@ -197,11 +192,9 @@ export function InvestmentsTable({
   const applyListSnapshot = useCallback(
     (
       snapshot: AdminInvestmentsListResult,
-      nextStreams: InvestmentStreamSnapshots,
       nextCursors: InvestmentTableStreamCursors
     ) => {
       setData(snapshot);
-      setStreams(nextStreams);
       setStreamCursors(nextCursors);
       setNowIso(new Date().toISOString());
       setError(null);
@@ -226,16 +219,18 @@ export function InvestmentsTable({
           limit,
           fundId: activeFundId || undefined,
           append: options.append,
-          queueSnapshot: streams.queue ?? data,
-          archiveSnapshot: streams.archive,
-          queueCursor: options.append
-            ? streamCursors.queueCursor ?? undefined
-            : undefined,
-          archiveCursor: options.append
-            ? streamCursors.archiveCursor ?? undefined
-            : undefined,
-          loadQueue: options.append ? streamCursors.queueHasMore : undefined,
-          loadArchive: options.append ? streamCursors.archiveHasMore : undefined,
+          queueSnapshot:
+            options.append && mode !== "archive" ? data : undefined,
+          archiveSnapshot:
+            options.append && mode === "archive" ? data : undefined,
+          queueCursor:
+            options.append && mode !== "archive"
+              ? streamCursors.queueCursor ?? undefined
+              : undefined,
+          archiveCursor:
+            options.append && mode === "archive"
+              ? streamCursors.archiveCursor ?? undefined
+              : undefined,
         }
       );
 
@@ -256,7 +251,7 @@ export function InvestmentsTable({
             }
           : listResult.data;
 
-      applyListSnapshot(snapshot, listResult.streams, listResult.cursors);
+      applyListSnapshot(snapshot, listResult.cursors);
     },
     [
       applyListSnapshot,
@@ -264,11 +259,7 @@ export function InvestmentsTable({
       fundId,
       limit,
       streamCursors.archiveCursor,
-      streamCursors.archiveHasMore,
       streamCursors.queueCursor,
-      streamCursors.queueHasMore,
-      streams.archive,
-      streams.queue,
       data,
     ]
   );
@@ -321,8 +312,6 @@ export function InvestmentsTable({
         {
           limit,
           fundId: fundId || undefined,
-          queueSnapshot: streams.queue ?? data,
-          archiveSnapshot: streams.archive,
         }
       );
       if (cancelled || !listResult.ok) {
@@ -345,7 +334,7 @@ export function InvestmentsTable({
           }
         : listResult.data;
 
-      applyListSnapshot(snapshot, listResult.streams, listResult.cursors);
+      applyListSnapshot(snapshot, listResult.cursors);
     }
 
     const interval = window.setInterval(() => {
@@ -362,9 +351,6 @@ export function InvestmentsTable({
     filters,
     fundId,
     limit,
-    streams.archive,
-    streams.queue,
-    data,
   ]);
 
   const emptyMessage = getInvestmentTableEmptyMessage(fetchMode);

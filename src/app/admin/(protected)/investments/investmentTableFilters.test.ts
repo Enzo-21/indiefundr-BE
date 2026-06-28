@@ -5,6 +5,7 @@ import type {
   AdminInvestmentsListResult,
 } from "@/services/admin/investmentAdminTypes";
 import {
+  fetchInvestmentsForFilters,
   getInvestmentTableEmptyMessage,
   mergeInvestmentListSnapshots,
   resolveFetchMode,
@@ -42,7 +43,7 @@ function displayRow(
 
 function snapshot(
   displayRows: AdminInvestmentDisplayRow[],
-  view: "queue" | "archive" = "queue"
+  view: "queue" | "archive" | "all" = "queue"
 ): AdminInvestmentsListResult {
   return {
     rows: [],
@@ -86,37 +87,66 @@ describe("investmentTableFilters", () => {
     );
   });
 
-  it("mergeInvestmentListSnapshots sorts chronologically and rebuilds hints", () => {
+  it("both mode fetches view=all once instead of merging streams", async () => {
+    const calls: Array<{ view?: string; cursor?: string }> = [];
+    const allSnapshot = snapshot(
+      [displayRow("inv-1", 1, "2026-01-01T00:00:00.000Z")],
+      "all"
+    );
+    allSnapshot.pageInfo.hasMore = true;
+    allSnapshot.pageInfo.nextCursor = "all-cursor";
+
+    const result = await fetchInvestmentsForFilters(
+      async (options) => {
+        calls.push(options);
+        return { ok: true, data: allSnapshot };
+      },
+      { showQueue: true, showArchive: true },
+      { limit: 50, queueCursor: "page-2" }
+    );
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]?.view, "all");
+    assert.equal(calls[0]?.cursor, "page-2");
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.mode, "both");
+    assert.equal(result.data.pageInfo.view, "all");
+    assert.equal(result.cursors.queueCursor, "all-cursor");
+    assert.equal(result.cursors.queueHasMore, true);
+    assert.equal(result.streams.queue, null);
+    assert.equal(result.streams.archive, null);
+  });
+
+  it("mergeInvestmentListSnapshots refreshes stale payout sort before reorder", () => {
     const parentInvestment = {
       id: "inv-1",
-      payoutUnlockingInvestmentIds: ["inv-2", "inv-3"],
+      payoutUnlockingInvestmentIds: ["inv-2", "inv-4"],
     } as AdminInvestmentDisplayRow["parentInvestment"];
 
     const queue = snapshot([
       displayRow("inv-2", 1, "2026-01-02T00:00:00.000Z"),
-      displayRow("inv-3", 2, "2026-01-03T00:00:00.000Z"),
-      displayRow("inv-4", 3, "2026-01-04T00:00:00.000Z"),
+      displayRow("inv-4", 2, "2026-01-04T00:00:00.000Z"),
     ]);
     const archive = snapshot(
       [
         displayRow("inv-1", 1, "2026-01-01T00:00:00.000Z"),
-        displayRow("inv-1", 2, "2026-01-03T00:00:00.000Z", {
+        displayRow("inv-1", 2, "2026-01-02T00:00:00.000Z", {
           rowKey: "inv-1:payout",
           displayKind: "payout",
           eventKind: "payout",
-          subscribedColumnHint: "#1 unlocked after #2, #3",
+          sortAtIso: "2026-01-02T00:00:00.000Z",
+          subscribedAtIso: "2026-01-02T00:00:00.000Z",
+          subscribedColumnHint: "#1 unlocked after #2",
           parentInvestment,
           investment: null,
         }),
       ],
       "archive"
     );
-    archive.pageInfo.hasMore = true;
-    archive.pageInfo.nextCursor = "archive-cursor";
 
     const merged = mergeInvestmentListSnapshots(queue, archive, 100);
 
-    assert.equal(merged.displayRows.length, 5);
     assert.deepEqual(
       merged.displayRows.map(
         (r) => `${r.chronologicalStep}:${r.displayKind}:${r.investmentId}`
@@ -124,17 +154,14 @@ describe("investmentTableFilters", () => {
       [
         "1:subscription:inv-1",
         "2:subscription:inv-2",
-        "3:subscription:inv-3",
+        "3:subscription:inv-4",
         "4:payout:inv-1",
-        "5:subscription:inv-4",
       ]
     );
     assert.equal(
       merged.displayRows[3]?.subscribedColumnHint,
       "#1 unlocked after #2, #3"
     );
-    assert.equal(merged.pageInfo.hasMore, true);
-    assert.equal(merged.pageInfo.view, "all");
   });
 
   it("getInvestmentTableEmptyMessage covers none-selected state", () => {

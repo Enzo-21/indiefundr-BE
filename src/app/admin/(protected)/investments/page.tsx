@@ -26,16 +26,16 @@ export default async function AdminInvestmentsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Investments</h1>
         <p className="text-sm text-muted-foreground">
-          Chronological rows are subscriptions and completed payouts. Use the
-          Action queue and Paid / archive checkboxes to show open investments,
-          redeemed history, or both together (queue first, then archive). Triad
-          unlocks show a gray payout row (Pending treasury until paid). When
-          two-user unlock is available, use Pay now. Otherwise Pay with surplus
-          is offered in subscribe-date FIFO order — only investments that fit
-          remaining surplus after earlier candidates qualify. A surplus_payout
-          row appears only after you execute that payment. Surplus is shared;
-          after each pay the page refreshes so buttons reflect remaining
-          surplus (click a payout row ID to jump to its subscription).
+          Rows follow event chronology: each subscription, then its payout after
+          the unlocker investments that made it payable. Use the Action queue and
+          Paid / archive checkboxes to show open investments, redeemed history, or
+          both together. Triad unlocks show a gray payout row (Pending treasury
+          until paid). When two-user unlock is available, use Pay now. Otherwise
+          Pay with surplus is offered in subscribe-date FIFO order — only
+          investments that fit remaining surplus after earlier candidates qualify.
+          A surplus_payout row appears only after you execute that payment.
+          Surplus is shared; after each pay the page refreshes so buttons reflect
+          remaining surplus (click a payout row ID to jump to its subscription).
         </p>
       </div>
 

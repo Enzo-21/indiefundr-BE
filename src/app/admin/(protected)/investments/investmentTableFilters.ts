@@ -147,8 +147,6 @@ export async function fetchInvestmentsForFilters(
     queueSnapshot?: AdminInvestmentsListResult | null;
     archiveSnapshot?: AdminInvestmentsListResult | null;
     append?: boolean;
-    loadQueue?: boolean;
-    loadArchive?: boolean;
   }
 ): Promise<
   | { ok: false; error: string }
@@ -245,50 +243,28 @@ export async function fetchInvestmentsForFilters(
     };
   }
 
-  let queue = options.queueSnapshot ?? null;
-  let archive = options.archiveSnapshot ?? null;
-
-  if (options.loadQueue !== false) {
-    const queueResult = await fetchInvestments({
-      view: "queue",
-      limit: options.limit,
-      fundId,
-      cursor: options.queueCursor,
-    });
-    if (!queueResult.ok) {
-      return { ok: false, error: queueResult.error.msg };
-    }
-    queue =
-      options.append && queue
-        ? appendInvestmentListSnapshot(queue, queueResult.data)
-        : queueResult.data;
+  const result = await fetchInvestments({
+    view: "all",
+    limit: options.limit,
+    fundId,
+    cursor: options.queueCursor,
+  });
+  if (!result.ok) {
+    return { ok: false, error: result.error.msg };
   }
-
-  if (options.loadArchive !== false) {
-    const archiveResult = await fetchInvestments({
-      view: "archive",
-      limit: options.limit,
-      fundId,
-      cursor: options.archiveCursor,
-    });
-    if (!archiveResult.ok) {
-      return { ok: false, error: archiveResult.error.msg };
-    }
-    archive =
-      options.append && archive
-        ? appendInvestmentListSnapshot(archive, archiveResult.data)
-        : archiveResult.data;
-  }
-
-  if (!queue || !archive) {
-    return { ok: false, error: "Failed to load investment lists" };
-  }
-
+  const combined = options.append && options.queueSnapshot
+    ? appendInvestmentListSnapshot(options.queueSnapshot, result.data)
+    : result.data;
   return {
     ok: true,
     mode,
-    data: mergeInvestmentListSnapshots(queue, archive, options.limit),
-    streams: { queue, archive },
-    cursors: extractStreamCursors(queue, archive),
+    data: combined,
+    streams: { queue: null, archive: null },
+    cursors: {
+      queueCursor: combined.pageInfo.nextCursor,
+      archiveCursor: null,
+      queueHasMore: combined.pageInfo.hasMore,
+      archiveHasMore: false,
+    },
   };
 }

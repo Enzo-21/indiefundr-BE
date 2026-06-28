@@ -541,3 +541,51 @@ describe("reorderInvestmentDisplayRows", () => {
     assert.equal(reordered[3]?.subscribedColumnHint, "#1 unlocked after #2, #3");
   });
 });
+
+describe("unified timeline across queue and archive statuses", () => {
+  it("places payout after active unlocker when built in one pass", () => {
+    const rows: AdminInvestmentRow[] = [
+      baseRow({
+        id: "inv-1",
+        subscribedAt: new Date("2026-06-28T15:03:34.770Z"),
+        payoutUnlockedAt: new Date("2026-06-28T15:10:00.000Z"),
+        payoutUnlockingInvestmentIds: ["inv-2", "inv-4"],
+        ledgerAfterPayout: {
+          pool: 40,
+          surplus: 9.99,
+          protectedWithdrawable: 30,
+        },
+        ledgerEventKind: "payout",
+        payoutTriggeredBy: "admin",
+        status: InvestmentStatus.redeemed,
+        payoutStatus: "paid",
+        redeemedAt: new Date("2026-06-28T15:10:00.000Z"),
+      }),
+      baseRow({
+        id: "inv-2",
+        subscribedAt: new Date("2026-06-28T15:07:03.531Z"),
+        status: InvestmentStatus.redeemed,
+        payoutStatus: "paid",
+      }),
+      baseRow({
+        id: "inv-4",
+        subscribedAt: new Date("2026-06-28T15:10:36.791Z"),
+        status: InvestmentStatus.active,
+        payoutStatus: "waiting",
+      }),
+    ];
+
+    const display = buildInvestmentLedgerTimeline(rows);
+
+    assert.deepEqual(
+      display.map((r) => `${r.displayKind}:${r.investmentId}`),
+      [
+        "subscription:inv-1",
+        "subscription:inv-2",
+        "subscription:inv-4",
+        "payout:inv-1",
+      ]
+    );
+    assert.equal(display[3]?.subscribedColumnHint, "#1 unlocked after #2, #3");
+  });
+});

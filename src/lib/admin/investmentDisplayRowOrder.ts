@@ -58,11 +58,49 @@ export function enrichLedgerDisplayFlags(rows: AdminInvestmentDisplayRow[]): voi
   }
 }
 
+export function refreshPayoutSortAtIso(
+  rows: AdminInvestmentDisplayRow[]
+): AdminInvestmentDisplayRow[] {
+  const subscribedAtByInvestmentId = new Map<string, string>();
+  for (const row of rows) {
+    if (row.displayKind === "subscription" && row.subscribedAtIso) {
+      subscribedAtByInvestmentId.set(row.investmentId, row.subscribedAtIso);
+    }
+  }
+
+  return rows.map((row) => {
+    if (row.displayKind !== "payout" || row.eventKind !== "payout") {
+      return row;
+    }
+    const source = row.parentInvestment;
+    if (!source) {
+      return row;
+    }
+
+    const unlockerTimes = source.payoutUnlockingInvestmentIds
+      .map((id) => subscribedAtByInvestmentId.get(id))
+      .filter((iso): iso is string => iso != null)
+      .map((iso) => new Date(iso).getTime());
+
+    if (unlockerTimes.length === 0) {
+      return row;
+    }
+
+    const sortAtIso = new Date(Math.max(...unlockerTimes)).toISOString();
+    return {
+      ...row,
+      sortAtIso,
+      subscribedAtIso: sortAtIso,
+    };
+  });
+}
+
 /** Re-sort merged display rows chronologically and rebuild step numbers and unlock hints. */
 export function reorderInvestmentDisplayRows(
   rows: AdminInvestmentDisplayRow[]
 ): AdminInvestmentDisplayRow[] {
-  const sorted = [...rows].sort(compareDisplayRows);
+  const refreshed = refreshPayoutSortAtIso(rows);
+  const sorted = [...refreshed].sort(compareDisplayRows);
 
   const subscriptionStepByInvestmentId = new Map<string, number>();
   const withSteps = sorted.map((row, index) => {
