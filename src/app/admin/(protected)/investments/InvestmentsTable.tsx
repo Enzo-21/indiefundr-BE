@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { INVESTMENT_FUNDS } from "@/lib/config/investmentFunds";
-import { buildInvestmentReasonNote } from "@/lib/admin/investmentReasonNotes";
+import { buildInvestmentReasonDetail } from "@/lib/admin/investmentReasonNotes";
 import { shouldShowInvestmentMaturityCountdown } from "@/lib/admin/investmentMaturityCountdown";
 import {
   investmentRowDomId,
@@ -637,7 +637,12 @@ export function InvestmentsTable({
                             ? parent.userPathLabel
                             : "—"}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">—</TableCell>
+                        <TableCell>
+                          <InvestmentReasonCell
+                            detail={buildInvestmentReasonDetail(parent)}
+                            investmentId={parent.id}
+                          />
+                        </TableCell>
                       </>
                     ) : inv ? (
                       <>
@@ -679,7 +684,7 @@ export function InvestmentsTable({
                         </TableCell>
                         <TableCell>
                           <InvestmentReasonCell
-                            note={buildInvestmentReasonNote(inv)}
+                            detail={buildInvestmentReasonDetail(inv)}
                             investmentId={inv.id}
                           />
                         </TableCell>

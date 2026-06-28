@@ -9,34 +9,42 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { InvestmentReasonDetail } from "@/lib/admin/investmentReasonNotes";
 import { investmentShortId } from "@/lib/admin/investmentTableIds";
 
 const SEE_MORE_MIN_LENGTH = 72;
 
 type Props = {
-  note: string | null;
+  detail: InvestmentReasonDetail | null;
   investmentId?: string;
 };
 
-export function InvestmentReasonCell({ note, investmentId }: Props) {
+export function InvestmentReasonCell({ detail, investmentId }: Props) {
   const [open, setOpen] = useState(false);
 
-  if (!note) {
+  const summary = detail?.summary ?? null;
+  const unlockers = detail?.unlockers ?? [];
+
+  if (!summary && unlockers.length === 0) {
     return <span className="text-muted-foreground">—</span>;
   }
 
-  const showSeeMore = note.length > SEE_MORE_MIN_LENGTH;
+  const showSeeMore =
+    (summary != null && summary.length > SEE_MORE_MIN_LENGTH) ||
+    unlockers.length > 0;
   const shortId = investmentId ? investmentShortId(investmentId) : null;
 
   return (
     <>
       <div className="max-w-[200px] space-y-1">
-        <p
-          className="line-clamp-3 wrap-break-word text-xs leading-relaxed text-muted-foreground"
-          title={showSeeMore ? undefined : note}
-        >
-          {note}
-        </p>
+        {summary ? (
+          <p
+            className="line-clamp-3 wrap-break-word text-xs leading-relaxed text-muted-foreground"
+            title={showSeeMore ? undefined : summary}
+          >
+            {summary}
+          </p>
+        ) : null}
         {showSeeMore ? (
           <Button
             type="button"
@@ -60,9 +68,26 @@ export function InvestmentReasonCell({ note, investmentId }: Props) {
               Full payout and unlock reason for this investment.
             </DialogDescription>
           </DialogHeader>
-          <p className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-foreground">
-            {note}
-          </p>
+          {summary ? (
+            <p className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-foreground">
+              {summary}
+            </p>
+          ) : null}
+          {unlockers.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-foreground">Unlocked by</p>
+              <ul className="space-y-1.5 text-sm text-muted-foreground">
+                {unlockers.map((unlocker) => (
+                  <li
+                    key={unlocker.investmentId}
+                    className="wrap-break-word font-mono text-xs leading-relaxed"
+                  >
+                    {unlocker.label}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
     </>

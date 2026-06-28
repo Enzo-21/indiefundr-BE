@@ -2,7 +2,23 @@ import { unlockPrincipalRequired } from "@/lib/config/investmentCohort";
 import type { AdminInvestmentRow } from "@/services/admin/investmentAdminTypes";
 import type { MaturitySituationView } from "@/lib/investments/maturitySituation";
 import { isSurplusPayoutTrigger } from "@/services/revenueEngine/payoutTriggers";
+import { buildPayoutReason } from "@/services/revenueEngine/payoutScheduler";
 import { investmentShortId } from "./investmentTableIds";
+
+export type InvestmentReasonUnlockerLine = {
+  investmentId: string;
+  investmentShortId: string;
+  email: string | null;
+  name: string | null;
+  amountUsdt: number;
+  slotEquivalent: number;
+  label: string;
+};
+
+export type InvestmentReasonDetail = {
+  summary: string | null;
+  unlockers: InvestmentReasonUnlockerLine[];
+};
 
 function formatUnlockedAfterInvestmentIds(investmentIds: string[]): string {
   const labels = investmentIds.map(investmentShortId);
@@ -113,4 +129,55 @@ export function buildInvestmentReasonNote(inv: AdminInvestmentRow): string | nul
   }
 
   return null;
+}
+
+function formatUnlockerAdminLine(
+  detail: AdminInvestmentRow["payoutUnlockerDetails"][number]
+): InvestmentReasonUnlockerLine {
+  const shortId = investmentShortId(detail.investmentId);
+  const who = detail.email ?? detail.name ?? "Unknown user";
+  const label = `#${shortId} — ${who} — ${detail.amountUsdt} USDT (${detail.slotEquivalent}× slot)`;
+  return {
+    investmentId: detail.investmentId,
+    investmentShortId: shortId,
+    email: detail.email,
+    name: detail.name,
+    amountUsdt: detail.amountUsdt,
+    slotEquivalent: detail.slotEquivalent,
+    label,
+  };
+}
+
+/** Admin-facing reason summary plus structured unlocker lines for See more. */
+export function buildInvestmentReasonDetail(
+  inv: AdminInvestmentRow
+): InvestmentReasonDetail {
+  let summary = buildInvestmentReasonNote(inv);
+
+  if (
+    inv.payoutUnlockedAt &&
+    !inv.payoutReason &&
+    inv.payoutUnlockerDetails.length > 0
+  ) {
+    const synthesized = buildPayoutReason(
+      inv.amountUsdt,
+      inv.payoutUnlockerDetails.map((unlocker) => ({
+        id: unlocker.investmentId,
+        userId: unlocker.userId,
+        subscribedAt: null,
+        excludedFromTriadUnlock: false,
+        amountUsdt: unlocker.amountUsdt,
+      }))
+    );
+    if (synthesized) {
+      summary = synthesized;
+    }
+  }
+
+  const unlockers =
+    inv.payoutUnlockedAt && inv.payoutUnlockerDetails.length > 0
+      ? inv.payoutUnlockerDetails.map(formatUnlockerAdminLine)
+      : [];
+
+  return { summary, unlockers };
 }

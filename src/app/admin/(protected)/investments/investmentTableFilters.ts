@@ -1,4 +1,5 @@
 import type { AdminInvestmentsListResult } from "@/services/admin/investmentAdminTypes";
+import { reorderInvestmentDisplayRows } from "@/services/admin/investmentLedgerTimeline";
 
 export type InvestmentTableFilters = {
   showQueue: boolean;
@@ -32,15 +33,6 @@ export function resolveFetchMode(
   return "none";
 }
 
-export function renumberDisplayRows(
-  rows: AdminInvestmentsListResult["displayRows"]
-): AdminInvestmentsListResult["displayRows"] {
-  return rows.map((row, index) => ({
-    ...row,
-    chronologicalStep: index + 1,
-  }));
-}
-
 export function appendInvestmentListSnapshot(
   current: AdminInvestmentsListResult,
   next: AdminInvestmentsListResult
@@ -62,7 +54,7 @@ export function mergeInvestmentListSnapshots(
     throw new Error("At least one investment list snapshot is required to merge");
   }
 
-  const displayRows = renumberDisplayRows([
+  const displayRows = reorderInvestmentDisplayRows([
     ...(queue?.displayRows ?? []),
     ...(archive?.displayRows ?? []),
   ]);

@@ -36,6 +36,7 @@ export type MaturitySituationInput = Pick<
   | "status"
   | "payabilityStatus"
   | "payoutUnlockedAt"
+  | "payoutReason"
   | "recoveryEligibleAt"
   | "referralRecoveryCompletedAt"
   | "unpaidMaturityResolution"
@@ -164,11 +165,13 @@ export function resolveMaturitySituation(
   }
 
   if (status === InvestmentStatus.redeemed) {
+    const detail =
+      investment.payoutReason?.trim() || "Payout completed.";
     return {
       ...base,
       situation: "redeemed",
       statusLabel: "Redeemed",
-      statusDetail: "Payout completed.",
+      statusDetail: detail,
     };
   }
 
@@ -271,12 +274,14 @@ export function resolveMaturitySituation(
     investment.payoutUnlockedAt ||
     investment.payabilityStatus === InvestmentPayabilityStatus.payable
   ) {
+    const detail =
+      investment.payoutReason?.trim() ||
+      "Your payout is unlocked. Our team will process the transfer according to treasury operations.";
     return {
       ...base,
       situation: "awaiting_admin_payout",
       statusLabel: "Awaiting admin payout",
-      statusDetail:
-        "Your payout is unlocked. Our team will process the transfer according to treasury operations.",
+      statusDetail: detail,
     };
   }
 

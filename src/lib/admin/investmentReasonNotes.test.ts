@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { InvestmentStatus } from "@prisma/client";
 import { describe, it } from "node:test";
 import type { AdminInvestmentRow } from "@/services/admin/investmentAdminTypes";
-import { buildInvestmentReasonNote } from "./investmentReasonNotes";
+import { buildInvestmentReasonDetail, buildInvestmentReasonNote } from "./investmentReasonNotes";
 
 function baseRow(
   overrides: Partial<AdminInvestmentRow> & { id: string }
@@ -136,5 +136,42 @@ describe("buildInvestmentReasonNote", () => {
       })
     );
     assert.match(note ?? "", /48h choice open/);
+  });
+});
+
+describe("buildInvestmentReasonDetail", () => {
+  it("synthesizes cohort summary and unlocker admin lines", () => {
+    const detail = buildInvestmentReasonDetail(
+      baseRow({
+        id: "inv-head",
+        payoutUnlockedAt: new Date(),
+        payoutUnlockingInvestmentIds: ["inv-bbbbbbbbbbbb", "inv-cccccccccccc"],
+        payoutReason: null,
+        payoutStatus: "ready",
+        payoutUnlockerDetails: [
+          {
+            investmentId: "inv-bbbbbbbbbbbb",
+            userId: "u2",
+            amountUsdt: 25,
+            slotEquivalent: 1,
+            name: "User B",
+            email: "b@test.com",
+          },
+          {
+            investmentId: "inv-cccccccccccc",
+            userId: "u3",
+            amountUsdt: 25,
+            slotEquivalent: 1,
+            name: "User C",
+            email: "c@test.com",
+          },
+        ],
+      })
+    );
+
+    assert.match(detail.summary ?? "", /Unlocked after 2 later investments/);
+    assert.equal(detail.unlockers.length, 2);
+    assert.match(detail.unlockers[0]?.label ?? "", /b@test.com/);
+    assert.match(detail.unlockers[1]?.label ?? "", /c@test.com/);
   });
 });

@@ -48,6 +48,7 @@ export type TransactionInsights = {
   globalQueueRank: number | null;
   newSubscribersNeeded: number | null;
   needsUnpaidMaturityChoice: boolean;
+  unlockDetail: string | null;
 };
 
 function roundUsdt(value: number): number {
@@ -56,6 +57,27 @@ function roundUsdt(value: number): number {
 
 function subscribeDate(inv: Pick<Investment, "subscribedAt" | "date">): Date {
   return inv.subscribedAt ?? inv.date;
+}
+
+function resolveUnlockDetail(
+  investment: Pick<
+    Investment,
+    "payoutUnlockedAt" | "payoutReason" | "payoutUnlockingInvestmentIds"
+  >
+): string | null {
+  if (!investment.payoutUnlockedAt) {
+    return null;
+  }
+  if (investment.payoutReason?.trim()) {
+    return investment.payoutReason.trim();
+  }
+  const count = investment.payoutUnlockingInvestmentIds.length;
+  if (count === 0) {
+    return "Unlocked and ready for payout.";
+  }
+  const countLabel =
+    count === 1 ? "1 later investment" : `${count} later investments`;
+  return `Unlocked after ${countLabel}.`;
 }
 
 function fundOrFallback(fundId: string): InvestmentFund {
@@ -119,6 +141,7 @@ function baseInsights(
     globalQueueRank: extras?.globalQueueRank ?? null,
     newSubscribersNeeded: extras?.newSubscribersNeeded ?? null,
     needsUnpaidMaturityChoice: extras?.needsUnpaidMaturityChoice ?? false,
+    unlockDetail: extras?.unlockDetail ?? null,
   };
 }
 
@@ -177,6 +200,7 @@ export function insightsFromInvestment(
       typicalPayoutDays,
       investmentId: investment.id,
       purchaseOrderId: investment.purchaseOrderId,
+      unlockDetail: resolveUnlockDetail(investment),
       ...investmentLifecycleInsights(investment, context),
     }
   );
@@ -209,6 +233,7 @@ export function insightsFromPurchaseOrder(
         typicalPayoutDays,
         investmentId: linkedInvestment.id,
         purchaseOrderId: linkedInvestment.purchaseOrderId ?? order.id,
+        unlockDetail: resolveUnlockDetail(linkedInvestment),
         ...investmentLifecycleInsights(linkedInvestment, context),
       }
     );
@@ -235,6 +260,7 @@ export function insightsFromPurchaseOrder(
       globalQueueRank: null,
       newSubscribersNeeded: null,
       needsUnpaidMaturityChoice: false,
+      unlockDetail: null,
     }
   );
 }
@@ -270,6 +296,7 @@ export function insightsFromRedemption(
       typicalPayoutDays,
       investmentId: investment.id,
       purchaseOrderId: investment.purchaseOrderId,
+      unlockDetail: resolveUnlockDetail(investment),
       ...investmentLifecycleInsights(investment, context),
     }
   );

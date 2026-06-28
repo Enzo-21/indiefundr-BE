@@ -212,4 +212,91 @@ describe("transactionInsights", () => {
     assert.equal(insights.statusLabel, "Choose next step");
     assert.equal(insights.needsUnpaidMaturityChoice, true);
   });
+
+  it("includes unlock detail when investment was unlocked by later investors", () => {
+    const payoutReason =
+      "Unlocked after 2 later investments (25 USDT + 25 USDT). Head invested 25 USDT; required 50 USDT from newer investors (2× cohort). Received 50 USDT (2× equivalent).";
+    const investment = {
+      id: "inv-unlocked",
+      userId: "u1",
+      walletId: "w1",
+      fundId: "growth-partners",
+      amountUsdt: 25,
+      returnPercent90d: 25,
+      projectedPayoutUsdt: 31.25,
+      status: InvestmentStatus.matured,
+      purchaseOrderId: "ord-1",
+      transaction: null,
+      redemptionTransaction: null,
+      subscribedAt: new Date("2026-01-01T00:00:00.000Z"),
+      maturesAt: new Date("2026-06-01T00:00:00.000Z"),
+      redeemedAt: null,
+      payabilityStatus: "payable" as const,
+      payoutEligibleAt: null,
+      markedPayableAt: null,
+      payoutUnlockedAt: new Date("2026-06-02T00:00:00.000Z"),
+      autoPayoutAt: null,
+      payoutUnlockingInvestmentIds: ["inv-2", "inv-3"],
+      payoutUnlockingUserIds: [],
+      payoutReason,
+      payoutTriggeredBy: null,
+      payoutFailureReason: null,
+      globalQueueRank: null,
+      newSubscribersNeeded: null,
+      chainMemo: null,
+      recoveryEligibleAt: null,
+      sympathyNotifiedAt: null,
+      referralRecoveryCompletedAt: null,
+      unpaidMaturityResolution: null,
+      unpaidMaturityResolvedAt: null,
+      termExtensionDays: null,
+      date: new Date("2026-01-01T00:00:00.000Z"),
+    };
+
+    const insights = insightsFromInvestment(investment);
+    assert.equal(insights.unlockDetail, payoutReason);
+    assert.equal(insights.statusDetail, payoutReason);
+  });
+
+  it("falls back to unlock count when payout reason is missing", () => {
+    const insights = insightsFromRedemption({
+      id: "inv-1",
+      userId: "u1",
+      walletId: "w1",
+      fundId: "growth-partners",
+      amountUsdt: 25,
+      returnPercent90d: 25,
+      projectedPayoutUsdt: 31.25,
+      status: InvestmentStatus.redeemed,
+      purchaseOrderId: null,
+      transaction: null,
+      redemptionTransaction: null,
+      subscribedAt: new Date("2026-01-01T00:00:00.000Z"),
+      maturesAt: new Date("2026-03-01T00:00:00.000Z"),
+      redeemedAt: new Date("2026-01-06T12:00:00.000Z"),
+      payabilityStatus: "not_matured",
+      payoutEligibleAt: null,
+      markedPayableAt: null,
+      payoutUnlockedAt: new Date("2026-01-05T00:00:00.000Z"),
+      autoPayoutAt: null,
+      payoutUnlockingInvestmentIds: ["inv-2", "inv-3"],
+      payoutUnlockingUserIds: [],
+      payoutReason: null,
+      payoutTriggeredBy: null,
+      payoutFailureReason: null,
+      globalQueueRank: null,
+      newSubscribersNeeded: null,
+      chainMemo: null,
+      recoveryEligibleAt: null,
+      sympathyNotifiedAt: null,
+      referralRecoveryCompletedAt: null,
+      unpaidMaturityResolution: null,
+      unpaidMaturityResolvedAt: null,
+      termExtensionDays: null,
+      date: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    assert.equal(insights.unlockDetail, "Unlocked after 2 later investments.");
+    assert.equal(insights.statusDetail, "Payout completed.");
+  });
 });

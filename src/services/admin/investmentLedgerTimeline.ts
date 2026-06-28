@@ -114,6 +114,52 @@ function compareTimelineEntries(a: TimelineEntry, b: TimelineEntry): number {
   return a.investmentId.localeCompare(b.investmentId);
 }
 
+function compareDisplayRows(
+  a: AdminInvestmentDisplayRow,
+  b: AdminInvestmentDisplayRow
+): number {
+  const timeDiff =
+    new Date(a.sortAtIso).getTime() - new Date(b.sortAtIso).getTime();
+  if (timeDiff !== 0) return timeDiff;
+  if (a.displayKind !== b.displayKind) {
+    return a.displayKind === "subscription" ? -1 : 1;
+  }
+  return a.investmentId.localeCompare(b.investmentId);
+}
+
+/** Re-sort merged display rows chronologically and rebuild step numbers and unlock hints. */
+export function reorderInvestmentDisplayRows(
+  rows: AdminInvestmentDisplayRow[]
+): AdminInvestmentDisplayRow[] {
+  const sorted = [...rows].sort(compareDisplayRows);
+
+  const subscriptionStepByInvestmentId = new Map<string, number>();
+  const withSteps = sorted.map((row, index) => {
+    const chronologicalStep = index + 1;
+    if (row.displayKind === "subscription") {
+      subscriptionStepByInvestmentId.set(row.investmentId, chronologicalStep);
+    }
+    return { ...row, chronologicalStep };
+  });
+
+  const withHints = withSteps.map((row) => {
+    if (row.displayKind !== "payout" || row.eventKind !== "payout") {
+      return row;
+    }
+    const source = row.parentInvestment;
+    if (!source) return row;
+    const hint = formatUnlockHint(
+      source.id,
+      source.payoutUnlockingInvestmentIds,
+      subscriptionStepByInvestmentId
+    );
+    return hint != null ? { ...row, subscribedColumnHint: hint } : row;
+  });
+
+  enrichLedgerDisplayFlags(withHints);
+  return withHints;
+}
+
 function formatUnlockHint(
   targetInvestmentId: string,
   unlockerIds: string[],

@@ -5,6 +5,7 @@ import {
   buildInvestmentLedgerTimeline,
   computePayoutSortAt,
   computeSurplusPayoutSortAt,
+  reorderInvestmentDisplayRows,
 } from "./investmentLedgerTimeline";
 import type { AdminInvestmentRow } from "./investmentAdminTypes";
 import { buildInvestmentLedgerViewsFromEvents } from "./investmentLedgerSnapshots";
@@ -481,5 +482,62 @@ describe("buildInvestmentLedgerTimeline", () => {
 
     const sortAt = computePayoutSortAt(row, undefined, subscribedAtByInvestmentId);
     assert.equal(sortAt.toISOString(), "2026-01-05T00:00:00.000Z");
+  });
+});
+
+describe("reorderInvestmentDisplayRows", () => {
+  it("re-sorts merged streams and rebuilds unlock hints", () => {
+    const rows: AdminInvestmentRow[] = [
+      baseRow({
+        id: "inv-1",
+        subscribedAt: new Date("2026-01-01T00:00:00.000Z"),
+        payoutUnlockedAt: new Date("2026-01-10"),
+        payoutUnlockingInvestmentIds: ["inv-2", "inv-3"],
+        ledgerAfterPayout: {
+          pool: 46.25,
+          surplus: 16.26,
+          protectedWithdrawable: 29.99,
+        },
+        ledgerEventKind: "payout",
+        payoutTriggeredBy: "admin",
+        status: InvestmentStatus.redeemed,
+        payoutStatus: "paid",
+      }),
+      baseRow({
+        id: "inv-2",
+        subscribedAt: new Date("2026-01-02T00:00:00.000Z"),
+      }),
+      baseRow({
+        id: "inv-3",
+        subscribedAt: new Date("2026-01-03T00:00:00.000Z"),
+      }),
+      baseRow({
+        id: "inv-4",
+        subscribedAt: new Date("2026-01-04T00:00:00.000Z"),
+      }),
+    ];
+
+    const timeline = buildInvestmentLedgerTimeline(rows);
+    const shuffled = [
+      timeline[1]!,
+      timeline[2]!,
+      timeline[4]!,
+      timeline[0]!,
+      timeline[3]!,
+    ];
+
+    const reordered = reorderInvestmentDisplayRows(shuffled);
+    const kinds = reordered.map(
+      (r) => `${r.chronologicalStep}:${r.displayKind}:${r.investmentId}`
+    );
+
+    assert.deepEqual(kinds, [
+      "1:subscription:inv-1",
+      "2:subscription:inv-2",
+      "3:subscription:inv-3",
+      "4:payout:inv-1",
+      "5:subscription:inv-4",
+    ]);
+    assert.equal(reordered[3]?.subscribedColumnHint, "#1 unlocked after #2, #3");
   });
 });
