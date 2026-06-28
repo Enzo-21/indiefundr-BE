@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   adminBroadcastReferralPayout,
   adminCompleteReferralPayout,
+  adminResetReferralPayoutUsdtForRetry,
 } from "@/actions/admin/referralPayoutOrders";
 import { adminGetTransactionStatus } from "@/actions/admin/purchaseOrders";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
@@ -255,6 +256,15 @@ export function useCompleteReferralPayoutWorkflow(
         if (result.data.status === "failed") {
           const message =
             result.data.message ?? "Transaction failed on-chain";
+          if (!result.data.retryable) {
+            const resetResult = await adminResetReferralPayoutUsdtForRetry(orderId);
+            if (!resetResult.ok) {
+              console.warn(
+                "[admin-complete-referral-payout] reset after failed tx:",
+                resetResult.error.msg
+              );
+            }
+          }
           patchStep("confirm", {
             state: "failed",
             detail: message,
@@ -287,12 +297,22 @@ export function useCompleteReferralPayoutWorkflow(
 
     const broadcastResult = await adminBroadcastReferralPayout(orderId);
     if (!broadcastResult.ok) {
-      throw new Error(broadcastResult.error.msg);
+      const message = broadcastResult.error.msg;
+      patchStep("broadcast", {
+        state: "failed",
+        detail: message,
+      });
+      throw new Error(message);
     }
 
     const txId = broadcastResult.data?.txId;
     if (!txId) {
-      throw new Error("Broadcast succeeded but no transaction id returned");
+      const message = "Broadcast succeeded but no transaction id returned";
+      patchStep("broadcast", {
+        state: "failed",
+        detail: message,
+      });
+      throw new Error(message);
     }
 
     const tronscanUrl = getTronscanTxUrl(txId);

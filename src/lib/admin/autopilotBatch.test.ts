@@ -123,4 +123,29 @@ describe("autopilotBatch helpers", () => {
       true
     );
   });
+
+  it("isAutopilotWorkflowInterruptedFailure is false when broadcast step failed", () => {
+    assert.equal(
+      isAutopilotWorkflowInterruptedFailure(
+        {
+          success: false,
+          error: "Not enough test USDT on Shasta",
+          interrupted: false,
+        },
+        [{ state: "failed" }, { state: "idle" }, { state: "idle" }]
+      ),
+      false
+    );
+    assert.equal(
+      isAutopilotWorkflowInterruptedFailure(
+        { success: false, error: "Treasury USDT balance too low" },
+        [
+          { state: "failed" },
+          { state: "idle" },
+          { state: "idle" },
+        ]
+      ),
+      false
+    );
+  });
 });

@@ -6,8 +6,10 @@ import { verifyAdminSession } from "@/lib/auth/adminSession";
 import {
   broadcastReferralPayoutUsdt,
   completeReferralPayoutOrder,
+  getReferralPayoutFulfillmentEstimate,
   markReferralPayoutOrderFailed,
   appendAdminReferralPayoutAutopilotManualCheckNote,
+  resetReferralPayoutUsdtForRetry,
 } from "@/services/admin/referralPayoutOrderFulfillment";
 
 function revalidateOrderViews() {
@@ -69,6 +71,20 @@ export async function adminMarkReferralAutopilotManualCheck(
       error,
       session.email
     )
+  );
+  if (result.ok) {
+    revalidateOrderViews();
+  }
+  return result;
+}
+
+export async function adminGetReferralPayoutEstimate(orderId: string) {
+  return withAdminAction(() => getReferralPayoutFulfillmentEstimate(orderId));
+}
+
+export async function adminResetReferralPayoutUsdtForRetry(orderId: string) {
+  const result = await withAdminAction(() =>
+    resetReferralPayoutUsdtForRetry(orderId)
   );
   if (result.ok) {
     revalidateOrderViews();

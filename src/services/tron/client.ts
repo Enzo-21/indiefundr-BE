@@ -21,6 +21,7 @@ type TransactionInfo = {
   blockNumber?: number;
   fee?: number;
   resMessage?: string;
+  contractResult?: string | string[];
   receipt?: { result?: string; energy_fee?: number; net_fee?: number };
   result?: string;
 };
@@ -1130,18 +1131,45 @@ export function parseTransactionFailureReason(
     resMessage = decodeTronMessage(info.resMessage);
   }
 
+  const contractResults = info.contractResult
+    ? Array.isArray(info.contractResult)
+      ? info.contractResult
+      : [info.contractResult]
+    : [];
+  let contractMessage = "";
+  for (const item of contractResults) {
+    const decoded = decodeTronMessage(item);
+    if (decoded) {
+      contractMessage = decoded;
+      break;
+    }
+  }
+
+  let failureMessage = resMessage;
+  if (
+    !failureMessage ||
+    /^REVERT opcode executed$/i.test(failureMessage.trim())
+  ) {
+    failureMessage = contractMessage || failureMessage;
+  }
+
   const retryable =
     receiptResult === "OUT_OF_ENERGY" ||
-    /out_of_energy|not enough energy/i.test(String(resMessage)) ||
+    /out_of_energy|not enough energy/i.test(String(failureMessage)) ||
     /out_of_energy/i.test(String(receiptResult));
+
+  let message = retryable
+    ? "Not enough TRX for network fees"
+    : failureMessage || "USDT payment failed on-chain";
+  if (/subtraction overflow/i.test(message)) {
+    message = "Treasury USDT balance too low for this transfer";
+  }
 
   return {
     retryable,
     code: receiptResult || "FAILED",
     feeTrx,
-    message: retryable
-      ? "Not enough TRX for network fees"
-      : resMessage || "USDT payment failed on-chain",
+    message,
   };
 }
 

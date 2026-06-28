@@ -526,15 +526,22 @@ flowchart TD
 - [ ] 10.4.1 Tras qualify referral, órdenes payout en cola admin.
 - [ ] 10.4.2 Fulfill inviter + invitee bonuses.
 - [ ] 10.4.3 Fulfill principal recovery (25 USDT) separado de bonus.
+- [ ] 10.4.4 **Treasury preflight:** abrir Complete referral payout → panel Treasury preflight muestra USDT/TRX y Ready: Yes/No antes de broadcast.
+- [ ] 10.4.5 **Sin fondos:** treasury USDT &lt; 2 → preflight bloquea; **no** nueva tx en Tronscan treasury.
+- [ ] 10.4.6 **Con fondos:** una sola tx outbound por orden; confirm on-chain SUCCESS; una fila activity.
+- [ ] 10.4.7 Tronscan treasury: txs REVERT históricas ≠ payouts exitosos; contar txs vs órdenes referral (spam = más txs que órdenes).
 
 ### 10.5 Treasury (opcional)
 
 - [ ] 10.5.1 Reconcile treasury sin drift inexplicable.
 - [ ] 10.5.2 Sync on-chain history.
+- [ ] 10.5.3 Revisar USDT outbound en treasury Tronscan: distinguir FAILED/REVERT de SUCCESS.
 
 ### 10.6 Autopilot (si habilitado en entorno)
 
 - [ ] 10.6.1 Verificar que autopilot no contradice pagos manuales en mismo ID.
+- [ ] 10.6.2 Referral autopilot con treasury vacío: falla en preflight, marca manual check, **no** loop de txs on-chain.
+- [ ] 10.6.3 Tras 3 reintentos interrupted, autopilot avanza a siguiente orden (no spin infinito).
 
 ---
 

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { isAutopilotWorkflowInterruptedFailure } from "@/lib/admin/autopilotBatch";
+import { AUTOPILOT_MAX_INTERRUPTED_RETRIES } from "@/lib/config/adminAutopilot";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
 import { InvestmentPayoutWorkflowPanel } from "./InvestmentPayoutWorkflowPanel";
 import type { AutopilotPayoutCandidate } from "./usePayoutAutopilot";
@@ -51,6 +52,7 @@ export function PayoutAutopilotBatchRunner({
   const stepsRef = useRef(steps);
   const candidateKey = `${candidate.investmentId}:${candidate.mode}`;
   const prevCandidateKeyRef = useRef(candidateKey);
+  const interruptedRunCountRef = useRef(0);
 
   stepsRef.current = steps;
 
@@ -75,6 +77,7 @@ export function PayoutAutopilotBatchRunner({
     cancel();
     resetSteps();
     startedRef.current = null;
+    interruptedRunCountRef.current = 0;
     prevCandidateKeyRef.current = candidateKey;
   }, [candidateKey, cancel, resetSteps]);
 
@@ -82,6 +85,7 @@ export function PayoutAutopilotBatchRunner({
     await applySeed();
     const result = await run();
     if (result.success) {
+      interruptedRunCountRef.current = 0;
       setAdvancing(true);
       try {
         await onSuccess();
@@ -99,10 +103,29 @@ export function PayoutAutopilotBatchRunner({
       if (userStoppedRef.current) {
         return;
       }
+      interruptedRunCountRef.current += 1;
+      if (interruptedRunCountRef.current >= AUTOPILOT_MAX_INTERRUPTED_RETRIES) {
+        interruptedRunCountRef.current = 0;
+        setAdvancing(true);
+        try {
+          await onFailure({
+            error: `Payout automation stopped after ${AUTOPILOT_MAX_INTERRUPTED_RETRIES} interrupted retries — manual check needed`,
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          await onFailure({ error: message });
+        } finally {
+          setAdvancing(false);
+          startedRef.current = null;
+        }
+        return;
+      }
       startedRef.current = candidateKey;
       void runPayout();
       return;
     }
+
+    interruptedRunCountRef.current = 0;
 
     setAdvancing(true);
     try {

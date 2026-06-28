@@ -11,8 +11,14 @@ import {
   appendAutopilotNote,
   formatOrderAutopilotManualCheckNote,
 } from "@/lib/admin/autopilotBatch";
+import {
+  buildIndieFundrMemo,
+  isIndieFundrChainMemoEnabled,
+} from "@/lib/tron/transactionMemo";
+import { formatTronTransferError } from "@/lib/utils/tronErrors";
 import { getTronscanTxUrl } from "@/lib/wallets/helpers";
 import { prisma } from "@/lib/prisma";
+import type { AdminFulfillmentEstimate } from "@/services/admin/purchaseOrderFulfillment";
 import { referralPayoutOrderKindLabel } from "@/services/referrals/referralPayoutOrderQueue";
 import {
   creditReferralWalletActivity,
@@ -21,8 +27,10 @@ import {
   principalRecoveryActivityEntityId,
 } from "@/services/referrals/referralWalletActivity";
 import {
+  getLedgerSnapshot,
   recordReferralBonusOutflow,
   recordReferralPrincipalRecovery,
+  type LedgerSnapshot,
 } from "@/services/revenueEngine/ledger";
 import * as tron from "@/services/tron/client";
 import { scheduleUserLevelRecalculation } from "@/services/playerLevels/scheduleUserLevelRecalculation";
@@ -46,10 +54,10 @@ export type AdminReferralPayoutRow = {
   reservedUsdt: number;
   status: ReferralPayoutOrderStatus;
   walletAddress: string;
-  trxBalance: null;
-  usdtBalance: null;
+  trxBalance: number | null;
+  usdtBalance: number | null;
   balanceReadStatus: "ok";
-  estimatedTrx: null;
+  estimatedTrx: number | null;
   topUpTxId: null;
   usdtTxId: string | null;
   adminTrxTopUpTxId: null;
@@ -61,6 +69,95 @@ export type AdminReferralPayoutRow = {
   date: string;
   updatedAt: string;
 };
+
+export type ReferralPayoutFulfillmentEstimate = AdminFulfillmentEstimate & {
+  treasuryUsdtBalance: number;
+  treasuryTrxBalance: number;
+  ledgerTreasurySurplus: number;
+  ledgerPoolAvailable: number;
+  canTransfer: boolean;
+};
+
+export function assertReferralLedgerLiquidity(
+  kind: ReferralPayoutOrderKind,
+  amountUsdt: number,
+  snapshot: LedgerSnapshot
+): void {
+  if (kind === ReferralPayoutOrderKind.principal_recovery) {
+    if (snapshot.poolAvailable < amountUsdt) {
+      throw new Error(
+        `Insufficient pool liquidity for principal recovery: need ${amountUsdt}, available ${snapshot.poolAvailable}`
+      );
+    }
+    return;
+  }
+
+  if (snapshot.treasurySurplus < amountUsdt) {
+    throw new Error(
+      `Insufficient treasury surplus for referral bonus: need ${amountUsdt}, available ${snapshot.treasurySurplus}`
+    );
+  }
+}
+
+function formatTreasuryTransferPreflightError(
+  estimate: tron.UsdtTransferEstimate,
+  treasuryAddress: string,
+  amountUsdt: number,
+  snapshot: LedgerSnapshot
+): string {
+  const formatted = formatTronTransferError(
+    estimate.hasEnoughUsdt ? "insufficient trx for fees" : "insufficient usdt",
+    {
+      fromAddress: treasuryAddress,
+      trxBalance: estimate.trxBalance,
+      usdtBalance: estimate.usdtBalance,
+      amountUsdt,
+      estimatedTrx: estimate.estimatedTrx,
+    }
+  );
+  const base =
+    typeof formatted.msg === "string"
+      ? formatted.msg
+      : "Treasury cannot cover this referral payout";
+  const ledgerHint =
+    amountUsdt <= snapshot.treasurySurplus || amountUsdt <= snapshot.poolAvailable
+      ? ` Ledger shows sufficient funds (surplus ${snapshot.treasurySurplus}, pool ${snapshot.poolAvailable}) but on-chain treasury USDT is ${estimate.usdtBalance}.`
+      : "";
+  return `${base}${ledgerHint}`;
+}
+
+async function assertReferralPayoutBroadcastReady(
+  order: ReferralPayoutOrder,
+  toAddress: string
+): Promise<{ treasuryAddress: string; estimate: tron.UsdtTransferEstimate }> {
+  if (!(await tron.validateAddress(toAddress))) {
+    throw new Error("User wallet address is invalid");
+  }
+
+  const treasuryPk = getTreasuryPrivateKey();
+  const treasuryAddress = await tron.privateKeyToAddress(treasuryPk);
+  const snapshot = await getLedgerSnapshot();
+  assertReferralLedgerLiquidity(order.kind, order.amountUsdt, snapshot);
+
+  const estimate = await tron.estimateUsdtTransfer({
+    fromAddress: treasuryAddress,
+    toAddress,
+    amount: order.amountUsdt,
+  });
+
+  if (!estimate.canTransfer) {
+    throw new Error(
+      formatTreasuryTransferPreflightError(
+        estimate,
+        treasuryAddress,
+        order.amountUsdt,
+        snapshot
+      )
+    );
+  }
+
+  return { treasuryAddress, estimate };
+}
 
 function getTreasuryPrivateKey(): string {
   const pk = getEnv().treasuryPrivateKey?.trim();
@@ -127,10 +224,9 @@ export async function listAdminReferralPayoutQueue(): Promise<AdminReferralPayou
   });
 }
 
-export async function broadcastReferralPayoutUsdt(
-  orderId: string,
-  adminEmail?: string
-): Promise<string> {
+export async function getReferralPayoutFulfillmentEstimate(
+  orderId: string
+): Promise<ReferralPayoutFulfillmentEstimate> {
   const order = await loadOpenReferralOrder(orderId);
   const wallet = await prisma.wallet.findUnique({ where: { id: order.walletId } });
   if (!wallet?.address) {
@@ -138,10 +234,114 @@ export async function broadcastReferralPayoutUsdt(
   }
 
   const treasuryPk = getTreasuryPrivateKey();
+  const treasuryAddress = await tron.privateKeyToAddress(treasuryPk);
+  const snapshot = await getLedgerSnapshot();
+
+  let ledgerOk = true;
+  try {
+    assertReferralLedgerLiquidity(order.kind, order.amountUsdt, snapshot);
+  } catch {
+    ledgerOk = false;
+  }
+
+  const feeEstimate = await tron.estimateUsdtTransfer({
+    fromAddress: treasuryAddress,
+    toAddress: wallet.address,
+    amount: order.amountUsdt,
+  });
+
+  const shortfall = Math.max(
+    0,
+    parseFloat((feeEstimate.estimatedTrx - feeEstimate.trxBalance).toFixed(6))
+  );
+
+  return {
+    estimatedTrx: feeEstimate.estimatedTrx,
+    trxBalance: feeEstimate.trxBalance,
+    shortfall,
+    hasEnoughTrx: feeEstimate.hasEnoughTrx,
+    hasEnoughUsdt: feeEstimate.hasEnoughUsdt,
+    costUsdt: order.amountUsdt,
+    treasuryUsdtBalance: feeEstimate.usdtBalance,
+    treasuryTrxBalance: feeEstimate.trxBalance,
+    ledgerTreasurySurplus: snapshot.treasurySurplus,
+    ledgerPoolAvailable: snapshot.poolAvailable,
+    canTransfer: feeEstimate.canTransfer && ledgerOk,
+  };
+}
+
+export async function resetReferralPayoutUsdtForRetry(
+  orderId: string,
+  options: { appendNote?: string } = {}
+): Promise<void> {
+  const order = await prisma.referralPayoutOrder.findUnique({
+    where: { id: orderId },
+  });
+  if (!order) {
+    throw new Error("Referral payout order not found");
+  }
+  if (!OPEN_STATUSES.includes(order.status)) {
+    throw new Error("Referral payout order is no longer open");
+  }
+
+  await prisma.referralPayoutOrder.update({
+    where: { id: orderId },
+    data: {
+      usdtTxId: null,
+      status: ReferralPayoutOrderStatus.queued,
+      failureReason: options.appendNote
+        ? appendAutopilotNote(order.failureReason, options.appendNote)
+        : order.failureReason,
+      updatedAt: new Date(),
+    },
+  });
+}
+
+export async function broadcastReferralPayoutUsdt(
+  orderId: string,
+  adminEmail?: string
+): Promise<string> {
+  let order = await loadOpenReferralOrder(orderId);
+  const wallet = await prisma.wallet.findUnique({ where: { id: order.walletId } });
+  if (!wallet?.address) {
+    throw new Error("User wallet not found");
+  }
+
+  const existingTxId = order.usdtTxId?.trim();
+  if (existingTxId) {
+    const inspection = await tron.inspectTransactionOnChain(existingTxId);
+    if (inspection.usdtTransferSuccessful) {
+      return existingTxId;
+    }
+    if (inspection.status === "pending") {
+      return existingTxId;
+    }
+    if (inspection.status === "failed") {
+      await resetReferralPayoutUsdtForRetry(orderId, {
+        appendNote: formatOrderAutopilotManualCheckNote(
+          "Previous USDT broadcast failed on-chain; cleared tx id for retry"
+        ),
+      });
+      order = await loadOpenReferralOrder(orderId);
+    }
+  }
+
+  await assertReferralPayoutBroadcastReady(order, wallet.address);
+
+  const treasuryPk = getTreasuryPrivateKey();
+  const chainMemo = isIndieFundrChainMemoEnabled()
+    ? buildIndieFundrMemo({
+        kind: "payout",
+        fundId: "referral",
+        entityId: order.id,
+      })
+    : undefined;
+
   const signed = await tron.transferUsdt({
     fromPrivateKey: treasuryPk,
     toAddress: wallet.address,
     amount: order.amountUsdt,
+    memo: chainMemo,
   });
   const txId = tron.getTxId(signed);
   if (!txId) {
@@ -186,6 +386,14 @@ export async function completeReferralPayoutOrder(
   const txId = (usdtTxId ?? order.usdtTxId)?.trim();
   if (!txId) {
     throw new Error("USDT transaction id is required to complete referral payout");
+  }
+
+  const transferOk = await tron.isUsdtTransferSuccessful(txId);
+  if (!transferOk) {
+    const failure = await tron.getTransactionFailureReason(txId);
+    throw new Error(
+      failure.message || "USDT transfer did not succeed on-chain"
+    );
   }
 
   if (order.kind === ReferralPayoutOrderKind.principal_recovery) {

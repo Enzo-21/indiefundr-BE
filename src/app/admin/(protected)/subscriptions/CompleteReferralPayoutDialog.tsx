@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, TriangleAlert } from "lucide-react";
+import { adminGetReferralPayoutEstimate } from "@/actions/admin/referralPayoutOrders";
 import { AdminWorkflowStepCard } from "@/app/admin/_components/AdminWorkflowStepCard";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -17,7 +18,10 @@ import {
 } from "@/components/ui/dialog";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
 import { cn } from "@/lib/utils";
-import type { AdminReferralPayoutRow } from "@/services/admin/referralPayoutOrderFulfillment";
+import type {
+  AdminReferralPayoutRow,
+  ReferralPayoutFulfillmentEstimate,
+} from "@/services/admin/referralPayoutOrderFulfillment";
 import {
   type CompleteReferralPayoutStepId,
   useCompleteReferralPayoutWorkflow,
@@ -36,6 +40,10 @@ export function CompleteReferralPayoutDialog({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [estimate, setEstimate] =
+    useState<ReferralPayoutFulfillmentEstimate | null>(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+  const [estimateError, setEstimateError] = useState<string | null>(null);
   const {
     steps,
     running,
@@ -63,14 +71,27 @@ export function CompleteReferralPayoutDialog({
     if (open) {
       wasOpenRef.current = true;
       applySeedFromOrder();
+      setEstimateLoading(true);
+      setEstimateError(null);
+      void adminGetReferralPayoutEstimate(row.orderId).then((result) => {
+        setEstimateLoading(false);
+        if (result.ok) {
+          setEstimate(result.data);
+        } else {
+          setEstimate(null);
+          setEstimateError(result.error.msg);
+        }
+      });
       return;
     }
     if (wasOpenRef.current) {
       cancel();
       resetSteps();
+      setEstimate(null);
+      setEstimateError(null);
       wasOpenRef.current = false;
     }
-  }, [open, cancel, resetSteps, applySeedFromOrder]);
+  }, [open, cancel, resetSteps, applySeedFromOrder, row.orderId]);
 
   const handleOpenChange = (next: boolean) => {
     if (running && !next) {
@@ -152,6 +173,56 @@ export function CompleteReferralPayoutDialog({
               </span>
             </div>
           </DialogHeader>
+
+          <div className="rounded-xl border bg-muted/20 px-4 py-3 text-sm">
+            <p className="mb-2 font-medium text-foreground">Treasury preflight</p>
+            {estimateLoading ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Checking treasury balances…</span>
+              </div>
+            ) : estimateError ? (
+              <p className="text-destructive">{estimateError}</p>
+            ) : estimate ? (
+              <div className="grid gap-1 text-muted-foreground sm:grid-cols-2">
+                <span>
+                  Treasury USDT:{" "}
+                  <span className="font-medium text-foreground">
+                    {formatUsdtDisplay(estimate.treasuryUsdtBalance)}
+                  </span>
+                </span>
+                <span>
+                  Treasury TRX:{" "}
+                  <span className="font-medium text-foreground">
+                    {estimate.treasuryTrxBalance.toFixed(4)}
+                  </span>
+                  {estimate.estimatedTrx > 0
+                    ? ` (~${estimate.estimatedTrx.toFixed(4)} fee)`
+                    : null}
+                </span>
+                <span>
+                  Ledger surplus:{" "}
+                  <span className="font-medium text-foreground">
+                    {formatUsdtDisplay(estimate.ledgerTreasurySurplus)}
+                  </span>
+                </span>
+                <span>
+                  Ready:{" "}
+                  <span
+                    className={
+                      estimate.canTransfer
+                        ? "font-medium text-emerald-600 dark:text-emerald-400"
+                        : "font-medium text-destructive"
+                    }
+                  >
+                    {estimate.canTransfer ? "Yes" : "No — fix treasury first"}
+                  </span>
+                </span>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">Estimate unavailable.</p>
+            )}
+          </div>
 
           <div>
             <p className="mb-1 text-sm font-medium text-foreground">
