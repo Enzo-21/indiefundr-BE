@@ -94,3 +94,27 @@ export function stepBoxClass(
       );
   }
 }
+
+const IN_FLIGHT_WORKFLOW_STEP_STATES: AdminWorkflowStepState[] = [
+  "running",
+  "waiting_chain",
+  "retry_wait",
+];
+
+export function isAdminWorkflowDismissBlocked(options: {
+  running?: boolean;
+  retryCountdownUntil?: Date | null;
+  steps?: Pick<AdminWorkflowStepSnapshot, "state">[];
+}): boolean {
+  if (options.running) {
+    return true;
+  }
+  if (options.retryCountdownUntil) {
+    return true;
+  }
+  return (
+    options.steps?.some((step) =>
+      IN_FLIGHT_WORKFLOW_STEP_STATES.includes(step.state)
+    ) ?? false
+  );
+}

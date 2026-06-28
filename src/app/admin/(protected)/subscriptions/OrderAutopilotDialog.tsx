@@ -217,6 +217,9 @@ export function OrderAutopilotDialog({
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
+      if (phase === "running") {
+        return;
+      }
       if (phase === "countdown") {
         handleStopAutopilot();
         return;
@@ -278,7 +281,11 @@ export function OrderAutopilotDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      disablePointerDismissal={phase === "running"}
+    >
       <DialogTrigger
         disabled={pendingOrderCount === 0}
         className={buttonVariants({ variant: "default", size: "sm" })}

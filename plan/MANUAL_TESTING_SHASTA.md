@@ -520,6 +520,8 @@ flowchart TD
 - [ ] 10.3.3 Pay now → estado `redeeming` → Confirm on-chain → `redeemed`.
 - [ ] 10.3.4 Pay with surplus solo en filas FIFO elegibles.
 - [ ] 10.3.5 Orden oldest-first respetado en cola surplus.
+- [ ] 10.3.6 **Failed treasury tx:** si broadcast REVERT por USDT insuficiente → Retry debe **rebroadcast** (nuevo hash en Tronscan), no re-poll del tx fallido.
+- [ ] 10.3.7 **Treasury preflight:** Pay now con treasury USDT &lt; payout → error antes de broadcast; sin nueva tx REVERT.
 
 ### 10.4 Referral payouts
 
@@ -530,6 +532,7 @@ flowchart TD
 - [ ] 10.4.5 **Sin fondos:** treasury USDT &lt; 2 → preflight bloquea; **no** nueva tx en Tronscan treasury.
 - [ ] 10.4.6 **Con fondos:** una sola tx outbound por orden; confirm on-chain SUCCESS; una fila activity.
 - [ ] 10.4.7 Tronscan treasury: txs REVERT históricas ≠ payouts exitosos; contar txs vs órdenes referral (spam = más txs que órdenes).
+- [ ] 10.4.8 **Single-run confirm:** Complete referral payout en un solo Run → broadcast DONE → confirm inicia sin error "No USDT transaction to confirm".
 
 ### 10.5 Treasury (opcional)
 

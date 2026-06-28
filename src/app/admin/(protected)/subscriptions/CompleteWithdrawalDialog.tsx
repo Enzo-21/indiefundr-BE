@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
+import { isAdminWorkflowDismissBlocked } from "@/lib/admin/workflowStepUi";
 import { cn } from "@/lib/utils";
 import type { AdminWithdrawalRow } from "@/services/admin/withdrawalOrderFulfillment";
 import {
@@ -102,11 +103,24 @@ export function CompleteWithdrawalDialog({ row }: { row: AdminWithdrawalRow }) {
   }, [open, cancel, resetSteps, applySeedFromOrder]);
 
   const handleOpenChange = (next: boolean) => {
-    if (running && !next) {
+    if (
+      !next &&
+      isAdminWorkflowDismissBlocked({
+        running,
+        retryCountdownUntil,
+        steps,
+      })
+    ) {
       return;
     }
     setOpen(next);
   };
+
+  const blockDismiss = isAdminWorkflowDismissBlocked({
+    running,
+    retryCountdownUntil,
+    steps,
+  });
 
   const handleToggleManualSkip = (stepId: CompleteWithdrawalStepId) => {
     const warnings = toggleManualStep(stepId);
@@ -141,7 +155,11 @@ export function CompleteWithdrawalDialog({ row }: { row: AdminWithdrawalRow }) {
   const stepsById = Object.fromEntries(steps.map((step) => [step.id, step]));
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      disablePointerDismissal={blockDismiss}
+    >
       <DialogTrigger
         disabled={!canComplete}
         title={disabledReason}

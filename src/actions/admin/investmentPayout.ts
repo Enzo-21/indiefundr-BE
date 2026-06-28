@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
 import { withAdminAction } from "@/actions/_lib/withAdminAction";
 import {
   broadcastInvestmentPayoutUsdt,
+  getInvestmentPayoutFulfillmentEstimate,
   getInvestmentPayoutWorkflowSeed,
   prepareInvestmentPayout,
+  resetInvestmentPayoutUsdtForRetry,
   type InvestmentPayoutMode,
   validateInvestmentPayout,
   markInvestmentAutopilotManualCheck,
@@ -45,7 +47,31 @@ export async function adminPrepareInvestmentPayout(
 }
 
 export async function adminBroadcastInvestmentPayout(investmentId: string) {
-  return withAdminAction(() => broadcastInvestmentPayoutUsdt(investmentId));
+  const result = await withAdminAction(() =>
+    broadcastInvestmentPayoutUsdt(investmentId)
+  );
+  if (result.ok) {
+    revalidateInvestmentViews();
+  }
+  return result;
+}
+
+export async function adminGetInvestmentPayoutEstimate(investmentId: string) {
+  return withAdminAction(() =>
+    getInvestmentPayoutFulfillmentEstimate(investmentId)
+  );
+}
+
+export async function adminResetInvestmentPayoutUsdtForRetry(
+  investmentId: string
+) {
+  const result = await withAdminAction(() =>
+    resetInvestmentPayoutUsdtForRetry(investmentId)
+  );
+  if (result.ok) {
+    revalidateInvestmentViews();
+  }
+  return result;
 }
 
 export async function adminCompleteInvestmentPayout(investmentId: string) {

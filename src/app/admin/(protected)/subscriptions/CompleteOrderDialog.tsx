@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { adminGetSiblingOpenOrdersForRecovery } from "@/actions/admin/purchaseOrders";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
+import { isAdminWorkflowDismissBlocked } from "@/lib/admin/workflowStepUi";
 import { cn } from "@/lib/utils";
 import type { AdminSubscriptionRow } from "@/services/admin/purchaseOrderFulfillment";
 import type { SiblingOpenOrderCounts } from "@/services/admin/siblingOpenOrders";
@@ -133,11 +134,24 @@ export function CompleteOrderDialog({ row }: { row: AdminSubscriptionRow }) {
   }, [open, cancel, resetSteps, applySeedFromOrder, row.orderId]);
 
   const handleOpenChange = (next: boolean) => {
-    if (running && !next) {
+    if (
+      !next &&
+      isAdminWorkflowDismissBlocked({
+        running,
+        retryCountdownUntil,
+        steps,
+      })
+    ) {
       return;
     }
     setOpen(next);
   };
+
+  const blockDismiss = isAdminWorkflowDismissBlocked({
+    running,
+    retryCountdownUntil,
+    steps,
+  });
 
   const handleToggleManualSkip = (stepId: CompleteOrderStepId) => {
     const warnings = toggleManualStep(stepId);
@@ -172,7 +186,11 @@ export function CompleteOrderDialog({ row }: { row: AdminSubscriptionRow }) {
   const stepsById = Object.fromEntries(steps.map((step) => [step.id, step]));
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      disablePointerDismissal={blockDismiss}
+    >
       <DialogTrigger
         disabled={!canComplete}
         title={disabledReason}

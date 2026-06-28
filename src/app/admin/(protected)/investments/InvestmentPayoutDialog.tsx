@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
+import { isAdminWorkflowDismissBlocked } from "@/lib/admin/workflowStepUi";
 import { cn } from "@/lib/utils";
 import type { InvestmentPayoutMode } from "@/services/admin/investmentPayoutFulfillment";
 import { InvestmentPayoutWorkflowPanel } from "./InvestmentPayoutWorkflowPanel";
@@ -93,10 +94,10 @@ export function InvestmentPayoutDialog({
     }
   }, [open, cancel, resetSteps, applySeed]);
 
-  const awaitingChain = steps.some(
-    (step) => step.state === "waiting_chain" || step.state === "running"
-  );
-  const blockClose = running || awaitingChain;
+  const blockClose = isAdminWorkflowDismissBlocked({
+    running,
+    steps,
+  });
 
   const handleOpenChange = (next: boolean) => {
     if (blockClose && !next) {
@@ -117,7 +118,11 @@ export function InvestmentPayoutDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      disablePointerDismissal={blockClose}
+    >
       {!hideTrigger ? (
         <DialogTrigger
           disabled={disabled}

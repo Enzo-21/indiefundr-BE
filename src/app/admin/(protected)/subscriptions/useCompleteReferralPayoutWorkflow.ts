@@ -12,6 +12,7 @@ import type {
   AdminWorkflowStepSnapshot,
   AdminWorkflowStepState,
 } from "@/lib/admin/workflowStepUi";
+import { resolveBroadcastTxId } from "@/lib/admin/referralPayoutWorkflow";
 import {
   COMPLETE_ORDER_CHAIN_TIMEOUT_MS,
   COMPLETE_ORDER_POLL_MS,
@@ -113,9 +114,13 @@ export function useCompleteReferralPayoutWorkflow(
       id: CompleteReferralPayoutStepId,
       patch: Partial<Omit<AdminWorkflowStepSnapshot, "id" | "label">>
     ) => {
-      setSteps((prev) =>
-        prev.map((step) => (step.id === id ? { ...step, ...patch } : step))
-      );
+      setSteps((prev) => {
+        const next = prev.map((step) =>
+          step.id === id ? { ...step, ...patch } : step
+        );
+        stepsRef.current = next;
+        return next;
+      });
     },
     []
   );
@@ -227,16 +232,19 @@ export function useCompleteReferralPayoutWorkflow(
     );
   }, []);
 
-  const getBroadcastTxId = useCallback((): string | null => {
-    const broadcastStep = stepsRef.current.find((step) => step.id === "broadcast");
-    if (broadcastStep?.txId) {
-      return broadcastStep.txId;
-    }
-    if (broadcastStep?.manualSkip && seedRef.current?.usdtTxId) {
-      return seedRef.current.usdtTxId;
-    }
-    return null;
-  }, []);
+  const getBroadcastTxId = useCallback(
+    (txIdOverride?: string | null): string | null => {
+      const broadcastStep = stepsRef.current.find(
+        (step) => step.id === "broadcast"
+      );
+      return resolveBroadcastTxId(
+        broadcastStep,
+        seedRef.current?.usdtTxId,
+        txIdOverride
+      );
+    },
+    []
+  );
 
   const pollTransaction = useCallback(
     async (txId: string): Promise<void> => {
@@ -281,10 +289,10 @@ export function useCompleteReferralPayoutWorkflow(
     [orderId, patchStep]
   );
 
-  const runBroadcastStep = useCallback(async () => {
+  const runBroadcastStep = useCallback(async (): Promise<string | null> => {
     if (isStepManuallySkipped("broadcast")) {
       logReferralWorkflow(orderId, "broadcast", "step_manually_skipped");
-      return;
+      return getBroadcastTxId();
     }
 
     logReferralWorkflow(orderId, "broadcast", "step_start");
@@ -323,15 +331,17 @@ export function useCompleteReferralPayoutWorkflow(
       tronscanUrl,
     });
     logReferralWorkflow(orderId, "broadcast", "step_success", { txId });
-  }, [costUsdt, isStepManuallySkipped, orderId, patchStep]);
+    return txId;
+  }, [costUsdt, getBroadcastTxId, isStepManuallySkipped, orderId, patchStep]);
 
-  const runConfirmStep = useCallback(async () => {
+  const runConfirmStep = useCallback(
+    async (txIdOverride?: string | null) => {
     if (isStepManuallySkipped("confirm")) {
       logReferralWorkflow(orderId, "confirm", "step_manually_skipped");
       return;
     }
 
-    const txId = getBroadcastTxId();
+    const txId = getBroadcastTxId(txIdOverride);
     if (!txId) {
       throw new Error("No USDT transaction to confirm");
     }
@@ -353,15 +363,18 @@ export function useCompleteReferralPayoutWorkflow(
       tronscanUrl: getTronscanTxUrl(txId),
     });
     logReferralWorkflow(orderId, "confirm", "step_success", { txId });
-  }, [getBroadcastTxId, isStepManuallySkipped, orderId, patchStep, pollTransaction]);
+  },
+  [getBroadcastTxId, isStepManuallySkipped, orderId, patchStep, pollTransaction]
+  );
 
-  const runCompleteStep = useCallback(async () => {
+  const runCompleteStep = useCallback(
+    async (txIdOverride?: string | null) => {
     if (isStepManuallySkipped("complete")) {
       logReferralWorkflow(orderId, "complete", "step_manually_skipped");
       return;
     }
 
-    const txId = getBroadcastTxId();
+    const txId = getBroadcastTxId(txIdOverride);
     logReferralWorkflow(orderId, "complete", "step_start");
     patchStep("complete", {
       state: "running",
@@ -381,7 +394,9 @@ export function useCompleteReferralPayoutWorkflow(
       detail: "Referral payout completed",
     });
     logReferralWorkflow(orderId, "complete", "step_success");
-  }, [getBroadcastTxId, isStepManuallySkipped, orderId, patchStep]);
+  },
+  [getBroadcastTxId, isStepManuallySkipped, orderId, patchStep]
+  );
 
   const run = useCallback(async (): Promise<CompleteOrderRunResult> => {
     abortRef.current = false;
@@ -396,9 +411,9 @@ export function useCompleteReferralPayoutWorkflow(
         return { success: true, allManual: true };
       }
 
-      await runBroadcastStep();
-      await runConfirmStep();
-      await runCompleteStep();
+      const broadcastTxId = await runBroadcastStep();
+      await runConfirmStep(broadcastTxId);
+      await runCompleteStep(broadcastTxId);
       logReferralWorkflow(orderId, "complete", "workflow_success");
       return { success: true };
     } catch (err) {

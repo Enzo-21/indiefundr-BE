@@ -27,10 +27,154 @@ import {
 } from "@/lib/tron/transactionMemo";
 import {
   formatInvestmentAutopilotManualCheckReason,
+  appendAutopilotNote,
 } from "@/lib/admin/autopilotBatch";
+import type { AdminFulfillmentEstimate } from "@/services/admin/purchaseOrderFulfillment";
+import { formatTronTransferError } from "@/lib/utils/tronErrors";
 import * as tron from "@/services/tron/client";
 
 export type InvestmentPayoutMode = "normal" | "surplus";
+
+export type InvestmentPayoutFulfillmentEstimate = AdminFulfillmentEstimate & {
+  treasuryUsdtBalance: number;
+  treasuryTrxBalance: number;
+  ledgerTreasurySurplus: number;
+  ledgerPoolAvailable: number;
+  canTransfer: boolean;
+};
+
+function getTreasuryPrivateKey(): string {
+  const pk = getEnv().treasuryPrivateKey?.trim();
+  if (!pk) {
+    throw new Error("Treasury private key is not configured");
+  }
+  return pk;
+}
+
+function formatInvestmentTreasuryPreflightError(
+  estimate: tron.UsdtTransferEstimate,
+  treasuryAddress: string,
+  amountUsdt: number,
+  snapshot: Awaited<ReturnType<typeof getLedgerSnapshot>>
+): string {
+  const formatted = formatTronTransferError(
+    estimate.hasEnoughUsdt ? "insufficient trx for fees" : "insufficient usdt",
+    {
+      fromAddress: treasuryAddress,
+      trxBalance: estimate.trxBalance,
+      usdtBalance: estimate.usdtBalance,
+      amountUsdt,
+      estimatedTrx: estimate.estimatedTrx,
+    }
+  );
+  const base =
+    typeof formatted.msg === "string"
+      ? formatted.msg
+      : "Treasury cannot cover this investment payout";
+  const ledgerHint =
+    amountUsdt <= snapshot.treasurySurplus ||
+    amountUsdt <= snapshot.poolAvailable
+      ? ` Ledger shows sufficient funds (surplus ${snapshot.treasurySurplus}, pool ${snapshot.poolAvailable}) but on-chain treasury USDT is ${estimate.usdtBalance}.`
+      : "";
+  return `${base}${ledgerHint}`;
+}
+
+async function assertInvestmentPayoutBroadcastReady(
+  investment: Investment,
+  toAddress: string
+): Promise<{ treasuryAddress: string; estimate: tron.UsdtTransferEstimate }> {
+  if (!(await tron.validateAddress(toAddress))) {
+    throw new Error("User wallet address is invalid");
+  }
+
+  const treasuryPk = getTreasuryPrivateKey();
+  const treasuryAddress = await tron.privateKeyToAddress(treasuryPk);
+  const snapshot = await getLedgerSnapshot();
+
+  const estimate = await tron.estimateUsdtTransfer({
+    fromAddress: treasuryAddress,
+    toAddress,
+    amount: investment.projectedPayoutUsdt,
+  });
+
+  if (!estimate.canTransfer) {
+    throw new Error(
+      formatInvestmentTreasuryPreflightError(
+        estimate,
+        treasuryAddress,
+        investment.projectedPayoutUsdt,
+        snapshot
+      )
+    );
+  }
+
+  return { treasuryAddress, estimate };
+}
+
+export async function getInvestmentPayoutFulfillmentEstimate(
+  investmentId: string
+): Promise<InvestmentPayoutFulfillmentEstimate> {
+  const investment = await loadInvestmentOrThrow(investmentId);
+  const receiverAddress = await assertPayoutWalletReady(investment.userId);
+
+  const treasuryPk = getTreasuryPrivateKey();
+  const treasuryAddress = await tron.privateKeyToAddress(treasuryPk);
+  const snapshot = await getLedgerSnapshot();
+
+  const feeEstimate = await tron.estimateUsdtTransfer({
+    fromAddress: treasuryAddress,
+    toAddress: receiverAddress,
+    amount: investment.projectedPayoutUsdt,
+  });
+
+  const shortfall = Math.max(
+    0,
+    parseFloat((feeEstimate.estimatedTrx - feeEstimate.trxBalance).toFixed(6))
+  );
+
+  return {
+    estimatedTrx: feeEstimate.estimatedTrx,
+    trxBalance: feeEstimate.trxBalance,
+    shortfall,
+    hasEnoughTrx: feeEstimate.hasEnoughTrx,
+    hasEnoughUsdt: feeEstimate.hasEnoughUsdt,
+    costUsdt: investment.projectedPayoutUsdt,
+    treasuryUsdtBalance: feeEstimate.usdtBalance,
+    treasuryTrxBalance: feeEstimate.trxBalance,
+    ledgerTreasurySurplus: snapshot.treasurySurplus,
+    ledgerPoolAvailable: snapshot.poolAvailable,
+    canTransfer: feeEstimate.canTransfer,
+  };
+}
+
+export async function resetInvestmentPayoutUsdtForRetry(
+  investmentId: string,
+  options: { appendNote?: string } = {}
+): Promise<void> {
+  const investment = await prisma.investment.findUnique({
+    where: { id: investmentId },
+  });
+  if (!investment) {
+    throw new Error("Investment not found");
+  }
+  if (investment.status !== InvestmentStatus.redeeming) {
+    throw new Error("Investment is not in redeeming status");
+  }
+
+  await prisma.investment.update({
+    where: { id: investmentId },
+    data: {
+      redemptionTransaction: null,
+      payoutFailureReason: options.appendNote
+        ? appendAutopilotNote(
+            investment.payoutFailureReason,
+            options.appendNote
+          )
+        : null,
+    },
+  });
+}
+
 
 export type InvestmentPayoutWorkflowSeed = {
   status: InvestmentStatus;
@@ -359,7 +503,7 @@ export async function broadcastInvestmentPayoutUsdt(
   tronscanUrl: string;
   alreadyBroadcast: boolean;
 }> {
-  const investment = await loadInvestmentOrThrow(investmentId);
+  let investment = await loadInvestmentOrThrow(investmentId);
 
   if (investment.status === InvestmentStatus.redeemed) {
     const txId =
@@ -382,19 +526,35 @@ export async function broadcastInvestmentPayoutUsdt(
     investment.redemptionTransaction as Record<string, unknown> | null
   );
   if (existingTxId) {
-    return {
-      investment,
-      txId: existingTxId,
-      tronscanUrl: getTronscanTxUrl(existingTxId),
-      alreadyBroadcast: true,
-    };
+    const inspection = await tron.inspectTransactionOnChain(existingTxId);
+    if (inspection.usdtTransferSuccessful) {
+      return {
+        investment,
+        txId: existingTxId,
+        tronscanUrl: getTronscanTxUrl(existingTxId),
+        alreadyBroadcast: true,
+      };
+    }
+    if (inspection.status === "pending") {
+      return {
+        investment,
+        txId: existingTxId,
+        tronscanUrl: getTronscanTxUrl(existingTxId),
+        alreadyBroadcast: true,
+      };
+    }
+    if (inspection.status === "failed") {
+      await resetInvestmentPayoutUsdtForRetry(investmentId, {
+        appendNote:
+          "Previous USDT broadcast failed on-chain; cleared tx id for retry",
+      });
+      investment = await loadInvestmentOrThrow(investmentId);
+    }
   }
 
   const receiverAddress = await assertPayoutWalletReady(investment.userId);
-  const treasuryPk = getEnv().treasuryPrivateKey;
-  if (!treasuryPk) {
-    throw new Error("Treasury wallet is not configured");
-  }
+  await assertInvestmentPayoutBroadcastReady(investment, receiverAddress);
+  const treasuryPk = getTreasuryPrivateKey();
 
   const chainMemo = isIndieFundrChainMemoEnabled()
     ? buildIndieFundrMemo({

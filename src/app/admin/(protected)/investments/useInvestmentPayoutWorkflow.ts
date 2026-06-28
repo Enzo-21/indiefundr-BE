@@ -6,6 +6,7 @@ import {
   adminCompleteInvestmentPayout,
   adminGetInvestmentPayoutSeed,
   adminPrepareInvestmentPayout,
+  adminResetInvestmentPayoutUsdtForRetry,
   adminValidateInvestmentPayout,
 } from "@/actions/admin/investmentPayout";
 import { adminGetTransactionStatus } from "@/actions/admin/purchaseOrders";
@@ -190,9 +191,13 @@ export function useInvestmentPayoutWorkflow(
       id: InvestmentPayoutStepId,
       patch: Partial<Omit<InvestmentPayoutStepSnapshot, "id" | "label">>
     ) => {
-      setSteps((prev) =>
-        prev.map((step) => (step.id === id ? { ...step, ...patch } : step))
-      );
+      setSteps((prev) => {
+        const next = prev.map((step) =>
+          step.id === id ? { ...step, ...patch } : step
+        );
+        stepsRef.current = next;
+        return next;
+      });
     },
     []
   );
@@ -262,6 +267,16 @@ export function useInvestmentPayoutWorkflow(
         if (result.data.status === "failed") {
           const message =
             result.data.message ?? "Transaction failed on-chain";
+          if (!result.data.retryable) {
+            const resetResult =
+              await adminResetInvestmentPayoutUsdtForRetry(investmentId);
+            if (!resetResult.ok) {
+              console.warn(
+                "[admin-investment-payout] reset after failed tx:",
+                resetResult.error.msg
+              );
+            }
+          }
           logPayoutWorkflow(investmentId, "broadcast", "poll_failed", {
             txId,
             message,
@@ -423,6 +438,12 @@ export function useInvestmentPayoutWorkflow(
         logPayoutWorkflow(investmentId, "complete", "workflow_failed", {
           error: message,
         });
+        if (
+          message !== "Timed out waiting for on-chain confirmation" &&
+          stepsRef.current.some((step) => step.id === "broadcast" && step.state === "failed")
+        ) {
+          void applySeed();
+        }
       }
       return {
         success: false,
@@ -440,6 +461,7 @@ export function useInvestmentPayoutWorkflow(
     runCompleteStep,
     runPrepareStep,
     runValidateStep,
+    applySeed,
   ]);
 
   const cancel = useCallback(() => {

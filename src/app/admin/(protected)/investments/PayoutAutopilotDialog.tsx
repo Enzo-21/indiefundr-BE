@@ -198,6 +198,9 @@ export function PayoutAutopilotDialog({
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
+      if (phase === "running") {
+        return;
+      }
       if (phase === "countdown") {
         handleStopAutopilot();
         return;
@@ -259,7 +262,11 @@ export function PayoutAutopilotDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      disablePointerDismissal={phase === "running"}
+    >
       <DialogTrigger className={buttonVariants({ variant: "default", size: "sm" })}>
         Autopilot
       </DialogTrigger>

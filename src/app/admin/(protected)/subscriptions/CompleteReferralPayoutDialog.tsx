@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
+import { isAdminWorkflowDismissBlocked } from "@/lib/admin/workflowStepUi";
 import { cn } from "@/lib/utils";
 import type {
   AdminReferralPayoutRow,
@@ -94,11 +95,22 @@ export function CompleteReferralPayoutDialog({
   }, [open, cancel, resetSteps, applySeedFromOrder, row.orderId]);
 
   const handleOpenChange = (next: boolean) => {
-    if (running && !next) {
+    if (
+      !next &&
+      isAdminWorkflowDismissBlocked({
+        running,
+        steps,
+      })
+    ) {
       return;
     }
     setOpen(next);
   };
+
+  const blockDismiss = isAdminWorkflowDismissBlocked({
+    running,
+    steps,
+  });
 
   const handleToggleManualSkip = (stepId: CompleteReferralPayoutStepId) => {
     const warnings = toggleManualStep(stepId);
@@ -133,7 +145,11 @@ export function CompleteReferralPayoutDialog({
   const stepsById = Object.fromEntries(steps.map((step) => [step.id, step]));
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      disablePointerDismissal={blockDismiss}
+    >
       <DialogTrigger
         disabled={!canComplete}
         title={disabledReason}
