@@ -37,12 +37,17 @@ import type {
   AdminInvestmentDisplayRow,
   AdminInvestmentsListResult,
 } from "@/services/admin/investmentAdminTypes";
-import type {
-  AdminInvestmentsView,
-  ListAdminInvestmentsOptions,
-} from "@/services/admin/adminInvestmentListQuery";
 import type { InvestmentLedgerSnapshot } from "@/services/admin/investmentLedgerSnapshots";
 import { cn } from "@/lib/utils";
+import {
+  extractStreamCursors,
+  fetchInvestmentsForFilters,
+  getInvestmentTableEmptyMessage,
+  resolveFetchMode,
+  type InvestmentStreamSnapshots,
+  type InvestmentTableFilters,
+  type InvestmentTableStreamCursors,
+} from "./investmentTableFilters";
 import { InvestmentPayoutActions } from "./InvestmentPayoutActions";
 import { InvestmentReasonCell } from "./InvestmentReasonCell";
 import { InvestmentsPayoutStatusBar } from "./InvestmentsPayoutStatusBar";
@@ -171,141 +176,176 @@ export function InvestmentsTable({
   limit = 100,
 }: InvestmentsTableProps) {
   const [data, setData] = useState(initialData);
-  const [view, setView] = useState<AdminInvestmentsView>(
-    initialData.pageInfo.view
+  const [filters, setFilters] = useState<InvestmentTableFilters>({
+    showQueue: true,
+    showArchive: false,
+  });
+  const [streams, setStreams] = useState<InvestmentStreamSnapshots>({
+    queue: initialData,
+    archive: null,
+  });
+  const [streamCursors, setStreamCursors] = useState<InvestmentTableStreamCursors>(
+    () => extractStreamCursors(initialData, null)
   );
   const [fundId, setFundId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [nowIso, setNowIso] = useState(() => new Date().toISOString());
 
-  const listOptions = useCallback(
-    (overrides: Partial<ListAdminInvestmentsOptions> = {}): ListAdminInvestmentsOptions => ({
-      limit,
-      view,
-      fundId: fundId || undefined,
-      ...overrides,
-    }),
-    [fundId, limit, view]
+  const fetchMode = resolveFetchMode(filters);
+
+  const applyListSnapshot = useCallback(
+    (
+      snapshot: AdminInvestmentsListResult,
+      nextStreams: InvestmentStreamSnapshots,
+      nextCursors: InvestmentTableStreamCursors
+    ) => {
+      setData(snapshot);
+      setStreams(nextStreams);
+      setStreamCursors(nextCursors);
+      setNowIso(new Date().toISOString());
+      setError(null);
+    },
+    []
   );
 
-  const applySnapshot = useCallback((snapshot: AdminInvestmentsListResult) => {
-    setData(snapshot);
-    setNowIso(new Date().toISOString());
-    setError(null);
-  }, []);
+  const loadInvestments = useCallback(
+    async (options: {
+      nextFilters?: InvestmentTableFilters;
+      nextFundId?: string;
+      append?: boolean;
+    } = {}) => {
+      const activeFilters = options.nextFilters ?? filters;
+      const activeFundId = options.nextFundId ?? fundId;
+      const mode = resolveFetchMode(activeFilters);
+
+      const listResult = await fetchInvestmentsForFilters(
+        fetchAdminInvestments,
+        activeFilters,
+        {
+          limit,
+          fundId: activeFundId || undefined,
+          append: options.append,
+          queueSnapshot: streams.queue ?? data,
+          archiveSnapshot: streams.archive,
+          queueCursor: options.append
+            ? streamCursors.queueCursor ?? undefined
+            : undefined,
+          archiveCursor: options.append
+            ? streamCursors.archiveCursor ?? undefined
+            : undefined,
+          loadQueue: options.append ? streamCursors.queueHasMore : undefined,
+          loadArchive: options.append ? streamCursors.archiveHasMore : undefined,
+        }
+      );
+
+      if (!listResult.ok) {
+        setError(listResult.error);
+        return;
+      }
+
+      const summaryResult =
+        mode === "none" ? null : await fetchAdminPayoutSummary();
+
+      const snapshot =
+        summaryResult?.ok && mode !== "none"
+          ? {
+              ...listResult.data,
+              currentLedger: summaryResult.data.currentLedger,
+              payoutAvailability: summaryResult.data.payoutAvailability,
+            }
+          : listResult.data;
+
+      applyListSnapshot(snapshot, listResult.streams, listResult.cursors);
+    },
+    [
+      applyListSnapshot,
+      filters,
+      fundId,
+      limit,
+      streamCursors.archiveCursor,
+      streamCursors.archiveHasMore,
+      streamCursors.queueCursor,
+      streamCursors.queueHasMore,
+      streams.archive,
+      streams.queue,
+      data,
+    ]
+  );
 
   const refreshFirstPage = useCallback(async () => {
-    const [listResult, summaryResult] = await Promise.all([
-      fetchAdminInvestments(listOptions()),
-      fetchAdminPayoutSummary(),
-    ]);
-
-    if (!listResult.ok) {
-      setError(listResult.error.msg);
-      return;
-    }
-
-    if (summaryResult.ok) {
-      applySnapshot({
-        ...listResult.data,
-        currentLedger: summaryResult.data.currentLedger,
-        payoutAvailability: summaryResult.data.payoutAvailability,
-      });
-      return;
-    }
-
-    applySnapshot(listResult.data);
-  }, [applySnapshot, listOptions]);
+    await loadInvestments();
+  }, [loadInvestments]);
 
   const loadMore = useCallback(() => {
-    if (!data.pageInfo.hasMore || !data.pageInfo.nextCursor) {
+    if (!data.pageInfo.hasMore) {
       return;
     }
 
     startTransition(async () => {
-      const result = await fetchAdminInvestments(
-        listOptions({ cursor: data.pageInfo.nextCursor ?? undefined })
-      );
-      if (!result.ok) {
-        setError(result.error.msg);
-        return;
-      }
-
-      setData((current) => ({
-        ...result.data,
-        displayRows: [...current.displayRows, ...result.data.displayRows],
-        rows: [...current.rows, ...result.data.rows],
-        currentLedger: result.data.currentLedger,
-        payoutAvailability: result.data.payoutAvailability,
-      }));
-      setError(null);
+      await loadInvestments({ append: true });
     });
-  }, [data.pageInfo.hasMore, data.pageInfo.nextCursor, listOptions]);
+  }, [data.pageInfo.hasMore, loadInvestments]);
 
-  const switchView = useCallback(
-    (nextView: AdminInvestmentsView) => {
-      setView(nextView);
+  const updateFilters = useCallback(
+    (nextFilters: InvestmentTableFilters) => {
+      setFilters(nextFilters);
       startTransition(async () => {
-        const result = await fetchAdminInvestments({
-          limit,
-          view: nextView,
-          fundId: fundId || undefined,
-        });
-        if (result.ok) {
-          applySnapshot(result.data);
-        } else {
-          setError(result.error.msg);
-        }
+        await loadInvestments({ nextFilters });
       });
     },
-    [applySnapshot, fundId, limit]
+    [loadInvestments]
   );
 
   const applyFundFilter = useCallback(
     (nextFundId: string) => {
       setFundId(nextFundId);
       startTransition(async () => {
-        const result = await fetchAdminInvestments({
-          limit,
-          view,
-          fundId: nextFundId || undefined,
-        });
-        if (result.ok) {
-          applySnapshot(result.data);
-        } else {
-          setError(result.error.msg);
-        }
+        await loadInvestments({ nextFundId });
       });
     },
-    [applySnapshot, limit, view]
+    [loadInvestments]
   );
 
   useEffect(() => {
+    if (fetchMode === "none") {
+      return;
+    }
+
     let cancelled = false;
 
     async function refresh() {
-      const [listResult, summaryResult] = await Promise.all([
-        fetchAdminInvestments(listOptions()),
-        fetchAdminPayoutSummary(),
-      ]);
-      if (cancelled) return;
-
-      if (!listResult.ok) {
-        setError(listResult.error.msg);
+      const listResult = await fetchInvestmentsForFilters(
+        fetchAdminInvestments,
+        filters,
+        {
+          limit,
+          fundId: fundId || undefined,
+          queueSnapshot: streams.queue ?? data,
+          archiveSnapshot: streams.archive,
+        }
+      );
+      if (cancelled || !listResult.ok) {
+        if (!cancelled && !listResult.ok) {
+          setError(listResult.error);
+        }
         return;
       }
 
-      if (summaryResult.ok) {
-        applySnapshot({
-          ...listResult.data,
-          currentLedger: summaryResult.data.currentLedger,
-          payoutAvailability: summaryResult.data.payoutAvailability,
-        });
+      const summaryResult = await fetchAdminPayoutSummary();
+      if (cancelled) {
         return;
       }
 
-      applySnapshot(listResult.data);
+      const snapshot = summaryResult.ok
+        ? {
+            ...listResult.data,
+            currentLedger: summaryResult.data.currentLedger,
+            payoutAvailability: summaryResult.data.payoutAvailability,
+          }
+        : listResult.data;
+
+      applyListSnapshot(snapshot, listResult.streams, listResult.cursors);
     }
 
     const interval = window.setInterval(() => {
@@ -316,12 +356,18 @@ export function InvestmentsTable({
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [applySnapshot, listOptions]);
+  }, [
+    applyListSnapshot,
+    fetchMode,
+    filters,
+    fundId,
+    limit,
+    streams.archive,
+    streams.queue,
+    data,
+  ]);
 
-  const emptyMessage =
-    view === "archive"
-      ? "No paid or archived investments on this page."
-      : "No open investments on this page.";
+  const emptyMessage = getInvestmentTableEmptyMessage(fetchMode);
 
   return (
     <div className="space-y-4">
@@ -331,25 +377,37 @@ export function InvestmentsTable({
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant={view === "queue" ? "default" : "outline"}
-            disabled={isPending}
-            onClick={() => switchView("queue")}
-          >
+        <div className="flex flex-wrap items-center gap-4">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+            <input
+              type="checkbox"
+              className="size-4 rounded border border-input accent-primary"
+              checked={filters.showQueue}
+              disabled={isPending}
+              onChange={(event) => {
+                updateFilters({
+                  ...filters,
+                  showQueue: event.target.checked,
+                });
+              }}
+            />
             Action queue
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={view === "archive" ? "default" : "outline"}
-            disabled={isPending}
-            onClick={() => switchView("archive")}
-          >
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+            <input
+              type="checkbox"
+              className="size-4 rounded border border-input accent-primary"
+              checked={filters.showArchive}
+              disabled={isPending}
+              onChange={(event) => {
+                updateFilters({
+                  ...filters,
+                  showArchive: event.target.checked,
+                });
+              }}
+            />
             Paid / archive
-          </Button>
+          </label>
         </div>
 
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
