@@ -19,6 +19,7 @@
     "heal:purchase-orders": "tsx scripts/heal-purchase-orders.ts",
     "backfill:referral-payout-orders": "tsx scripts/backfill-referral-payout-orders.ts",
     "backfill:unpaid-maturity-resolution": "tsx scripts/backfill-unpaid-maturity-resolution.ts",
+    "backfill:unpaid-maturity-choice-deadlines": "tsx scripts/backfill-unpaid-maturity-choice-deadlines.ts",
     "backfill:usernames": "tsx scripts/backfill-usernames.ts",
     "backfill:user-levels": "tsx scripts/backfill-user-levels.ts",
     "resync:wallet-activity": "tsx scripts/resync-wallet-activity.ts",

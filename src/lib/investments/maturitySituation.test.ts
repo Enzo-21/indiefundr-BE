@@ -121,7 +121,8 @@ describe("resolveMaturitySituation", () => {
       { fifoEligibleIds: new Set(), now: choiceNow }
     );
     assert.equal(view.situation, "waiting_unlock");
-    assert.match(view.statusDetail, /Newer investors must contribute/);
+    assert.match(view.statusDetail, /waiting on pool activity/);
+    assert.doesNotMatch(view.statusDetail, /2×/);
   });
 
   it("returns forfeited labels by reason", () => {

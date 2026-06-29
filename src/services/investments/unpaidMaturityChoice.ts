@@ -7,6 +7,7 @@ import {
 import { getFundById } from "@/lib/config/investmentFunds";
 import {
   clampExtensionDays,
+  choiceDeadlineAt,
   computeInvestmentTermDays,
   extensionBounds,
   hasActiveUnpaidMaturityChoiceWindow,
@@ -27,6 +28,7 @@ import {
   type PowerInventory,
 } from "@/services/playerPowers/playerPowers";
 import { sendUnpaidMaturityChoiceConfirmedEmail } from "@/services/mailing/sendUnpaidMaturityChoiceConfirmedEmail";
+import { isRecoveryCandidate } from "@/services/referrals/recoveryEligibility";
 
 async function notifyChoiceConfirmedEmail(
   userId: string,
@@ -108,6 +110,82 @@ const CHOICE_INVESTMENT_SELECT = {
   projectedPayoutUsdt: true,
   maturesAt: true,
 } as const;
+
+const ENSURE_DEADLINE_SELECT = {
+  id: true,
+  status: true,
+  payoutUnlockedAt: true,
+  referralRecoveryCompletedAt: true,
+  unpaidMaturityResolution: true,
+  unpaidMaturityChoiceDeadlineAt: true,
+  globalQueueRank: true,
+  subscribedAt: true,
+  projectedPayoutUsdt: true,
+  maturesAt: true,
+} as const;
+
+export async function ensureUnpaidMaturityChoiceDeadline(
+  investmentId: string,
+  fifoEligibleIds?: ReadonlySet<string>,
+  now: Date = new Date()
+): Promise<boolean> {
+  const investment = await prisma.investment.findUnique({
+    where: { id: investmentId },
+    select: ENSURE_DEADLINE_SELECT,
+  });
+
+  if (!investment) return false;
+  if (investment.status !== InvestmentStatus.matured) return false;
+  if (investment.payoutUnlockedAt) return false;
+  if (investment.referralRecoveryCompletedAt) return false;
+  if (investment.unpaidMaturityResolution != null) return false;
+  if (investment.unpaidMaturityChoiceDeadlineAt) return false;
+  if (investment.globalQueueRank != null) return false;
+
+  const fifoIds = fifoEligibleIds ?? (await loadFifoEligibleIds());
+  if (!isRecoveryCandidate(investment, fifoIds)) return false;
+
+  await prisma.investment.update({
+    where: { id: investmentId },
+    data: {
+      unpaidMaturityChoiceDeadlineAt: choiceDeadlineAt(now),
+      payabilityStatus: InvestmentPayabilityStatus.pending_liquidity,
+    },
+  });
+  return true;
+}
+
+export async function healStuckUnpaidMaturityChoiceDeadlines(
+  userId?: string,
+  now: Date = new Date()
+): Promise<number> {
+  const { evaluateAll } = await import("@/services/revenueEngine/evaluateAll");
+  await evaluateAll();
+
+  const stuck = await prisma.investment.findMany({
+    where: {
+      status: InvestmentStatus.matured,
+      payoutUnlockedAt: null,
+      referralRecoveryCompletedAt: null,
+      unpaidMaturityResolution: null,
+      unpaidMaturityChoiceDeadlineAt: null,
+      globalQueueRank: null,
+      ...(userId ? { userId } : {}),
+    },
+    select: { id: true },
+  });
+
+  if (stuck.length === 0) return 0;
+
+  const fifoIds = await loadFifoEligibleIds();
+  let healed = 0;
+  for (const row of stuck) {
+    if (await ensureUnpaidMaturityChoiceDeadline(row.id, fifoIds, now)) {
+      healed += 1;
+    }
+  }
+  return healed;
+}
 
 export async function loadFifoEligibleIds(): Promise<Set<string>> {
   const ledger = await getLedgerSnapshot();
@@ -201,6 +279,7 @@ export async function getPendingUnpaidMaturityChoiceForUser(
   );
   await markMaturedInvestments();
   await processInvestmentForfeitures();
+  await healStuckUnpaidMaturityChoiceDeadlines(userId);
   const fifoIds = await loadFifoEligibleIds();
   const powers = await getPowerInventory(userId, userLevel);
 

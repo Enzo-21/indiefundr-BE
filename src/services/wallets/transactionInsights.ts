@@ -59,27 +59,6 @@ function subscribeDate(inv: Pick<Investment, "subscribedAt" | "date">): Date {
   return inv.subscribedAt ?? inv.date;
 }
 
-function resolveUnlockDetail(
-  investment: Pick<
-    Investment,
-    "payoutUnlockedAt" | "payoutReason" | "payoutUnlockingInvestmentIds"
-  >
-): string | null {
-  if (!investment.payoutUnlockedAt) {
-    return null;
-  }
-  if (investment.payoutReason?.trim()) {
-    return investment.payoutReason.trim();
-  }
-  const count = investment.payoutUnlockingInvestmentIds.length;
-  if (count === 0) {
-    return "Unlocked and ready for payout.";
-  }
-  const countLabel =
-    count === 1 ? "1 later investment" : `${count} later investments`;
-  return `Unlocked after ${countLabel}.`;
-}
-
 function fundOrFallback(fundId: string): InvestmentFund {
   return (
     getFundById(fundId) ?? {
@@ -200,7 +179,7 @@ export function insightsFromInvestment(
       typicalPayoutDays,
       investmentId: investment.id,
       purchaseOrderId: investment.purchaseOrderId,
-      unlockDetail: resolveUnlockDetail(investment),
+      unlockDetail: null,
       ...investmentLifecycleInsights(investment, context),
     }
   );
@@ -233,7 +212,7 @@ export function insightsFromPurchaseOrder(
         typicalPayoutDays,
         investmentId: linkedInvestment.id,
         purchaseOrderId: linkedInvestment.purchaseOrderId ?? order.id,
-        unlockDetail: resolveUnlockDetail(linkedInvestment),
+        unlockDetail: null,
         ...investmentLifecycleInsights(linkedInvestment, context),
       }
     );
@@ -296,7 +275,7 @@ export function insightsFromRedemption(
       typicalPayoutDays,
       investmentId: investment.id,
       purchaseOrderId: investment.purchaseOrderId,
-      unlockDetail: resolveUnlockDetail(investment),
+      unlockDetail: null,
       ...investmentLifecycleInsights(investment, context),
     }
   );

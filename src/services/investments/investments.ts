@@ -3,6 +3,7 @@ import { isValidObjectId } from "@/lib/validators/objectId";
 import { prisma } from "@/lib/prisma";
 import {
   getUnpaidMaturityChoiceContext,
+  healStuckUnpaidMaturityChoiceDeadlines,
   loadFifoEligibleIds,
 } from "@/services/investments/unpaidMaturityChoice";
 import { getPowerInventory } from "@/services/playerPowers/playerPowers";
@@ -27,6 +28,7 @@ export async function getUserInvestments(userId: string) {
   await markMaturedInvestments();
   await processInvestmentForfeitures();
   await refreshRecoveryEligibilityForUser(userId);
+  await healStuckUnpaidMaturityChoiceDeadlines(userId);
 
   const investments = await prisma.investment.findMany({
     where: { userId },

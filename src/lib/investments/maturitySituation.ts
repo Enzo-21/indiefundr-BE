@@ -7,10 +7,6 @@ import {
 } from "@prisma/client";
 import { isChoiceDeadlineActive } from "@/lib/config/unpaidMaturityChoice";
 import { recoveryExpiresAt } from "@/lib/config/referralRecovery";
-import {
-  unlockPrincipalRequired,
-} from "@/lib/config/investmentCohort";
-import { BASE_INVESTMENT_AMOUNT_USDT } from "@/lib/config/pricing";
 import { isUnpaidMaturityChoicePending } from "@/services/investments/unpaidMaturityChoice";
 
 export type MaturitySituation =
@@ -274,31 +270,22 @@ export function resolveMaturitySituation(
     investment.payoutUnlockedAt ||
     investment.payabilityStatus === InvestmentPayabilityStatus.payable
   ) {
-    const detail =
-      investment.payoutReason?.trim() ||
-      "Your payout is unlocked. Our team will process the transfer according to treasury operations.";
     return {
       ...base,
       situation: "awaiting_admin_payout",
       statusLabel: "Awaiting admin payout",
-      statusDetail: detail,
+      statusDetail:
+        "Your payout is unlocked. Our team will process the transfer according to treasury operations.",
     };
   }
 
   if (investment.globalQueueRank != null) {
     const rank = investment.globalQueueRank;
-    const needed = investment.newSubscribersNeeded;
-    let detail = `You are in the global payout queue (position #${rank}).`;
-    if (needed != null && needed > 0) {
-      detail += ` About ${needed} new investor${needed === 1 ? "" : "s"} may be needed for pool liquidity.`;
-    } else {
-      detail += " Waiting for pool liquidity and queue processing.";
-    }
     return {
       ...base,
       situation: "waiting_liquidity",
       statusLabel: `Payout queue #${rank}`,
-      statusDetail: detail,
+      statusDetail: `You are in the global payout queue (position #${rank}). Waiting for pool liquidity and queue processing.`,
     };
   }
 
@@ -316,18 +303,12 @@ export function resolveMaturitySituation(
     };
   }
 
-  const headAmount =
-    investment.amountUsdt > 0
-      ? investment.amountUsdt
-      : BASE_INVESTMENT_AMOUNT_USDT;
-
   return {
     ...base,
     situation: "waiting_unlock",
-    statusLabel: "Waiting for newer investors",
-    statusDetail: `Your term ended. Newer investors must contribute ${unlockPrincipalRequired(
-      headAmount
-    )} USDT total (2× your ${headAmount} USDT investment; e.g. a 50 USDT investor counts as 2× toward a 25 USDT head).`,
+    statusLabel: "Waiting for pool activity",
+    statusDetail:
+      "Your term ended. Payout is waiting on pool activity. We'll notify you when your position moves forward.",
   };
 }
 

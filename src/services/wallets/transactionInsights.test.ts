@@ -213,7 +213,7 @@ describe("transactionInsights", () => {
     assert.equal(insights.needsUnpaidMaturityChoice, true);
   });
 
-  it("includes unlock detail when investment was unlocked by later investors", () => {
+  it("omits internal unlock detail from user-facing investment insights", () => {
     const payoutReason =
       "Unlocked after 2 later investments (25 USDT + 25 USDT). Head invested 25 USDT; required 50 USDT from newer investors (2× cohort). Received 50 USDT (2× equivalent).";
     const investment = {
@@ -254,11 +254,15 @@ describe("transactionInsights", () => {
     };
 
     const insights = insightsFromInvestment(investment);
-    assert.equal(insights.unlockDetail, payoutReason);
-    assert.equal(insights.statusDetail, payoutReason);
+    assert.equal(insights.unlockDetail, null);
+    assert.match(
+      insights.statusDetail ?? "",
+      /Our team will process the transfer/
+    );
+    assert.doesNotMatch(insights.statusDetail ?? "", /2×/);
   });
 
-  it("falls back to unlock count when payout reason is missing", () => {
+  it("omits unlock detail from redemption insights", () => {
     const insights = insightsFromRedemption({
       id: "inv-1",
       userId: "u1",
@@ -296,7 +300,7 @@ describe("transactionInsights", () => {
       date: new Date("2026-01-01T00:00:00.000Z"),
     });
 
-    assert.equal(insights.unlockDetail, "Unlocked after 2 later investments.");
+    assert.equal(insights.unlockDetail, null);
     assert.equal(insights.statusDetail, "Payout completed.");
   });
 });

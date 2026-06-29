@@ -107,7 +107,7 @@ export async function markMaturedInvestments(options?: {
         };
 
   if (toMature.length > 0) {
-    await onInvestmentMatured();
+    await onInvestmentMatured(maturedIds);
   }
 
   const pendingCount = await prisma.investment.count({ where });
