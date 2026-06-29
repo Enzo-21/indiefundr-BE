@@ -14,7 +14,7 @@ export function AdminShell({
 }) {
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="hidden w-56 shrink-0 border-r md:block">
+      <aside className="hidden w-56 shrink-0 border-r md:flex md:min-h-screen md:flex-col">
         <AdminSidebar pendingOrderCount={pendingOrderCount} />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
