@@ -9,6 +9,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
+import {
+  autopilotCountdownToneClasses,
+  type AutopilotCountdownTone,
+} from "@/lib/admin/autopilotCountdownTone";
 import type { AutopilotPayoutCandidate } from "./usePayoutAutopilot";
 
 function modeLabel(mode: AutopilotPayoutCandidate["mode"]): string {
@@ -25,6 +29,7 @@ export function PayoutAutopilotCountdownPanel({
   nextIndex,
   countdownSecondsLeft,
   pendingCandidate,
+  tone,
   onStop,
 }: {
   completedCount: number;
@@ -32,8 +37,11 @@ export function PayoutAutopilotCountdownPanel({
   nextIndex: number;
   countdownSecondsLeft: number;
   pendingCandidate: AutopilotPayoutCandidate;
+  tone: AutopilotCountdownTone;
   onStop: () => void;
 }) {
+  const toneClasses = autopilotCountdownToneClasses(tone);
+
   return (
     <>
       <div className="space-y-5 p-6 pb-4">
@@ -45,11 +53,13 @@ export function PayoutAutopilotCountdownPanel({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-4">
-          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+        <div
+          className={`rounded-xl border px-4 py-4 ${toneClasses.container}`}
+        >
+          <p className={`text-sm font-medium ${toneClasses.title}`}>
             Payout {completedCount} of {initialTotal} complete
           </p>
-          <p className="mt-2 text-sm text-amber-800 dark:text-amber-200">
+          <p className={`mt-2 text-sm ${toneClasses.body}`}>
             Starting payout {nextIndex} of {initialTotal} in{" "}
             <span className="text-2xl font-bold tabular-nums">
               {countdownSecondsLeft}

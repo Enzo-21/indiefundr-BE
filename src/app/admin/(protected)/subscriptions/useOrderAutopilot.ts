@@ -14,6 +14,7 @@ import {
   type AutopilotManualCheckItem,
   isAutopilotNonTerminalFailure,
 } from "@/lib/admin/autopilotBatch";
+import type { AutopilotCountdownTone } from "@/lib/admin/autopilotCountdownTone";
 import { AUTOPILOT_INTER_PAYOUT_DELAY_SEC } from "@/lib/config/adminAutopilot";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
 
@@ -56,6 +57,8 @@ export function useOrderAutopilot() {
   const [pendingCandidate, setPendingCandidate] =
     useState<AutopilotOrderCandidate | null>(null);
   const [countdownSecondsLeft, setCountdownSecondsLeft] = useState(0);
+  const [interItemOutcome, setInterItemOutcome] =
+    useState<AutopilotCountdownTone | null>(null);
   const [configureError, setConfigureError] = useState<string | null>(null);
   const modesRef = useRef({
     includeInvestment: true,
@@ -91,6 +94,7 @@ export function useOrderAutopilot() {
     setCompletedCount(0);
     setManualCheckItems([]);
     setCurrentCandidate(null);
+    setInterItemOutcome(null);
     setConfigureError(null);
   }, [clearCountdown]);
 
@@ -106,6 +110,7 @@ export function useOrderAutopilot() {
     setManualCheckItems([]);
     setCurrentCandidate(null);
     setPendingCandidate(null);
+    setInterItemOutcome(null);
     setConfigureError(null);
     return { completedCount: stoppedAfter, manualCheckCount };
   }, [clearCountdown]);
@@ -234,12 +239,16 @@ export function useOrderAutopilot() {
     [advanceQueue]
   );
 
-  const beginCountdown = useCallback((nextCandidate: AutopilotOrderCandidate) => {
-    abortRef.current = false;
-    setPendingCandidate(nextCandidate);
-    setCountdownSecondsLeft(AUTOPILOT_INTER_PAYOUT_DELAY_SEC);
-    setPhase("countdown");
-  }, []);
+  const beginCountdown = useCallback(
+    (nextCandidate: AutopilotOrderCandidate, outcome: AutopilotCountdownTone) => {
+      abortRef.current = false;
+      setPendingCandidate(nextCandidate);
+      setInterItemOutcome(outcome);
+      setCountdownSecondsLeft(AUTOPILOT_INTER_PAYOUT_DELAY_SEC);
+      setPhase("countdown");
+    },
+    []
+  );
 
   useEffect(() => {
     if (phase !== "countdown" || !pendingCandidate) {
@@ -253,6 +262,7 @@ export function useOrderAutopilot() {
       }
       setCurrentCandidate(next);
       setPendingCandidate(null);
+      setInterItemOutcome(null);
       setPhase("running");
       return;
     }
@@ -281,6 +291,7 @@ export function useOrderAutopilot() {
     currentCandidate,
     pendingCandidate,
     countdownSecondsLeft,
+    interItemOutcome,
     configureError,
     startBatch,
     advanceAfterSuccess,

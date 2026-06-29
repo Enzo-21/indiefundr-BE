@@ -19,6 +19,7 @@ import {
   buildAutopilotCompleteToastMessage,
   buildAutopilotStopToastMessage,
 } from "@/lib/admin/autopilotBatch";
+import type { AutopilotCountdownTone } from "@/lib/admin/autopilotCountdownTone";
 import { cn } from "@/lib/utils";
 import { PayoutAutopilotBatchRunner } from "./PayoutAutopilotBatchRunner";
 import { PayoutAutopilotCountdownPanel } from "./PayoutAutopilotCountdownPanel";
@@ -108,6 +109,7 @@ export function PayoutAutopilotDialog({
     currentCandidate,
     pendingCandidate,
     countdownSecondsLeft,
+    interItemOutcome,
     configureError,
     startBatch,
     advanceAfterSuccess,
@@ -166,13 +168,16 @@ export function PayoutAutopilotDialog({
     }
   };
 
-  const handleAdvanceOutcome = async (outcome: AdvanceOutcome) => {
+  const handleAdvanceOutcome = async (
+    outcome: AdvanceOutcome,
+    lastOutcome: AutopilotCountdownTone
+  ) => {
     if (outcome.done) {
       showBatchCompleteToast(outcome);
       return;
     }
     if (outcome.nextCandidate) {
-      beginCountdown(outcome.nextCandidate);
+      beginCountdown(outcome.nextCandidate, lastOutcome);
     }
   };
 
@@ -226,7 +231,7 @@ export function PayoutAutopilotDialog({
   const handlePayoutSuccess = async () => {
     try {
       const outcome = await advanceAfterSuccess();
-      await handleAdvanceOutcome(outcome);
+      await handleAdvanceOutcome(outcome, "success");
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       toast.error(message);
@@ -240,7 +245,7 @@ export function PayoutAutopilotDialog({
       if (!outcome) {
         return;
       }
-      await handleAdvanceOutcome(outcome);
+      await handleAdvanceOutcome(outcome, "skipped");
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       toast.error(message);
@@ -338,6 +343,7 @@ export function PayoutAutopilotDialog({
             nextIndex={nextItemIndex}
             countdownSecondsLeft={countdownSecondsLeft}
             pendingCandidate={pendingCandidate}
+            tone={interItemOutcome ?? "success"}
             onStop={handleStopAutopilot}
           />
         ) : phase === "summary" ? (

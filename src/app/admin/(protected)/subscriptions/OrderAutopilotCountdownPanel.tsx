@@ -9,6 +9,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
+import {
+  autopilotCountdownToneClasses,
+  type AutopilotCountdownTone,
+} from "@/lib/admin/autopilotCountdownTone";
 import type { AutopilotOrderCandidate } from "./useOrderAutopilot";
 
 export function OrderAutopilotCountdownPanel({
@@ -17,6 +21,7 @@ export function OrderAutopilotCountdownPanel({
   nextIndex,
   countdownSecondsLeft,
   pendingCandidate,
+  tone,
   onStop,
 }: {
   completedCount: number;
@@ -24,8 +29,11 @@ export function OrderAutopilotCountdownPanel({
   nextIndex: number;
   countdownSecondsLeft: number;
   pendingCandidate: AutopilotOrderCandidate;
+  tone: AutopilotCountdownTone;
   onStop: () => void;
 }) {
+  const toneClasses = autopilotCountdownToneClasses(tone);
+
   return (
     <>
       <div className="space-y-5 p-6 pb-4">
@@ -37,11 +45,13 @@ export function OrderAutopilotCountdownPanel({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-4">
-          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+        <div
+          className={`rounded-xl border px-4 py-4 ${toneClasses.container}`}
+        >
+          <p className={`text-sm font-medium ${toneClasses.title}`}>
             Order {completedCount} of {initialTotal} complete
           </p>
-          <p className="mt-2 text-sm text-amber-800 dark:text-amber-200">
+          <p className={`mt-2 text-sm ${toneClasses.body}`}>
             Starting order {nextIndex} of {initialTotal} in{" "}
             <span className="text-2xl font-bold tabular-nums">
               {countdownSecondsLeft}

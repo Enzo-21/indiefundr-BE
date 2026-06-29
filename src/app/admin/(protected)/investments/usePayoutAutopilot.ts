@@ -12,6 +12,7 @@ import {
   type AutopilotManualCheckItem,
   isAutopilotNonTerminalFailure,
 } from "@/lib/admin/autopilotBatch";
+import type { AutopilotCountdownTone } from "@/lib/admin/autopilotCountdownTone";
 import { AUTOPILOT_INTER_PAYOUT_DELAY_SEC } from "@/lib/config/adminAutopilot";
 import type { InvestmentPayoutMode } from "@/services/admin/investmentPayoutFulfillment";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
@@ -55,6 +56,8 @@ export function usePayoutAutopilot() {
   const [pendingCandidate, setPendingCandidate] =
     useState<AutopilotPayoutCandidate | null>(null);
   const [countdownSecondsLeft, setCountdownSecondsLeft] = useState(0);
+  const [interItemOutcome, setInterItemOutcome] =
+    useState<AutopilotCountdownTone | null>(null);
   const [configureError, setConfigureError] = useState<string | null>(null);
   const modesRef = useRef({ includeNormal: true, includeSurplus: true });
   const abortRef = useRef(false);
@@ -85,6 +88,7 @@ export function usePayoutAutopilot() {
     setCompletedCount(0);
     setManualCheckItems([]);
     setCurrentCandidate(null);
+    setInterItemOutcome(null);
     setConfigureError(null);
   }, [clearCountdown]);
 
@@ -100,6 +104,7 @@ export function usePayoutAutopilot() {
     setManualCheckItems([]);
     setCurrentCandidate(null);
     setPendingCandidate(null);
+    setInterItemOutcome(null);
     setConfigureError(null);
     return { completedCount: stoppedAfter, manualCheckCount };
   }, [clearCountdown]);
@@ -230,12 +235,16 @@ export function usePayoutAutopilot() {
     [advanceQueue]
   );
 
-  const beginCountdown = useCallback((nextCandidate: AutopilotPayoutCandidate) => {
-    abortRef.current = false;
-    setPendingCandidate(nextCandidate);
-    setCountdownSecondsLeft(AUTOPILOT_INTER_PAYOUT_DELAY_SEC);
-    setPhase("countdown");
-  }, []);
+  const beginCountdown = useCallback(
+    (nextCandidate: AutopilotPayoutCandidate, outcome: AutopilotCountdownTone) => {
+      abortRef.current = false;
+      setPendingCandidate(nextCandidate);
+      setInterItemOutcome(outcome);
+      setCountdownSecondsLeft(AUTOPILOT_INTER_PAYOUT_DELAY_SEC);
+      setPhase("countdown");
+    },
+    []
+  );
 
   useEffect(() => {
     if (phase !== "countdown" || !pendingCandidate) {
@@ -249,6 +258,7 @@ export function usePayoutAutopilot() {
       }
       setCurrentCandidate(next);
       setPendingCandidate(null);
+      setInterItemOutcome(null);
       setPhase("running");
       return;
     }
@@ -279,6 +289,7 @@ export function usePayoutAutopilot() {
     currentCandidate,
     pendingCandidate,
     countdownSecondsLeft,
+    interItemOutcome,
     configureError,
     startBatch,
     advanceAfterSuccess,
