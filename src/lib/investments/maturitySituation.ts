@@ -1,6 +1,5 @@
 import {
   ForfeitureReason,
-  InvestmentPayabilityStatus,
   InvestmentStatus,
   UnpaidMaturityResolution,
   type Investment,
@@ -266,10 +265,7 @@ export function resolveMaturitySituation(
     };
   }
 
-  if (
-    investment.payoutUnlockedAt ||
-    investment.payabilityStatus === InvestmentPayabilityStatus.payable
-  ) {
+  if (investment.payoutUnlockedAt) {
     return {
       ...base,
       situation: "awaiting_admin_payout",

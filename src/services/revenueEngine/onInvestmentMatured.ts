@@ -9,9 +9,9 @@ export async function onInvestmentMatured(
     return;
   }
 
-  await evaluateAll();
-
   for (const investmentId of newlyMaturedIds) {
     await ensureUnpaidMaturityChoiceDeadline(investmentId);
   }
+
+  await evaluateAll();
 }

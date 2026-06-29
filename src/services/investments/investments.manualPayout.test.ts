@@ -8,7 +8,7 @@ import {
 import { canUserClaim, getUserStatusLabel } from "@/lib/investments/presentation";
 import { enrichInvestment } from "@/lib/serializers/investment";
 
-const maturedPayable: Investment = {
+const maturedUnlocked: Investment = {
   id: "507f1f77bcf86cd799439011",
   userId: "507f1f77bcf86cd799439012",
   walletId: "507f1f77bcf86cd799439013",
@@ -26,16 +26,17 @@ const maturedPayable: Investment = {
   payabilityStatus: InvestmentPayabilityStatus.payable,
   payoutEligibleAt: new Date("2020-01-01T00:00:00.000Z"),
   markedPayableAt: null,
+  payoutUnlockedAt: new Date("2024-04-02T00:00:00.000Z"),
   globalQueueRank: 1,
   newSubscribersNeeded: 0,
   date: new Date("2024-01-01T00:00:00.000Z"),
 } as Investment;
 
 describe("admin-only payout fulfillment (user-facing)", () => {
-  it("disables canClaim and shows awaiting admin payout label", () => {
-    assert.equal(canUserClaim(maturedPayable), false);
-    assert.equal(getUserStatusLabel(maturedPayable), "Awaiting admin payout");
-    const json = enrichInvestment(maturedPayable);
+  it("disables canClaim and shows awaiting admin payout label when triad-unlocked", () => {
+    assert.equal(canUserClaim(maturedUnlocked), false);
+    assert.equal(getUserStatusLabel(maturedUnlocked), "Awaiting admin payout");
+    const json = enrichInvestment(maturedUnlocked);
     assert.equal(json.canClaim, false);
     assert.equal(json.statusLabel, "Awaiting admin payout");
   });

@@ -6,10 +6,10 @@ import type {
   AdminInvestmentsPayoutAvailability,
 } from "@/services/admin/investmentAdminTypes";
 import { getLedgerSnapshot } from "@/services/revenueEngine/ledger";
+import { loadFifoSurplusCandidateInvestments } from "@/services/revenueEngine/fifoSurplusCandidates";
 import {
   computeFifoSurplusEligibleInvestmentIds,
   getSurplusPayoutEligibilityWithFifo,
-  PAYOUT_CANDIDATE_STATUSES,
 } from "@/services/revenueEngine/payoutScheduler";
 
 const PAYOUT_ACTION_STATUSES: InvestmentStatus[] = [
@@ -84,28 +84,6 @@ function showPayoutActionsForInvestment(inv: {
   );
 }
 
-async function loadFifoSurplusCandidates() {
-  return prisma.investment.findMany({
-    where: {
-      status: { in: PAYOUT_CANDIDATE_STATUSES },
-      subscribedAt: { not: null },
-    },
-    orderBy: [{ subscribedAt: "asc" }, { id: "asc" }],
-    select: {
-      id: true,
-      subscribedAt: true,
-      status: true,
-      projectedPayoutUsdt: true,
-      payoutUnlockedAt: true,
-      redemptionTransaction: true,
-      maturesAt: true,
-      unpaidMaturityResolution: true,
-      referralRecoveryCompletedAt: true,
-      unpaidMaturityChoiceDeadlineAt: true,
-    },
-  });
-}
-
 async function loadPayoutActionInvestments() {
   return prisma.investment.findMany({
     where: {
@@ -150,7 +128,7 @@ export async function loadAdminInvestmentsContext(): Promise<{
 }> {
   const [ledger, fifoCandidates, actionInvestments] = await Promise.all([
     getLedgerSnapshot(),
-    loadFifoSurplusCandidates(),
+    loadFifoSurplusCandidateInvestments(),
     loadPayoutActionInvestments(),
   ]);
 

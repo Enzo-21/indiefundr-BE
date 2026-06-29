@@ -98,7 +98,7 @@ describe("resolveMaturitySituation", () => {
     assert.equal(view.newSubscribersNeeded, 2);
   });
 
-  it("returns awaiting_admin_payout when unlocked", () => {
+  it("returns awaiting_admin_payout when triad-unlocked", () => {
     const view = resolveMaturitySituation(
       {
         ...maturedBase,
@@ -110,6 +110,21 @@ describe("resolveMaturitySituation", () => {
     );
     assert.equal(view.situation, "awaiting_admin_payout");
     assert.equal(view.statusLabel, "Awaiting admin payout");
+  });
+
+  it("returns waiting_liquidity when payable without triad unlock", () => {
+    const view = resolveMaturitySituation(
+      {
+        ...maturedBase,
+        payoutUnlockedAt: null,
+        payabilityStatus: InvestmentPayabilityStatus.payable,
+        unpaidMaturityChoiceDeadlineAt: null,
+        globalQueueRank: 1,
+      },
+      { fifoEligibleIds: new Set(), now: choiceNow }
+    );
+    assert.equal(view.situation, "waiting_liquidity");
+    assert.equal(view.statusLabel, "Payout queue #1");
   });
 
   it("returns waiting_unlock when matured without queue or choice", () => {

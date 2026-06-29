@@ -3,11 +3,9 @@ import {
   InvestmentStatus,
 } from "@prisma/client";
 import { newSubscribersNeeded, REVENUE_ENGINE_ENABLED } from "@/lib/config/revenueEngine";
-import { isPastPayoutEligible } from "@/lib/investments/presentation";
 import { prisma } from "@/lib/prisma";
 import { getLedgerSnapshot } from "./ledger";
 import { buildGlobalQueue, getQueueHead } from "./queue";
-import { canFundFromPool, getPoolMin, sumObligationsRest } from "./pool";
 
 export type LastEvaluation = {
   queue: string[];
@@ -46,11 +44,6 @@ export async function evaluateAll(): Promise<{
   const head = getQueueHead(queue);
   const headId = head ? head.id : null;
 
-  let obligationsRest = 0;
-  if (head) {
-    obligationsRest = sumObligationsRest(queue, head.id);
-  }
-
   const updates: ReturnType<typeof prisma.investment.update>[] = [];
 
   for (let rank = 0; rank < queue.length; rank++) {
@@ -62,18 +55,12 @@ export async function evaluateAll(): Promise<{
     let needed: number | null = null;
 
     if (isHead) {
-      const poolMin = getPoolMin(ledger.poolAvailable, inv, obligationsRest);
-      const funding = canFundFromPool(
-        ledger.poolAvailable,
-        poolMin,
-        ledger.treasurySurplus
-      );
       needed = newSubscribersNeeded(
         ledger.poolAvailable,
         inv.projectedPayoutUsdt
       );
 
-      if (funding.ok && isPastPayoutEligible(inv)) {
+      if (inv.payoutUnlockedAt) {
         payabilityStatus = InvestmentPayabilityStatus.payable;
         markedPayableAt = new Date();
       }

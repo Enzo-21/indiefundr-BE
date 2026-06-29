@@ -18,8 +18,7 @@ import { addDuration } from "@/lib/duration/parseDuration";
 import { isValidObjectId } from "@/lib/validators/objectId";
 import { prisma } from "@/lib/prisma";
 import { enrichInvestment } from "@/lib/serializers/investment";
-import { getLedgerSnapshot } from "@/services/revenueEngine/ledger";
-import { computeFifoSurplusEligibleInvestmentIds } from "@/services/revenueEngine/payoutScheduler";
+import { loadFifoEligibleIds as loadFifoEligibleIdsFromCandidates } from "@/services/revenueEngine/fifoSurplusCandidates";
 import { markMaturedInvestments } from "@/services/investments/maturity";
 import {
   consumePowerForInvestment,
@@ -127,7 +126,8 @@ const ENSURE_DEADLINE_SELECT = {
 export async function ensureUnpaidMaturityChoiceDeadline(
   investmentId: string,
   fifoEligibleIds?: ReadonlySet<string>,
-  now: Date = new Date()
+  now: Date = new Date(),
+  deadlineFrom?: Date
 ): Promise<boolean> {
   const investment = await prisma.investment.findUnique({
     where: { id: investmentId },
@@ -140,7 +140,6 @@ export async function ensureUnpaidMaturityChoiceDeadline(
   if (investment.referralRecoveryCompletedAt) return false;
   if (investment.unpaidMaturityResolution != null) return false;
   if (investment.unpaidMaturityChoiceDeadlineAt) return false;
-  if (investment.globalQueueRank != null) return false;
 
   const fifoIds = fifoEligibleIds ?? (await loadFifoEligibleIds());
   if (!isRecoveryCandidate(investment, fifoIds)) return false;
@@ -148,7 +147,7 @@ export async function ensureUnpaidMaturityChoiceDeadline(
   await prisma.investment.update({
     where: { id: investmentId },
     data: {
-      unpaidMaturityChoiceDeadlineAt: choiceDeadlineAt(now),
+      unpaidMaturityChoiceDeadlineAt: choiceDeadlineAt(deadlineFrom ?? now),
       payabilityStatus: InvestmentPayabilityStatus.pending_liquidity,
     },
   });
@@ -159,9 +158,6 @@ export async function healStuckUnpaidMaturityChoiceDeadlines(
   userId?: string,
   now: Date = new Date()
 ): Promise<number> {
-  const { evaluateAll } = await import("@/services/revenueEngine/evaluateAll");
-  await evaluateAll();
-
   const stuck = await prisma.investment.findMany({
     where: {
       status: InvestmentStatus.matured,
@@ -169,42 +165,39 @@ export async function healStuckUnpaidMaturityChoiceDeadlines(
       referralRecoveryCompletedAt: null,
       unpaidMaturityResolution: null,
       unpaidMaturityChoiceDeadlineAt: null,
-      globalQueueRank: null,
       ...(userId ? { userId } : {}),
     },
-    select: { id: true },
+    select: { id: true, maturesAt: true },
   });
 
   if (stuck.length === 0) return 0;
 
-  const fifoIds = await loadFifoEligibleIds();
+  const fifoIds = await loadFifoEligibleIds(now);
   let healed = 0;
   for (const row of stuck) {
-    if (await ensureUnpaidMaturityChoiceDeadline(row.id, fifoIds, now)) {
+    const deadlineFrom = row.maturesAt ?? now;
+    if (
+      await ensureUnpaidMaturityChoiceDeadline(
+        row.id,
+        fifoIds,
+        now,
+        deadlineFrom
+      )
+    ) {
       healed += 1;
     }
   }
+
+  const { evaluateAll } = await import("@/services/revenueEngine/evaluateAll");
+  await evaluateAll();
+
   return healed;
 }
 
-export async function loadFifoEligibleIds(): Promise<Set<string>> {
-  const ledger = await getLedgerSnapshot();
-  const allMatured = await prisma.investment.findMany({
-    where: { status: InvestmentStatus.matured },
-    select: {
-      id: true,
-      status: true,
-      payoutUnlockedAt: true,
-      subscribedAt: true,
-      projectedPayoutUsdt: true,
-      maturesAt: true,
-      redemptionTransaction: true,
-      unpaidMaturityResolution: true,
-      referralRecoveryCompletedAt: true,
-      unpaidMaturityChoiceDeadlineAt: true,
-    },
-  });
-  return computeFifoSurplusEligibleInvestmentIds(allMatured, ledger);
+export async function loadFifoEligibleIds(
+  now: Date = new Date()
+): Promise<Set<string>> {
+  return loadFifoEligibleIdsFromCandidates(now);
 }
 
 export function isUnpaidMaturityChoicePending(

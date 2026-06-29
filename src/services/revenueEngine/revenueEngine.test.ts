@@ -439,7 +439,7 @@ describe("revenueEngine ledger integration", () => {
   );
 
   it(
-    "evaluateAll marks queue head payable when pool and eligibility allow",
+    "evaluateAll marks queue head payable only when triad-unlocked",
     { skip: skipDbTests },
     async () => {
       const user = await prisma.user.create({
@@ -472,6 +472,7 @@ describe("revenueEngine ledger integration", () => {
           maturesAt: new Date("2020-04-01"),
           payoutEligibleAt: pastEligible,
           payabilityStatus: InvestmentPayabilityStatus.pending_liquidity,
+          payoutUnlockedAt: new Date(),
         },
       });
 
