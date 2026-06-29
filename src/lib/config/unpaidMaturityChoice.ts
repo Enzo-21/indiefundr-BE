@@ -1,4 +1,4 @@
-import type { Investment } from "@prisma/client";
+import { InvestmentStatus, type Investment } from "@prisma/client";
 import type { InvestmentFund } from "@/lib/config/investmentFunds";
 import { getFundById } from "@/lib/config/investmentFunds";
 import { getEnv } from "@/lib/env";
@@ -22,6 +22,24 @@ export function isChoiceDeadlineActive(
 ): boolean {
   if (!deadlineAt) return false;
   return now.getTime() < deadlineAt.getTime();
+}
+
+export type UnpaidMaturityChoiceWindowFields = Pick<
+  Investment,
+  "status" | "unpaidMaturityResolution" | "unpaidMaturityChoiceDeadlineAt"
+>;
+
+/** Matured investment inside the 48h unpaid-maturity choice window (no resolution yet). */
+export function hasActiveUnpaidMaturityChoiceWindow(
+  investment: UnpaidMaturityChoiceWindowFields,
+  now: Date = new Date()
+): boolean {
+  return (
+    investment.status === InvestmentStatus.matured &&
+    investment.unpaidMaturityResolution == null &&
+    investment.unpaidMaturityChoiceDeadlineAt != null &&
+    isChoiceDeadlineActive(investment.unpaidMaturityChoiceDeadlineAt, now)
+  );
 }
 
 export function maxExtensionDays(termDays: number): number {

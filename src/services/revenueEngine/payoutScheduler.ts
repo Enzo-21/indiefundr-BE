@@ -3,7 +3,7 @@ import {
   InvestmentStatus,
   type Investment,
 } from "@prisma/client";
-import { isExcludedFromNormalPayout } from "@/lib/investments/referralRecoveryNormalPayout";
+import { isExcludedFromNormalPayout, normalPayoutExclusionReason } from "@/lib/investments/referralRecoveryNormalPayout";
 import {
   COHORT_REFERENCE_INVESTMENT_USDT,
   unlockPrincipalRequired,
@@ -69,18 +69,20 @@ export function getSurplusPayoutEligibility(
     | "redemptionTransaction"
     | "unpaidMaturityResolution"
     | "referralRecoveryCompletedAt"
+    | "unpaidMaturityChoiceDeadlineAt"
   >,
   ledger: Pick<LedgerSnapshot, "treasurySurplus">,
-  _now = new Date()
+  now = new Date()
 ) {
-  if (isExcludedFromNormalPayout(investment)) {
+  const exclusionReason = normalPayoutExclusionReason(investment, now);
+  if (exclusionReason != null) {
     return {
       eligibleForLiquiditySurplusPay: false,
       eligibleForAdminSurplusPay: false,
       eligibleForCronSurplusPay: false,
       surplusShortfallUsdt: 0,
       surplusPayoutAvailableAt: getSurplusPayoutAvailableAt(investment),
-      reason: "referral_recovery_path" as const,
+      reason: exclusionReason,
     };
   }
 
@@ -142,6 +144,7 @@ export type FifoSurplusPayoutCandidate = Pick<
   | "maturesAt"
   | "unpaidMaturityResolution"
   | "referralRecoveryCompletedAt"
+  | "unpaidMaturityChoiceDeadlineAt"
 >;
 
 function sortFifoSurplusCandidates(

@@ -9,6 +9,7 @@ import {
   clampExtensionDays,
   computeInvestmentTermDays,
   extensionBounds,
+  hasActiveUnpaidMaturityChoiceWindow,
   isChoiceDeadlineActive,
   UNPAID_MATURITY_CHOICE_HOURS,
 } from "@/lib/config/unpaidMaturityChoice";
@@ -16,7 +17,6 @@ import { addDuration } from "@/lib/duration/parseDuration";
 import { isValidObjectId } from "@/lib/validators/objectId";
 import { prisma } from "@/lib/prisma";
 import { enrichInvestment } from "@/lib/serializers/investment";
-import { isRecoveryCandidate } from "@/services/referrals/recoveryEligibility";
 import { getLedgerSnapshot } from "@/services/revenueEngine/ledger";
 import { computeFifoSurplusEligibleInvestmentIds } from "@/services/revenueEngine/payoutScheduler";
 import { markMaturedInvestments } from "@/services/investments/maturity";
@@ -86,6 +86,13 @@ export type UnpaidMaturityChoiceResult =
       body: Record<string, unknown>;
     };
 
+const UNPAID_MATURITY_CHOICE_CLAIM_FAILED = "UNPAID_MATURITY_CHOICE_CLAIM_FAILED";
+
+const UNPAID_MATURITY_CHOICE_CLAIM_WHERE = {
+  unpaidMaturityResolution: null,
+  unpaidMaturityChoiceDeadlineAt: { not: null },
+} as const;
+
 const CHOICE_INVESTMENT_SELECT = {
   id: true,
   userId: true,
@@ -116,6 +123,7 @@ export async function loadFifoEligibleIds(): Promise<Set<string>> {
       redemptionTransaction: true,
       unpaidMaturityResolution: true,
       referralRecoveryCompletedAt: true,
+      unpaidMaturityChoiceDeadlineAt: true,
     },
   });
   return computeFifoSurplusEligibleInvestmentIds(allMatured, ledger);
@@ -134,17 +142,12 @@ export function isUnpaidMaturityChoicePending(
     | "projectedPayoutUsdt"
     | "maturesAt"
   >,
-  fifoEligibleIds: ReadonlySet<string>,
+  _fifoEligibleIds: ReadonlySet<string>,
   now: Date = new Date()
 ): boolean {
-  if (investment.unpaidMaturityResolution != null) return false;
-  if (!investment.unpaidMaturityChoiceDeadlineAt) return false;
-  if (
-    !isChoiceDeadlineActive(investment.unpaidMaturityChoiceDeadlineAt, now)
-  ) {
-    return false;
-  }
-  return isRecoveryCandidate(investment, fifoEligibleIds);
+  if (investment.payoutUnlockedAt) return false;
+  if (investment.referralRecoveryCompletedAt) return false;
+  return hasActiveUnpaidMaturityChoiceWindow(investment, now);
 }
 
 export function getUnpaidMaturityChoiceContext(
@@ -319,8 +322,12 @@ export async function applyUnpaidMaturityChoice(
           consumedAt: now,
         });
 
-        return tx.investment.update({
-          where: { id: investmentId },
+        const claim = await tx.investment.updateMany({
+          where: {
+            id: investmentId,
+            userId,
+            ...UNPAID_MATURITY_CHOICE_CLAIM_WHERE,
+          },
           data: {
             unpaidMaturityResolution: UnpaidMaturityResolution.referral_recovery,
             unpaidMaturityResolvedAt: now,
@@ -333,6 +340,13 @@ export async function applyUnpaidMaturityChoice(
             globalQueueRank: null,
             newSubscribersNeeded: null,
           },
+        });
+        if (claim.count !== 1) {
+          throw new Error(UNPAID_MATURITY_CHOICE_CLAIM_FAILED);
+        }
+
+        return tx.investment.findFirstOrThrow({
+          where: { id: investmentId },
         });
       });
 
@@ -365,8 +379,12 @@ export async function applyUnpaidMaturityChoice(
         consumedAt: now,
       });
 
-      return tx.investment.update({
-        where: { id: investmentId },
+      const claim = await tx.investment.updateMany({
+        where: {
+          id: investmentId,
+          userId,
+          ...UNPAID_MATURITY_CHOICE_CLAIM_WHERE,
+        },
         data: {
           unpaidMaturityResolution: UnpaidMaturityResolution.term_extension,
           unpaidMaturityResolvedAt: now,
@@ -375,13 +393,34 @@ export async function applyUnpaidMaturityChoice(
           payabilityStatus: InvestmentPayabilityStatus.not_matured,
           maturesAt: addDuration(now, `${days}D`),
           recoveryEligibleAt: null,
+          unpaidMaturityChoiceDeadlineAt: null,
         },
+      });
+      if (claim.count !== 1) {
+        throw new Error(UNPAID_MATURITY_CHOICE_CLAIM_FAILED);
+      }
+
+      return tx.investment.findFirstOrThrow({
+        where: { id: investmentId },
       });
     });
 
     await notifyChoiceConfirmedEmail(userId, updated);
     return { ok: true, data: enrichAfterChoice(updated, fifoIds) };
   } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === UNPAID_MATURITY_CHOICE_CLAIM_FAILED
+    ) {
+      return {
+        ok: false,
+        status: 409,
+        body: {
+          msg: "This investment is not eligible for an unpaid maturity choice",
+          code: "not_eligible",
+        },
+      };
+    }
     if (error instanceof PlayerPowerUnavailableError) {
       return {
         ok: false,

@@ -39,7 +39,7 @@ import {
   computeFifoSurplusEligibleInvestmentIds,
   getSurplusPayoutEligibilityWithFifo,
 } from "@/services/revenueEngine/payoutScheduler";
-import { isExcludedFromNormalPayout } from "@/lib/investments/referralRecoveryNormalPayout";
+import { isExcludedFromNormalPayout, normalPayoutExclusionReason } from "@/lib/investments/referralRecoveryNormalPayout";
 import { getTronRateLimitStats } from "@/services/tron/rateLimit";
 
 export type AdminUserWalletFields = {
@@ -251,6 +251,8 @@ function surplusBlockReasonFromEligibility(
       return "Earlier investments reserve available surplus (FIFO)";
     case "referral_recovery_path":
       return "Referral recovery path (principal via qualified invites only)";
+    case "unpaid_maturity_choice_pending":
+      return "48h maturity choice open — user must pick recover or wait";
     case "not_payable_status":
       return "Not in a payable status";
     case "redemption_in_progress":
@@ -269,9 +271,14 @@ function payNowBlockReason(
     payoutFailureReason: string | null;
     unpaidMaturityResolution: import("@prisma/client").UnpaidMaturityResolution | null;
     referralRecoveryCompletedAt: Date | null;
+    unpaidMaturityChoiceDeadlineAt: Date | null;
   }
 ): string | null {
-  if (isExcludedFromNormalPayout(inv)) {
+  const exclusion = normalPayoutExclusionReason(inv);
+  if (exclusion === "unpaid_maturity_choice_pending") {
+    return "48h maturity choice open — user must pick recover or wait";
+  }
+  if (exclusion === "referral_recovery_path") {
     return "Referral recovery path (principal via qualified invites only)";
   }
   if (inv.status === InvestmentStatus.redeemed) {
@@ -323,6 +330,7 @@ function showPayoutActionsForInvestment(inv: {
   payoutFailureReason: string | null;
   unpaidMaturityResolution: import("@prisma/client").UnpaidMaturityResolution | null;
   referralRecoveryCompletedAt: Date | null;
+  unpaidMaturityChoiceDeadlineAt: Date | null;
 }): boolean {
   if (isExcludedFromNormalPayout(inv)) {
     return false;

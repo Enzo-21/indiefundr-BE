@@ -94,4 +94,57 @@ describe("referral recovery triad isolation", () => {
     >[0]);
     assert.equal(queue.length, 0);
   });
+
+  it("matured head in unpaid maturity choice window is excluded from normal payout paths", () => {
+    const choiceNow = new Date("2099-06-03T12:00:00.000Z");
+    const choiceHead = {
+      id: "choice-head",
+      userId: "user-choice",
+      fundId: "aggressive-alpha",
+      subscribedAt: new Date("2026-01-01T00:00:00.000Z"),
+      status: InvestmentStatus.matured,
+      projectedPayoutUsdt: 35,
+      unpaidMaturityResolution: null,
+      referralRecoveryCompletedAt: null,
+      unpaidMaturityChoiceDeadlineAt: new Date("2099-06-05T12:00:00.000Z"),
+      payoutUnlockedAt: null,
+      redemptionTransaction: null,
+      maturesAt: new Date("2026-04-01T00:00:00.000Z"),
+    };
+
+    const laterUnlockers = [
+      {
+        id: "unlocker-1",
+        userId: "unlocker-a",
+        amountUsdt: 25,
+        subscribedAt: new Date("2026-02-02T00:00:00.000Z"),
+        excludedFromTriadUnlock: false,
+      },
+      {
+        id: "unlocker-2",
+        userId: "unlocker-b",
+        amountUsdt: 25,
+        subscribedAt: new Date("2026-02-03T00:00:00.000Z"),
+        excludedFromTriadUnlock: false,
+      },
+    ];
+
+    assert.equal(isExcludedFromNormalPayout(choiceHead, choiceNow), true);
+
+    const unlockers = findUnlockingInvestments(choiceHead, laterUnlockers);
+    assert.equal(unlockers.length, 2);
+
+    const eligibility = getSurplusPayoutEligibility(choiceHead, {
+      treasurySurplus: 1000,
+    }, choiceNow);
+    assert.equal(eligibility.reason, "unpaid_maturity_choice_pending");
+    assert.equal(eligibility.eligibleForLiquiditySurplusPay, false);
+
+    const fifoEligible = computeFifoSurplusEligibleInvestmentIds(
+      [choiceHead],
+      { treasurySurplus: 1000 },
+      choiceNow
+    );
+    assert.equal(fifoEligible.has(choiceHead.id), false);
+  });
 });

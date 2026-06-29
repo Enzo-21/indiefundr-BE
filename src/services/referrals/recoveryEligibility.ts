@@ -126,6 +126,7 @@ export async function refreshRecoveryEligibilityForUser(userId: string) {
       redemptionTransaction: true,
       unpaidMaturityResolution: true,
       referralRecoveryCompletedAt: true,
+      unpaidMaturityChoiceDeadlineAt: true,
     },
   });
 

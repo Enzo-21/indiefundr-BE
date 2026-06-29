@@ -5,7 +5,7 @@ import {
   TreasuryEventType,
   type Investment,
 } from "@prisma/client";
-import { isExcludedFromNormalPayout } from "@/lib/investments/referralRecoveryNormalPayout";
+import { isExcludedFromNormalPayout, normalPayoutExclusionReason } from "@/lib/investments/referralRecoveryNormalPayout";
 import { getEnv } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { getTronscanTxUrl, getMainWallet } from "@/lib/wallets/helpers";
@@ -349,7 +349,13 @@ export async function validateNormalPayoutEligibility(
     throw new Error("Investment is not payable");
   }
 
-  if (isExcludedFromNormalPayout(investment)) {
+  const payoutExclusion = normalPayoutExclusionReason(investment);
+  if (payoutExclusion === "unpaid_maturity_choice_pending") {
+    throw new Error(
+      "Investment has an open unpaid maturity choice; user must pick recover or wait"
+    );
+  }
+  if (payoutExclusion === "referral_recovery_path") {
     throw new Error(
       "Investment is on the referral recovery path; principal is paid only after two qualified invites"
     );
@@ -373,7 +379,13 @@ export async function validateSurplusPayoutEligibility(
     throw new Error("Investment is already paid");
   }
 
-  if (isExcludedFromNormalPayout(investment)) {
+  const payoutExclusion = normalPayoutExclusionReason(investment, now);
+  if (payoutExclusion === "unpaid_maturity_choice_pending") {
+    throw new Error(
+      "Investment has an open unpaid maturity choice; user must pick recover or wait"
+    );
+  }
+  if (payoutExclusion === "referral_recovery_path") {
     throw new Error(
       "Investment is on the referral recovery path; principal is paid only after two qualified invites"
     );
@@ -400,6 +412,7 @@ export async function validateSurplusPayoutEligibility(
       maturesAt: true,
       unpaidMaturityResolution: true,
       referralRecoveryCompletedAt: true,
+      unpaidMaturityChoiceDeadlineAt: true,
     },
   });
   const fifoEligibleIds = computeFifoSurplusEligibleInvestmentIds(

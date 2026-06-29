@@ -10,10 +10,8 @@ import {
   forfeitInvestment,
   isForfeitureCandidateOnMaturity,
 } from "@/services/investments/investmentForfeiture";
-import {
-  isUnpaidMaturityChoicePending,
-  loadFifoEligibleIds,
-} from "@/services/investments/unpaidMaturityChoice";
+import { loadFifoEligibleIds } from "@/services/investments/unpaidMaturityChoice";
+import { isRecoveryCandidate } from "@/services/referrals/recoveryEligibility";
 
 export async function processNewlyMaturedInvestment(
   investmentId: string,
@@ -51,7 +49,7 @@ export async function processNewlyMaturedInvestment(
   }
 
   const fifoIds = await loadFifoEligibleIds();
-  if (!isUnpaidMaturityChoicePending(investment, fifoIds)) {
+  if (!isRecoveryCandidate(investment, fifoIds)) {
     return;
   }
 

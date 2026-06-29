@@ -248,8 +248,10 @@ Today `markMaturedInvestments` runs only when admin opens Investments. **Recomme
 | Case | Handling |
 |------|----------|
 | Still `active` past `maturesAt` | Treat as recovery-eligible once maturity job runs |
-| Later gains triad unlock | No longer recovery-eligible; normal Pay now |
-| Later becomes FIFO-eligible | No longer recovery-eligible; admin surplus path |
+| **48h choice window open** | Triad unlock and surplus FIFO are **blocked**; user must pick recover or wait; new subscribers do not enable Pay now |
+| Later gains triad unlock **after** user chose **wait** (`term_extension`) | Normal Pay now when unlock criteria met on the extended term |
+| Later becomes FIFO-eligible **after** user chose **wait** | Admin surplus path when eligible on extended term |
+| User chose **recover** (`referral_recovery`) | Permanently excluded from triad/surplus until `principal_recovery` (25 USDT) or forfeiture |
 | Multiple matured unpaid | One recovery campaign per investment; referrals can count toward oldest eligible first (configurable) |
 | Partial recovery (1/2 invitees) | Show progress; no principal until both qualify |
 
@@ -499,6 +501,9 @@ Optional monthly cap: `REFERRAL_MONTHLY_SURPLUS_CAP_USDT` — pause new referral
 
 ### Interaction with triad / FIFO
 
+- While `unpaidMaturityChoiceDeadlineAt` is active (48h choice window), the investment is **excluded from normal payout**: triad unlock (`evaluatePayoutReadiness`), surplus FIFO, and admin Pay now/surplus are blocked even if later subscribers would otherwise unlock the head.  
+- Only **`term_extension`** ends the choice window and returns the investment to `active`, re-enabling normal triad/surplus evaluation on the extended term.  
+- **`referral_recovery`** keeps the investment on the recovery path (principal only via qualified invites).  
 - Invitee investments that consume a **recovery slot** are marked `excludedFromTriadUnlock` and **never** count as triad unlockers for any user's matured investment (including other users' payout heads).  
 - Referral recovery **closes** the inviter's investment via `principal_recovery` (**25 USDT** principal only), not via triad unlock or surplus FIFO projected payout.  
 - Standard referral bonuses (2 USDT inviter / invitee) do not consume triad unlocker slots.  

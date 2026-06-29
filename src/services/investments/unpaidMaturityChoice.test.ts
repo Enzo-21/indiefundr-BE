@@ -56,9 +56,12 @@ describe("unpaid maturity choice eligibility", () => {
     );
   });
 
-  it("does not offer choice when FIFO-eligible", () => {
+  it("still offers choice when FIFO-eligible mid-window", () => {
     const fifo = new Set<string>(["inv-1"]);
-    assert.equal(isUnpaidMaturityChoicePending(baseInvestment, fifo), false);
+    assert.equal(
+      isUnpaidMaturityChoicePending(baseInvestment, fifo, choiceNow),
+      true
+    );
   });
 
   it("does not offer choice after resolution", () => {
