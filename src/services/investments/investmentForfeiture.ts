@@ -7,6 +7,7 @@ import {
 } from "@prisma/client";
 import { ledgerTruncateUsdt } from "@/lib/money/formatUsdt";
 import { prisma } from "@/lib/prisma";
+import { notifyInvestmentForfeited } from "@/services/investments/forfeitureNotifications";
 import { getLedgerSnapshot } from "@/services/revenueEngine/ledger";
 import {
   isUnpaidMaturityChoicePending,
@@ -109,6 +110,8 @@ export async function forfeitInvestment(
   });
 
   await recordObligationForfeiture(updated, reason);
+
+  await notifyInvestmentForfeited(updated);
 
   return { ok: true, investment: updated, alreadyForfeited: false };
 }

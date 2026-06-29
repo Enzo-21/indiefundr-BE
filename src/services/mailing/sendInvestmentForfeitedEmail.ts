@@ -1,8 +1,7 @@
 import { render } from "@react-email/render";
-import type { Investment, User } from "@prisma/client";
-import UnpaidMaturityChoiceRequiredEmail from "@/emails/UnpaidMaturityChoiceRequiredEmail";
+import type { ForfeitureReason, Investment, User } from "@prisma/client";
+import InvestmentForfeitedEmail from "@/emails/InvestmentForfeitedEmail";
 import type { InvestmentFund } from "@/lib/config/investmentFunds";
-import { UNPAID_MATURITY_CHOICE_HOURS } from "@/lib/config/unpaidMaturityChoice";
 import {
   getResendClient,
   getResendErrorMessage,
@@ -11,13 +10,29 @@ import {
 import { resolveMailingLogoUrl } from "./mailingLogoUrl";
 import { portfolioDeepLink } from "./sendInvestmentMaturedEmail";
 
-export async function sendUnpaidMaturityChoiceReminderEmail(params: {
+function forfeitureSubject(
+  fundName: string,
+  reason: ForfeitureReason
+): string {
+  switch (reason) {
+    case "choice_deadline_expired":
+      return `Update: your ${fundName} investment ended — no choice made`;
+    case "second_maturity_unpaid":
+      return `Update: your ${fundName} extended term ended without payout`;
+    case "recovery_window_expired":
+      return `Update: your ${fundName} invite recovery window closed`;
+    default:
+      return `Update: your ${fundName} investment has ended`;
+  }
+}
+
+export async function sendInvestmentForfeitedEmail(params: {
   user: Pick<User, "email" | "name">;
-  investment: Investment;
+  investment: Pick<Investment, "amountUsdt">;
   fund: InvestmentFund;
-  choiceDeadlineAt: Date;
+  forfeitureReason: ForfeitureReason;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  const { user, investment, fund, choiceDeadlineAt } = params;
+  const { user, investment, fund, forfeitureReason } = params;
 
   if (!user.email?.trim()) {
     return { ok: false, error: "User email is missing" };
@@ -25,31 +40,23 @@ export async function sendUnpaidMaturityChoiceReminderEmail(params: {
 
   try {
     const resend = getResendClient();
-    const choiceHours = UNPAID_MATURITY_CHOICE_HOURS();
-    const portfolioUrl = portfolioDeepLink(investment.id);
-    const deadlineLabel = choiceDeadlineAt.toLocaleString("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
+    const portfolioUrl = portfolioDeepLink();
 
     const html = await render(
-      UnpaidMaturityChoiceRequiredEmail({
+      InvestmentForfeitedEmail({
         username: user.name || "",
         fundName: fund.name,
         amountUsdt: investment.amountUsdt,
-        projectedPayoutUsdt: investment.projectedPayoutUsdt,
-        choiceHours,
-        choiceDeadlineLabel: deadlineLabel,
+        forfeitureReason,
         portfolioUrl,
         logoUrl: resolveMailingLogoUrl(),
-        isReminder: true,
       })
     );
 
-    const subject = `Reminder: choose how to continue your ${fund.name} investment`;
+    const subject = forfeitureSubject(fund.name, forfeitureReason);
     const text =
-      `Reminder: your ${fund.name} investment needs a choice before ${deadlineLabel}. ` +
-      `Open Portfolio: ${portfolioUrl}`;
+      `Your ${fund.name} investment (${investment.amountUsdt.toFixed(2)} USDT) has ended. ` +
+      `Review details in Portfolio: ${portfolioUrl}`;
 
     const { error } = await resend.emails.send({
       from: mailingFromAddress(),
@@ -66,7 +73,7 @@ export async function sendUnpaidMaturityChoiceReminderEmail(params: {
     return { ok: true };
   } catch (err) {
     console.error(
-      "sendUnpaidMaturityChoiceReminderEmail error:",
+      "sendInvestmentForfeitedEmail error:",
       err instanceof Error ? err.message : err
     );
     return { ok: false, error: getResendErrorMessage(err) };

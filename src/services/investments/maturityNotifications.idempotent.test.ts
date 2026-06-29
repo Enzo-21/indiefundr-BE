@@ -5,16 +5,40 @@ import { InvestmentStatus } from "@prisma/client";
 describe("notifyNewlyMaturedInvestments idempotency", () => {
   it("skips investments already marked with maturityNotifiedAt", async () => {
     const emailCalls: string[] = [];
+    const emailScenarios: string[] = [];
     const updatedIds: string[] = [];
 
+    mock.module("@/services/investments/unpaidMaturityChoice", {
+      namedExports: {
+        loadFifoEligibleIds: async () => new Set<string>(),
+        isUnpaidMaturityChoicePending: (
+          investment: {
+            unpaidMaturityChoiceDeadlineAt: Date | null;
+            unpaidMaturityResolution: unknown;
+            payoutUnlockedAt: Date | null;
+            referralRecoveryCompletedAt: Date | null;
+          },
+          _fifoIds: ReadonlySet<string>,
+          now: Date = new Date()
+        ) =>
+          investment.unpaidMaturityChoiceDeadlineAt != null &&
+          investment.unpaidMaturityChoiceDeadlineAt > now &&
+          investment.unpaidMaturityResolution == null &&
+          investment.payoutUnlockedAt == null &&
+          investment.referralRecoveryCompletedAt == null,
+      },
+    });
     mock.module("@/services/mailing/sendInvestmentMaturedEmail", {
       namedExports: {
         sendInvestmentMaturedEmail: async ({
           investment,
+          scenario,
         }: {
           investment: { id: string };
+          scenario: string;
         }) => {
           emailCalls.push(investment.id);
+          emailScenarios.push(scenario);
           return { ok: true as const };
         },
       },
@@ -51,9 +75,14 @@ describe("notifyNewlyMaturedInvestments idempotency", () => {
                 userId: "user-2",
                 status: InvestmentStatus.matured,
                 maturityNotifiedAt: null,
-                unpaidMaturityChoiceDeadlineAt: null,
+                unpaidMaturityChoiceDeadlineAt: new Date("2099-06-22T12:00:00.000Z"),
                 unpaidMaturityResolution: null,
                 payoutUnlockedAt: null,
+                referralRecoveryCompletedAt: null,
+                subscribedAt: new Date("2026-01-01T00:00:00.000Z"),
+                projectedPayoutUsdt: 31.25,
+                maturesAt: new Date("2026-06-01T00:00:00.000Z"),
+                amountUsdt: 25,
                 user: {
                   id: "user-2",
                   email: "new@example.com",
@@ -82,6 +111,7 @@ describe("notifyNewlyMaturedInvestments idempotency", () => {
     assert.equal(result.emailsSkipped, 1);
     assert.equal(result.emailsSent, 1);
     assert.deepEqual(emailCalls, ["inv-new"]);
+    assert.deepEqual(emailScenarios, ["choice_required"]);
     assert.deepEqual(updatedIds, ["inv-new"]);
   });
 });

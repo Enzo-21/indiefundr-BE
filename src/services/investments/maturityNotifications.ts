@@ -5,12 +5,13 @@ import {
   UNPAID_MATURITY_CHOICE_HOURS,
 } from "@/lib/config/unpaidMaturityChoice";
 import { prisma } from "@/lib/prisma";
+import {
+  resolveMaturityEmailScenario,
+  type MaturityEmailScenario,
+} from "@/lib/investments/resolveMaturityEmailScenario";
 import { sendInvestmentMaturedEmail } from "@/services/mailing/sendInvestmentMaturedEmail";
 import { sendPushNotification } from "@/services/orders/pushNotify";
-import {
-  isUnpaidMaturityChoicePending,
-  loadFifoEligibleIds,
-} from "@/services/investments/unpaidMaturityChoice";
+import { loadFifoEligibleIds } from "@/services/investments/unpaidMaturityChoice";
 
 export type MaturityNotificationResult = {
   emailsSent: number;
@@ -24,45 +25,68 @@ export type MaturityNotificationResult = {
 export function needsUnpaidMaturityChoiceFromInvestment(
   investment: Pick<
     Investment,
+    | "id"
     | "status"
     | "unpaidMaturityChoiceDeadlineAt"
     | "unpaidMaturityResolution"
     | "payoutUnlockedAt"
+    | "referralRecoveryCompletedAt"
+    | "subscribedAt"
+    | "projectedPayoutUsdt"
+    | "maturesAt"
   >,
+  fifoEligibleIds: ReadonlySet<string> = new Set(),
   now: Date = new Date()
 ): boolean {
   return (
-    investment.status === "matured" &&
-    investment.unpaidMaturityChoiceDeadlineAt != null &&
-    isChoiceDeadlineActive(investment.unpaidMaturityChoiceDeadlineAt, now) &&
-    investment.unpaidMaturityResolution == null &&
-    investment.payoutUnlockedAt == null
+    resolveMaturityEmailScenario(investment, fifoEligibleIds, now) ===
+    "choice_required"
   );
+}
+
+function maturityPushContent(
+  fundName: string,
+  scenario: MaturityEmailScenario
+): { title: string; body: string; type: string } {
+  const choiceHours = UNPAID_MATURITY_CHOICE_HOURS();
+
+  if (scenario === "choice_required") {
+    return {
+      title: "Action required",
+      body: `Your ${fundName} position matured. Choose wait longer or invite recovery within ${choiceHours} hours in the app.`,
+      type: "UNPAID_MATURITY_CHOICE_REQUIRED",
+    };
+  }
+
+  if (scenario === "waiting") {
+    return {
+      title: "Investment matured",
+      body: `Your ${fundName} position reached its term. Payout is pending pool liquidity.`,
+      type: "INVESTMENT_MATURED_WAITING",
+    };
+  }
+
+  return {
+    title: "Investment matured",
+    body: `Your ${fundName} position has reached its term and is eligible for payout processing.`,
+    type: "INVESTMENT_MATURED",
+  };
 }
 
 async function sendMaturityPush(
   investment: Pick<Investment, "id" | "fundId" | "userId">,
   device: string,
-  needsChoice: boolean
+  scenario: MaturityEmailScenario
 ): Promise<boolean> {
   const fundName = getFundById(investment.fundId)?.name ?? investment.fundId;
-  const choiceHours = UNPAID_MATURITY_CHOICE_HOURS();
+  const { title, body, type } = maturityPushContent(fundName, scenario);
 
   try {
-    await sendPushNotification(
-      device,
-      "Investment matured",
-      needsChoice
-        ? `Your ${fundName} position matured. Choose recover or wait within ${choiceHours} hours in the app.`
-        : `Your ${fundName} position has reached its term.`,
-      {
-        type: needsChoice
-          ? "UNPAID_MATURITY_CHOICE_REQUIRED"
-          : "INVESTMENT_MATURED",
-        investmentId: investment.id,
-        fundId: investment.fundId,
-      }
-    );
+    await sendPushNotification(device, title, body, {
+      type,
+      investmentId: investment.id,
+      fundId: investment.fundId,
+    });
     return true;
   } catch (error) {
     console.warn("[maturity] push notification failed", {
@@ -118,7 +142,7 @@ export async function notifyNewlyMaturedInvestments(
       continue;
     }
 
-    const needsChoice = isUnpaidMaturityChoicePending(investment, fifoIds, now);
+    const scenario = resolveMaturityEmailScenario(investment, fifoIds, now);
     const fund = getFundById(investment.fundId);
     if (!fund) {
       console.warn("[maturity] unknown fund for notification", {
@@ -134,7 +158,7 @@ export async function notifyNewlyMaturedInvestments(
         user: investment.user,
         investment,
         fund,
-        needsUnpaidMaturityChoice: needsChoice,
+        scenario,
       });
       if (emailResult.ok) {
         emailOk = true;
@@ -153,7 +177,7 @@ export async function notifyNewlyMaturedInvestments(
     let pushOk = false;
     const device = investment.user.device?.trim();
     if (device) {
-      pushOk = await sendMaturityPush(investment, device, needsChoice);
+      pushOk = await sendMaturityPush(investment, device, scenario);
       if (pushOk) {
         result.pushSent += 1;
       } else {

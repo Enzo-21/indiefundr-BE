@@ -14,32 +14,26 @@ import {
 
 const currentYear = new Date().getFullYear();
 
-export type InvestmentMaturedEmailProps = {
+export type InvestmentMaturedPayableEmailProps = {
   username?: string;
   fundName?: string;
   amountUsdt?: number;
   projectedPayoutUsdt?: number;
-  needsUnpaidMaturityChoice?: boolean;
-  choiceHours?: number;
   portfolioUrl?: string;
   logoUrl?: string;
 };
 
-export function InvestmentMaturedEmail({
+export function InvestmentMaturedPayableEmail({
   username = "",
   fundName = "your fund",
   amountUsdt = 0,
   projectedPayoutUsdt = 0,
-  needsUnpaidMaturityChoice = false,
-  choiceHours = 48,
   portfolioUrl = "",
   logoUrl = "",
-}: InvestmentMaturedEmailProps) {
+}: InvestmentMaturedPayableEmailProps) {
   const amountLabel = amountUsdt.toFixed(2);
   const payoutLabel = projectedPayoutUsdt.toFixed(2);
-  const preview = needsUnpaidMaturityChoice
-    ? `Your ${fundName} investment reached its term — action required`
-    : `Your ${fundName} investment has reached its term`;
+  const preview = `Your ${fundName} investment has reached its term`;
 
   return (
     <Html>
@@ -88,32 +82,14 @@ export function InvestmentMaturedEmail({
             <strong>Hello{username ? ` ${username}` : ""}!</strong>
           </Text>
 
-          {needsUnpaidMaturityChoice ? (
-            <>
-              <Text style={{ color: "#000000", fontSize: "14px", lineHeight: "24px" }}>
-                Your {fundName} position ({amountLabel} USDT) has reached its maximum
-                term, but we could not pay it through the normal queue yet because of
-                limited liquidity in the pool.
-              </Text>
-              <Text style={{ color: "#000000", fontSize: "14px", lineHeight: "24px" }}>
-                You have {choiceHours} hours to choose your next step in the app:
-                wait longer for a payout attempt, or invite two friends to recover
-                your {amountLabel} USDT principal. If you do not choose in time, the
-                principal may be forfeited.
-              </Text>
-            </>
-          ) : (
-            <>
-              <Text style={{ color: "#000000", fontSize: "14px", lineHeight: "24px" }}>
-                Your {fundName} investment ({amountLabel} USDT) has reached its
-                maximum term. Your projected payout is {payoutLabel} USDT.
-              </Text>
-              <Text style={{ color: "#000000", fontSize: "14px", lineHeight: "24px" }}>
-                Our team will process eligible payouts according to fund liquidity and
-                queue order. You can track the latest status anytime in your Portfolio.
-              </Text>
-            </>
-          )}
+          <Text style={{ color: "#000000", fontSize: "14px", lineHeight: "24px" }}>
+            Your {fundName} investment ({amountLabel} USDT) has reached its maximum
+            term. Your projected payout is {payoutLabel} USDT.
+          </Text>
+          <Text style={{ color: "#000000", fontSize: "14px", lineHeight: "24px" }}>
+            Our team will process eligible payouts according to fund liquidity and
+            queue order. You can track the latest status anytime in your Portfolio.
+          </Text>
 
           {portfolioUrl ? (
             <Section style={{ textAlign: "center", marginTop: "24px" }}>
@@ -154,4 +130,4 @@ export function InvestmentMaturedEmail({
   );
 }
 
-export default InvestmentMaturedEmail;
+export default InvestmentMaturedPayableEmail;

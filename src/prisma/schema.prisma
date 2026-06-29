@@ -326,6 +326,7 @@ model Investment {
   sympathyNotifiedAt    DateTime?
   maturityNotifiedAt    DateTime?
   choiceReminderNotifiedAt DateTime?
+  forfeitureNotifiedAt  DateTime?
   referralRecoveryCompletedAt DateTime?
   unpaidMaturityResolution   UnpaidMaturityResolution?
   unpaidMaturityResolvedAt   DateTime?

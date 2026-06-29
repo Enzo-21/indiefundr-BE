@@ -90,24 +90,19 @@ export async function markMaturedInvestments(options?: {
     maturedIds.push(investment.id);
   }
 
+  let notifications: MaturityNotificationResult = {
+    emailsSent: 0,
+    emailsFailed: 0,
+    emailsSkipped: 0,
+    pushSent: 0,
+    pushSkippedNoDevice: 0,
+    pushFailed: 0,
+  };
+
   if (maturedIds.length > 0) {
     await processNewlyMaturedInvestments(maturedIds, now);
-  }
-
-  const notifications =
-    maturedIds.length > 0
-      ? await notifyNewlyMaturedInvestments(maturedIds)
-      : {
-          emailsSent: 0,
-          emailsFailed: 0,
-          emailsSkipped: 0,
-          pushSent: 0,
-          pushSkippedNoDevice: 0,
-          pushFailed: 0,
-        };
-
-  if (toMature.length > 0) {
     await onInvestmentMatured(maturedIds);
+    notifications = await notifyNewlyMaturedInvestments(maturedIds);
   }
 
   const pendingCount = await prisma.investment.count({ where });
