@@ -667,7 +667,8 @@ export function walletActivityRecordToTx(row: {
     recipientAddress: string;
   } | null,
   referralRequisites?: import("@/services/referrals/referralRequisites").ReferralRequisite[],
-  referralMeta?: import("./hydrateReferralMeta").ReferralActivityMeta
+  referralMeta?: import("./hydrateReferralMeta").ReferralActivityMeta,
+  principalRecoveryInsights?: import("./hydratePrincipalRecoveryInsights").PrincipalRecoveryInsights
 ): WalletActivityTx {
   const isReferralKind =
     row.kind === "referral_bonus_pending" ||
@@ -725,5 +726,6 @@ export function walletActivityRecordToTx(row: {
     recipientAddress: withdrawalMeta?.recipientAddress ?? null,
     referralRequisites,
     referralMeta,
+    principalRecoveryInsights,
   };
 }

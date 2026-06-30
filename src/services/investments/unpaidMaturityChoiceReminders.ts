@@ -2,6 +2,7 @@ import { InvestmentStatus } from "@prisma/client";
 import { getFundById } from "@/lib/config/investmentFunds";
 import { UNPAID_MATURITY_CHOICE_HOURS } from "@/lib/config/unpaidMaturityChoice";
 import { prisma } from "@/lib/prisma";
+import { fieldIsNullOrUnset } from "@/lib/prisma/mongoFieldFilters";
 import { sendUnpaidMaturityChoiceReminderEmail } from "@/services/mailing/sendUnpaidMaturityChoiceReminderEmail";
 import { isUnpaidMaturityChoicePending, loadFifoEligibleIds } from "./unpaidMaturityChoice";
 
@@ -23,11 +24,13 @@ export async function notifyUnpaidMaturityChoiceReminders(
 
   const candidates = await prisma.investment.findMany({
     where: {
-      status: InvestmentStatus.matured,
-      unpaidMaturityResolution: null,
-      unpaidMaturityChoiceDeadlineAt: { not: null },
-      choiceReminderNotifiedAt: null,
-      payoutUnlockedAt: null,
+      AND: [
+        { status: InvestmentStatus.matured },
+        fieldIsNullOrUnset("unpaidMaturityResolution"),
+        { unpaidMaturityChoiceDeadlineAt: { not: null } },
+        fieldIsNullOrUnset("choiceReminderNotifiedAt"),
+        fieldIsNullOrUnset("payoutUnlockedAt"),
+      ],
     },
     orderBy: { unpaidMaturityChoiceDeadlineAt: "asc" },
     ...(options.limit != null ? { take: options.limit } : {}),

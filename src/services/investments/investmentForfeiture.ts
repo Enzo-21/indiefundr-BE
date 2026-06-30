@@ -7,6 +7,7 @@ import {
 } from "@prisma/client";
 import { ledgerTruncateUsdt } from "@/lib/money/formatUsdt";
 import { prisma } from "@/lib/prisma";
+import { fieldIsNullOrUnset } from "@/lib/prisma/mongoFieldFilters";
 import { notifyInvestmentForfeited } from "@/services/investments/forfeitureNotifications";
 import { getLedgerSnapshot } from "@/services/revenueEngine/ledger";
 import {
@@ -131,11 +132,13 @@ export async function processInvestmentForfeitures(options?: {
 
   const expiredChoice = await prisma.investment.findMany({
     where: {
-      status: InvestmentStatus.matured,
-      unpaidMaturityResolution: null,
-      unpaidMaturityChoiceDeadlineAt: { lte: now },
-      payoutUnlockedAt: null,
-      referralRecoveryCompletedAt: null,
+      AND: [
+        { status: InvestmentStatus.matured },
+        fieldIsNullOrUnset("unpaidMaturityResolution"),
+        { unpaidMaturityChoiceDeadlineAt: { lte: now } },
+        fieldIsNullOrUnset("payoutUnlockedAt"),
+        fieldIsNullOrUnset("referralRecoveryCompletedAt"),
+      ],
     },
     orderBy: [{ unpaidMaturityChoiceDeadlineAt: "asc" }, { id: "asc" }],
     ...(options?.limit != null ? { take: options.limit } : {}),
@@ -154,11 +157,13 @@ export async function processInvestmentForfeitures(options?: {
 
   const recoveryExpired = await prisma.investment.findMany({
     where: {
-      status: InvestmentStatus.matured,
-      unpaidMaturityResolution: UnpaidMaturityResolution.referral_recovery,
-      referralRecoveryCompletedAt: null,
-      recoveryEligibleAt: { not: null },
-      payoutUnlockedAt: null,
+      AND: [
+        { status: InvestmentStatus.matured },
+        { unpaidMaturityResolution: UnpaidMaturityResolution.referral_recovery },
+        fieldIsNullOrUnset("referralRecoveryCompletedAt"),
+        { recoveryEligibleAt: { not: null } },
+        fieldIsNullOrUnset("payoutUnlockedAt"),
+      ],
     },
     orderBy: [{ recoveryEligibleAt: "asc" }, { id: "asc" }],
     select: {
@@ -210,18 +215,22 @@ export async function processInvestmentForfeitures(options?: {
     where: {
       OR: [
         {
-          status: InvestmentStatus.matured,
-          unpaidMaturityResolution: null,
-          unpaidMaturityChoiceDeadlineAt: { lte: now },
-          payoutUnlockedAt: null,
-          referralRecoveryCompletedAt: null,
+          AND: [
+            { status: InvestmentStatus.matured },
+            fieldIsNullOrUnset("unpaidMaturityResolution"),
+            { unpaidMaturityChoiceDeadlineAt: { lte: now } },
+            fieldIsNullOrUnset("payoutUnlockedAt"),
+            fieldIsNullOrUnset("referralRecoveryCompletedAt"),
+          ],
         },
         {
-          status: InvestmentStatus.matured,
-          unpaidMaturityResolution: UnpaidMaturityResolution.referral_recovery,
-          referralRecoveryCompletedAt: null,
-          recoveryEligibleAt: { not: null },
-          payoutUnlockedAt: null,
+          AND: [
+            { status: InvestmentStatus.matured },
+            { unpaidMaturityResolution: UnpaidMaturityResolution.referral_recovery },
+            fieldIsNullOrUnset("referralRecoveryCompletedAt"),
+            { recoveryEligibleAt: { not: null } },
+            fieldIsNullOrUnset("payoutUnlockedAt"),
+          ],
         },
       ],
     },

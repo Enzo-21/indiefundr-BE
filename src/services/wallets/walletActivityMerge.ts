@@ -1,4 +1,5 @@
 import type { ReferralRequisite } from "@/services/referrals/referralRequisites";
+import type { PrincipalRecoveryInsights } from "./hydratePrincipalRecoveryInsights";
 import type { TransactionInsights } from "./transactionInsights";
 
 export type WalletActivityTx = {
@@ -28,6 +29,7 @@ export type WalletActivityTx = {
     counterpartyDisplayName: string;
     referralCode?: string;
   };
+  principalRecoveryInsights?: PrincipalRecoveryInsights;
 };
 
 function mergeOnChainFields(

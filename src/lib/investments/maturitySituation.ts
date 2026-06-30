@@ -174,8 +174,8 @@ export function resolveMaturitySituation(
     return {
       ...base,
       situation: "referral_recovered",
-      statusLabel: "Principal recovered",
-      statusDetail: "Your principal was recovered through invites.",
+      statusLabel: "Investment recovered",
+      statusDetail: "Your investment amount was recovered through invites.",
     };
   }
 

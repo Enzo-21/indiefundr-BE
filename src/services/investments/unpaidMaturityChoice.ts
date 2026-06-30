@@ -17,6 +17,7 @@ import {
 import { addDuration } from "@/lib/duration/parseDuration";
 import { isValidObjectId } from "@/lib/validators/objectId";
 import { prisma } from "@/lib/prisma";
+import { fieldIsNullOrUnset } from "@/lib/prisma/mongoFieldFilters";
 import { enrichInvestment } from "@/lib/serializers/investment";
 import { loadFifoEligibleIds as loadFifoEligibleIdsFromCandidates } from "@/services/revenueEngine/fifoSurplusCandidates";
 import { markMaturedInvestments } from "@/services/investments/maturity";
@@ -89,10 +90,44 @@ export type UnpaidMaturityChoiceResult =
 
 const UNPAID_MATURITY_CHOICE_CLAIM_FAILED = "UNPAID_MATURITY_CHOICE_CLAIM_FAILED";
 
-const UNPAID_MATURITY_CHOICE_CLAIM_WHERE = {
-  unpaidMaturityResolution: null,
-  unpaidMaturityChoiceDeadlineAt: { not: null },
-} as const;
+function buildUnpaidMaturityChoiceClaimWhere(
+  investmentId: string,
+  userId: string
+) {
+  return {
+    AND: [
+      { id: investmentId },
+      { userId },
+      fieldIsNullOrUnset("unpaidMaturityResolution"),
+      { unpaidMaturityChoiceDeadlineAt: { not: null } },
+    ],
+  };
+}
+
+function unpaidMaturityChoicePendingListWhere(userId?: string) {
+  return {
+    AND: [
+      ...(userId ? [{ userId }] : []),
+      { status: InvestmentStatus.matured },
+      fieldIsNullOrUnset("unpaidMaturityResolution"),
+      fieldIsNullOrUnset("payoutUnlockedAt"),
+      fieldIsNullOrUnset("referralRecoveryCompletedAt"),
+    ],
+  };
+}
+
+function unpaidMaturityChoiceStuckHealWhere(userId?: string) {
+  return {
+    AND: [
+      ...(userId ? [{ userId }] : []),
+      { status: InvestmentStatus.matured },
+      fieldIsNullOrUnset("payoutUnlockedAt"),
+      fieldIsNullOrUnset("referralRecoveryCompletedAt"),
+      fieldIsNullOrUnset("unpaidMaturityResolution"),
+      fieldIsNullOrUnset("unpaidMaturityChoiceDeadlineAt"),
+    ],
+  };
+}
 
 const CHOICE_INVESTMENT_SELECT = {
   id: true,
@@ -159,14 +194,7 @@ export async function healStuckUnpaidMaturityChoiceDeadlines(
   now: Date = new Date()
 ): Promise<number> {
   const stuck = await prisma.investment.findMany({
-    where: {
-      status: InvestmentStatus.matured,
-      payoutUnlockedAt: null,
-      referralRecoveryCompletedAt: null,
-      unpaidMaturityResolution: null,
-      unpaidMaturityChoiceDeadlineAt: null,
-      ...(userId ? { userId } : {}),
-    },
+    where: unpaidMaturityChoiceStuckHealWhere(userId),
     select: { id: true, maturesAt: true },
   });
 
@@ -277,13 +305,7 @@ export async function getPendingUnpaidMaturityChoiceForUser(
   const powers = await getPowerInventory(userId, userLevel);
 
   const investments = await prisma.investment.findMany({
-    where: {
-      userId,
-      status: InvestmentStatus.matured,
-      unpaidMaturityResolution: null,
-      payoutUnlockedAt: null,
-      referralRecoveryCompletedAt: null,
-    },
+    where: unpaidMaturityChoicePendingListWhere(userId),
     select: CHOICE_INVESTMENT_SELECT,
     orderBy: [{ maturesAt: "asc" }, { subscribedAt: "asc" }],
   });
@@ -395,11 +417,7 @@ export async function applyUnpaidMaturityChoice(
         });
 
         const claim = await tx.investment.updateMany({
-          where: {
-            id: investmentId,
-            userId,
-            ...UNPAID_MATURITY_CHOICE_CLAIM_WHERE,
-          },
+          where: buildUnpaidMaturityChoiceClaimWhere(investmentId, userId),
           data: {
             unpaidMaturityResolution: UnpaidMaturityResolution.referral_recovery,
             unpaidMaturityResolvedAt: now,
@@ -452,11 +470,7 @@ export async function applyUnpaidMaturityChoice(
       });
 
       const claim = await tx.investment.updateMany({
-        where: {
-          id: investmentId,
-          userId,
-          ...UNPAID_MATURITY_CHOICE_CLAIM_WHERE,
-        },
+        where: buildUnpaidMaturityChoiceClaimWhere(investmentId, userId),
         data: {
           unpaidMaturityResolution: UnpaidMaturityResolution.term_extension,
           unpaidMaturityResolvedAt: now,
@@ -489,7 +503,7 @@ export async function applyUnpaidMaturityChoice(
         status: 409,
         body: {
           msg: "This investment is not eligible for an unpaid maturity choice",
-          code: "not_eligible",
+          code: "claim_failed",
         },
       };
     }

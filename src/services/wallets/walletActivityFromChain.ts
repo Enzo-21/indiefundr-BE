@@ -471,6 +471,9 @@ async function loadMaterializedTransactions(
     "./hydrateReferralRequisites"
   );
   const { hydrateReferralMetaBatch } = await import("./hydrateReferralMeta");
+  const { hydratePrincipalRecoveryInsightsBatch } = await import(
+    "./hydratePrincipalRecoveryInsights"
+  );
   const env = getEnv();
 
   const [rows, walletOrders] = await Promise.all([
@@ -498,12 +501,14 @@ async function loadMaterializedTransactions(
     withdrawalMetaByRow,
     referralRequisitesByRow,
     referralMetaByRow,
+    principalRecoveryInsightsByRow,
   ] = await Promise.all([
       hydrateActivityInsightsBatch(userId, rows),
       hydrateActivityOnChainLinksBatch(userId, rows),
       hydrateWithdrawalActivityMetaBatch(userId, rows),
       hydrateReferralRequisitesBatch(userId, rows),
       hydrateReferralMetaBatch(userId, rows),
+      hydratePrincipalRecoveryInsightsBatch(userId, rows),
     ]);
   const merged = new Map<string, WalletActivityTx>();
   for (const row of rows) {
@@ -522,6 +527,9 @@ async function loadMaterializedTransactions(
       ? referralRequisitesByRow.get(rowKey)
       : undefined;
     const referralMeta = rowKey ? referralMetaByRow.get(rowKey) : undefined;
+    const principalRecoveryInsights = rowKey
+      ? principalRecoveryInsightsByRow.get(rowKey)
+      : undefined;
     mergeWalletActivityTransaction(
       merged,
       walletActivityRecordToTx(
@@ -530,7 +538,8 @@ async function loadMaterializedTransactions(
         onChain,
         withdrawalMeta,
         referralRequisites,
-        referralMeta
+        referralMeta,
+        principalRecoveryInsights
       )
     );
   }

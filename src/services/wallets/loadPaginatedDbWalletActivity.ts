@@ -14,6 +14,7 @@ import { hydrateActivityInsightsBatch } from "./hydrateActivityInsights";
 import { hydrateActivityOnChainLinksBatch } from "./hydrateActivityOnChainLinks";
 import { hydrateReferralRequisitesBatch } from "./hydrateReferralRequisites";
 import { hydrateReferralMetaBatch } from "./hydrateReferralMeta";
+import { hydratePrincipalRecoveryInsightsBatch } from "./hydratePrincipalRecoveryInsights";
 import { hydrateWithdrawalActivityMetaBatch } from "./hydrateWithdrawalActivityMeta";
 import type { TransactionInsights } from "./transactionInsights";
 import type { WalletOnChainLinks } from "./walletOnChainLinks";
@@ -93,7 +94,11 @@ export function rowToVisibleTx(
     }
   > = new Map(),
   referralRequisitesByRow: Map<string, import("@/services/referrals/referralRequisites").ReferralRequisite[]> = new Map(),
-  referralMetaByRow: Map<string, import("./hydrateReferralMeta").ReferralActivityMeta> = new Map()
+  referralMetaByRow: Map<string, import("./hydrateReferralMeta").ReferralActivityMeta> = new Map(),
+  principalRecoveryInsightsByRow: Map<
+    string,
+    import("./hydratePrincipalRecoveryInsights").PrincipalRecoveryInsights
+  > = new Map()
 ): WalletActivityTx | null {
   if (
     row.status === "failed" &&
@@ -110,13 +115,17 @@ export function rowToVisibleTx(
     ? referralRequisitesByRow.get(rowKey)
     : undefined;
   const referralMeta = rowKey ? referralMetaByRow.get(rowKey) : undefined;
+  const principalRecoveryInsights = rowKey
+    ? principalRecoveryInsightsByRow.get(rowKey)
+    : undefined;
   return walletActivityRecordToTx(
     row,
     insights,
     onChain,
     withdrawalMeta,
     referralRequisites,
-    referralMeta
+    referralMeta,
+    principalRecoveryInsights
   );
 }
 
@@ -185,12 +194,14 @@ export async function loadPaginatedDbWalletActivity(
       withdrawalMetaByRow,
       referralRequisitesByRow,
       referralMetaByRow,
+      principalRecoveryInsightsByRow,
     ] = await Promise.all([
         hydrateActivityInsightsBatch(userId, batchRows),
         hydrateActivityOnChainLinksBatch(userId, batchRows),
         hydrateWithdrawalActivityMetaBatch(userId, batchRows),
         hydrateReferralRequisitesBatch(userId, batchRows),
         hydrateReferralMetaBatch(userId, batchRows),
+        hydratePrincipalRecoveryInsightsBatch(userId, batchRows),
       ]);
 
     let stoppedEarly = false;
@@ -204,7 +215,8 @@ export async function loadPaginatedDbWalletActivity(
         onChainByRow,
         withdrawalMetaByRow,
         referralRequisitesByRow,
-        referralMetaByRow
+        referralMetaByRow,
+        principalRecoveryInsightsByRow
       );
       if (tx) {
         mergeWalletActivityTransaction(merged, tx);

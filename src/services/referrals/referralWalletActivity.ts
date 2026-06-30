@@ -33,8 +33,21 @@ export function inviterReferralActivityEntityId(inviteId: string): string {
   return `${INVITER_PENDING_ENTITY_PREFIX}${inviteId}`;
 }
 
+const PRINCIPAL_RECOVERY_ENTITY_PREFIX =
+  "referral-principal-processing:principal-";
+
 export function principalRecoveryActivityEntityId(investmentId: string): string {
-  return `referral-principal-processing:principal-${investmentId}`;
+  return `${PRINCIPAL_RECOVERY_ENTITY_PREFIX}${investmentId}`;
+}
+
+export function parsePrincipalRecoveryInvestmentId(
+  entityId: string
+): string | null {
+  if (!entityId.startsWith(PRINCIPAL_RECOVERY_ENTITY_PREFIX)) {
+    return null;
+  }
+  const investmentId = entityId.slice(PRINCIPAL_RECOVERY_ENTITY_PREFIX.length);
+  return investmentId.length > 0 ? investmentId : null;
 }
 
 function buildReferralPendingTapInfo(amount: number) {
@@ -400,7 +413,7 @@ export async function markInviterReferralProcessingActivity(
       amountUsdt: amount,
       status: "processing",
       label: inviteKey.startsWith("principal-")
-        ? "Principal recovery"
+        ? "Investment recovered"
         : "Referral reward",
       detail: existing?.detail ?? null,
       pendingTapInfo: buildReferralProcessingTapInfo(amount),

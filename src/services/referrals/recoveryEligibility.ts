@@ -1,5 +1,6 @@
 import { InvestmentStatus, UnpaidMaturityResolution } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { fieldIsNullOrUnset } from "@/lib/prisma/mongoFieldFilters";
 import { getFundById } from "@/lib/config/investmentFunds";
 import {
   isRecoveryWindowActive,
@@ -21,6 +22,29 @@ const BLOCKED_STATUSES: InvestmentStatus[] = [
   InvestmentStatus.forfeited,
   InvestmentStatus.failed,
 ];
+
+function recoveryInProgressWhere(userId: string) {
+  return {
+    AND: [
+      { userId },
+      { status: InvestmentStatus.matured },
+      { recoveryEligibleAt: { not: null } },
+      fieldIsNullOrUnset("referralRecoveryCompletedAt"),
+      { unpaidMaturityResolution: UnpaidMaturityResolution.referral_recovery },
+    ],
+  };
+}
+
+function maturedAwaitingRecoveryRefreshWhere(userId: string) {
+  return {
+    AND: [
+      { userId },
+      { status: InvestmentStatus.matured },
+      fieldIsNullOrUnset("payoutUnlockedAt"),
+      fieldIsNullOrUnset("referralRecoveryCompletedAt"),
+    ],
+  };
+}
 
 export type RecoveryContextPayload = {
   investmentId: string;
@@ -92,12 +116,7 @@ export async function refreshRecoveryEligibilityForUser(userId: string) {
   await markMaturedInvestments();
 
   const investments = await prisma.investment.findMany({
-    where: {
-      userId,
-      status: InvestmentStatus.matured,
-      payoutUnlockedAt: null,
-      referralRecoveryCompletedAt: null,
-    },
+    where: maturedAwaitingRecoveryRefreshWhere(userId),
     select: {
       id: true,
       status: true,
@@ -216,13 +235,7 @@ export async function getRecoveryContextForInviter(userId: string) {
   await refreshRecoveryEligibilityForUser(userId);
 
   const investment = await prisma.investment.findFirst({
-    where: {
-      userId,
-      status: InvestmentStatus.matured,
-      recoveryEligibleAt: { not: null },
-      referralRecoveryCompletedAt: null,
-      unpaidMaturityResolution: UnpaidMaturityResolution.referral_recovery,
-    },
+    where: recoveryInProgressWhere(userId),
     orderBy: [{ recoveryEligibleAt: "asc" }, { subscribedAt: "asc" }],
   });
 

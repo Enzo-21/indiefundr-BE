@@ -25,7 +25,7 @@ export async function ensureReferralPendingActivity(
   await upsertReferralPendingActivity(userId, wallet.id, code);
 }
 
-export async function ensureSignedUpInviteAndInviterPending(
+export async function ensureReferralInviteSignedUp(
   inviteeUserId: string,
   referralCode: { id: string; userId: string; code: string },
   db?: Prisma.TransactionClient
@@ -46,6 +46,21 @@ export async function ensureSignedUpInviteAndInviterPending(
     });
   }
 
+  return invite;
+}
+
+export async function ensureSignedUpInviteAndInviterPending(
+  inviteeUserId: string,
+  referralCode: { id: string; userId: string; code: string },
+  db?: Prisma.TransactionClient
+) {
+  const invite = await ensureReferralInviteSignedUp(
+    inviteeUserId,
+    referralCode,
+    db
+  );
+
+  const client = db ?? prisma;
   const invitee = await client.user.findUnique({
     where: { id: inviteeUserId },
     select: { username: true },
@@ -180,24 +195,31 @@ export async function savePendingReferralCode(userId: string, rawCode: string) {
     );
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: userId },
-      data: { pendingReferralCodeId: referralCode.id },
-    });
-
-    const wallet = await getMainWallet(userId).catch(() => null);
-    if (wallet) {
-      await upsertReferralPendingActivity(
-        userId,
-        wallet.id,
-        referralCode.code,
-        tx
-      );
-    }
-
-    await ensureSignedUpInviteAndInviterPending(userId, referralCode, tx);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { pendingReferralCodeId: referralCode.id },
   });
+
+  const invite = await ensureReferralInviteSignedUp(userId, referralCode);
+
+  const inviteeWallet = await getMainWallet(userId).catch(() => null);
+  if (inviteeWallet) {
+    await upsertReferralPendingActivity(
+      userId,
+      inviteeWallet.id,
+      referralCode.code
+    );
+  }
+
+  const invitee = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { username: true },
+  });
+  await ensureInviterReferralPendingActivity(
+    invite.inviterUserId,
+    invite.id,
+    formatPublicUsername(invitee?.username)
+  );
 
   return buildPendingSaveResponse(referralCode, bonusUsdt);
 }

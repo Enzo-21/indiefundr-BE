@@ -424,7 +424,7 @@ export async function completeReferralPayoutOrder(
     }));
   const label =
     order.kind === ReferralPayoutOrderKind.principal_recovery
-      ? "Principal recovered"
+      ? "Investment recovered"
       : order.kind === ReferralPayoutOrderKind.invitee_bonus
         ? "Referral bonus"
         : "Referral reward";
