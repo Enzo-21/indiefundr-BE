@@ -6,7 +6,8 @@
  *
  * ## Changing values
  *
- * - Edit `DEFAULT_INVESTMENT_TERM` below, or set `INVESTMENT_TERM` env (duration syntax).
+ * - Edit `TESTNET_INVESTMENT_TERM` / `MAINNET_INVESTMENT_TERM` below (picked by
+ *   `BLOCKCHAIN_NETWORK`), or set `INVESTMENT_TERM` env to override (duration syntax).
  * - Only **new** investments pick up a changed term; existing rows keep stored dates.
  *
  * ## Duration suffixes
@@ -24,8 +25,11 @@
 import { addDuration, durationToApproxDays } from "@/lib/duration/parseDuration";
 import { getEnv } from "@/lib/env";
 
-/** Default investment term → `maturesAt` at subscribe. */
-export const DEFAULT_INVESTMENT_TERM = "1H";
+/** Investment term on Shasta / testnet → `maturesAt` at subscribe. */
+export const TESTNET_INVESTMENT_TERM = "3D";
+
+/** Investment term on Tron mainnet → `maturesAt` at subscribe. */
+export const MAINNET_INVESTMENT_TERM = "90D";
 
 function resolveDuration(
   envValue: string | undefined,
@@ -35,8 +39,14 @@ function resolveDuration(
   return trimmed && trimmed.length > 0 ? trimmed : fallback;
 }
 
+export function getDefaultInvestmentTerm(): string {
+  return getEnv().blockchainNetwork === "mainnet"
+    ? MAINNET_INVESTMENT_TERM
+    : TESTNET_INVESTMENT_TERM;
+}
+
 export function getInvestmentTermSpec(): string {
-  return resolveDuration(getEnv().investmentTerm, DEFAULT_INVESTMENT_TERM);
+  return resolveDuration(getEnv().investmentTerm, getDefaultInvestmentTerm());
 }
 
 /** Rounded day count for fund catalog / UI (see `durationToApproxDays`). */
