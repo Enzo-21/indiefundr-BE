@@ -36,7 +36,7 @@ export const PLAYER_POWER_CARD_COPY: Record<
   referral_recovery: {
     title: "Recovery Invite",
     description:
-      "Invite 2 friends to recover 25 USDT principal on an unpaid maturity",
+      "Invite friends to recover your principal on an unpaid maturity",
   },
   term_extension: {
     title: "Extra Time",

@@ -22,7 +22,7 @@ describe("shouldUseRecoverySlot", () => {
     );
   });
 
-  it("does not use recovery slot when slots are full", () => {
+  it("does not use recovery slot when slots are full for base tier", () => {
     assert.equal(
       shouldUseRecoverySlot(
         { completedAt: null, inviteIds: ["invite-1", "invite-2"] },
@@ -30,6 +30,36 @@ describe("shouldUseRecoverySlot", () => {
         2
       ),
       false
+    );
+  });
+
+  it("keeps slots open until higher-tier required count is met", () => {
+    assert.equal(
+      shouldUseRecoverySlot(
+        { completedAt: null, inviteIds: ["i1", "i2", "i3"] },
+        "i4",
+        4
+      ),
+      true
+    );
+    assert.equal(
+      shouldUseRecoverySlot(
+        { completedAt: null, inviteIds: ["i1", "i2", "i3", "i4"] },
+        "i5",
+        4
+      ),
+      false
+    );
+    assert.equal(
+      shouldUseRecoverySlot(
+        {
+          completedAt: null,
+          inviteIds: ["i1", "i2", "i3", "i4", "i5", "i6", "i7"],
+        },
+        "i8",
+        8
+      ),
+      true
     );
   });
 
@@ -58,3 +88,4 @@ describe("shouldUseRecoverySlot", () => {
     );
   });
 });
+

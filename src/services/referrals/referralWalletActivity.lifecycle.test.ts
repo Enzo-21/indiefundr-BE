@@ -79,7 +79,8 @@ describe("referralWalletActivity lifecycle", () => {
       namedExports: {
         REFERRAL_INVITEE_BONUS_USDT: () => 2,
         REFERRAL_INVITER_BONUS_USDT: () => 2,
-        REFERRAL_RECOVERY_PRINCIPAL_USDT: () => 50,
+        getRecoveryInviteesRequired: (principalUsdt: number) =>
+          Math.max(1, Math.round(principalUsdt / 25)) * 2,
       },
     });
     mock.module("@/lib/wallets/helpers", {

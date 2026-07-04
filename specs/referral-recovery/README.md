@@ -1,6 +1,6 @@
 # Referral recovery & Invite & Earn — specification
 
-Product and technical specification for **unpaid-at-maturity** user communication and the **Invite & Earn** referral program. When an investment matures but cannot be paid through the normal triad unlock or surplus FIFO paths, users receive an empathetic message and may **recover 25 USDT principal** by inviting two friends who each complete their first fund subscription. Invitees each receive **2 USDT** from treasury surplus (4 USDT total in recovery mode).
+Product and technical specification for **unpaid-at-maturity** user communication and the **Invite & Earn** referral program. When an investment matures but cannot be paid through the normal triad unlock or surplus FIFO paths, users receive an empathetic message and may **recover their invested principal** by inviting friends who each complete their first fund subscription (2 invitees per 25 USDT of principal: 25→2, 50→4, 75→6, 100→8). Invitees each receive **2 USDT** from treasury surplus.
 
 **Related:** [Revenue engine spec](../revenue-engine/README.md) (triad math, surplus, FIFO payouts)
 
@@ -51,9 +51,9 @@ This spec introduces:
 | **Share vs redeem** | Share requires no investment; manual redeem requires ≥1 investment; deep link saves **pending** code until first invest |
 | **One-time code slot** | Each user may use **one** referral code in their lifetime (pending, applied, or manual redeem) |
 | **Standard referrals** | Inviter earns 2 USDT per qualified invitee; invitee sees 2 USDT pending until they invest |
-| **Recovery referrals** | When inviter has a recovery-eligible investment within a **7-day window**: first 2 qualified invitees count toward **25 USDT principal** recovery; invitees always get **2 USDT**; **3rd+ invites during the window** earn standard **2 USDT inviter** bonuses |
+| **Recovery referrals** | When inviter has a recovery-eligible investment within a **7-day window**: qualified invitees fill recovery slots (`amountUsdt / 25 * 2`); when slots are full, inviter recovers **`investment.amountUsdt`**; invitees always get **2 USDT**; further invites during the window earn standard **2 USDT inviter** bonuses |
 
-Recovery bonuses for invitees (**4 USDT**) are funded from **`treasurySurplus`**. Principal recovery (**25 USDT**) is a separate **`referral_principal_recovery`** ledger event settled from pool liquidity (on-chain transfer to inviter wallet), not from projected earnings.
+Recovery invitee bonuses are funded from **`treasurySurplus`**. Principal recovery (`investment.amountUsdt`) is a separate **`referral_principal_recovery`** ledger event settled from pool liquidity (on-chain transfer to inviter wallet), not from projected earnings.
 
 ---
 
@@ -61,7 +61,8 @@ Recovery bonuses for invitees (**4 USDT**) are funded from **`treasurySurplus`**
 
 | Term | Meaning |
 |------|---------|
-| **A** | Principal per recovery investment = **25 USDT** (`REFERRAL_RECOVERY_PRINCIPAL_USDT`; base tier) |
+| **A** | Principal recovered = `investment.amountUsdt` (tier amounts 25 / 50 / 75 / 100) |
+| **N_recovery** | Invitees required = `(amountUsdt / 25) * 2` via `getRecoveryInviteesRequired` |
 | **Triad** | Payout head + two later unlocker investments (see revenue engine) |
 | **Surplus (S_sub)** | Per-subscribe credit to `treasurySurplus` ≈ 3.33–6.17 USDT depending on fund |
 | **Recovery-eligible investment** | Matured, unpaid, no triad unlock, not surplus-FIFO-eligible, within **7-day recovery window** from `recoveryEligibleAt` |
@@ -251,9 +252,9 @@ Today `markMaturedInvestments` runs only when admin opens Investments. **Recomme
 | **48h choice window open** | Triad unlock and surplus FIFO are **blocked**; user must pick recover or wait; new subscribers do not enable Pay now |
 | Later gains triad unlock **after** user chose **wait** (`term_extension`) | Normal Pay now when unlock criteria met on the extended term |
 | Later becomes FIFO-eligible **after** user chose **wait** | Admin surplus path when eligible on extended term |
-| User chose **recover** (`referral_recovery`) | Permanently excluded from triad/surplus until `principal_recovery` (25 USDT) or forfeiture |
+| User chose **recover** (`referral_recovery`) | Permanently excluded from triad/surplus until `principal_recovery` (full `amountUsdt`) or forfeiture |
 | Multiple matured unpaid | One recovery campaign per investment; referrals can count toward oldest eligible first (configurable) |
-| Partial recovery (1/2 invitees) | Show progress; no principal until both qualify |
+| Partial recovery (e.g. 1/4 invitees) | Show progress; no principal until required invitees qualify |
 
 ---
 
@@ -261,9 +262,9 @@ Today `markMaturedInvestments` runs only when admin opens Investments. **Recomme
 
 ### User-facing copy (default)
 
-> We're sorry — we couldn't grow your money on this fund this cycle. Your **25 USDT principal** is still owed, but we need more activity in the pool to pay everyone fairly.  
+> We're sorry — we couldn't grow your money on this fund this cycle. Your **principal** is still owed, but we need more activity in the pool to pay everyone fairly.  
 >  
-> **Invite two friends** who each invest once — you'll recover your **25 USDT principal**, and they'll each earn **2 USDT** when they join.
+> **Invite N friends** who each invest once (N = amount/25×2) — you'll recover your **invested principal**, and they'll each earn **2 USDT** when they join.
 
 ### Admin email variant
 
@@ -416,7 +417,7 @@ Subsequent investments do not re-trigger rewards for the same invite row.
 
 | Inviter state | Mode | Inviter reward | Invitee reward |
 |---------------|------|----------------|----------------|
-| Has ≥1 recovery-eligible investment (window active) | **Recovery** | 25 USDT principal when 2 qualify; **3rd+ during window** → 2 USDT inviter bonus each | 2 USDT each on first invest (from surplus) |
+| Has ≥1 recovery-eligible investment (window active) | **Recovery** | `amountUsdt` principal when N invitees qualify (N = amount/25×2); further invites during window → 2 USDT inviter bonus each | 2 USDT each on first invest (from surplus) |
 | No recovery-eligible investment (or window expired) | **Standard** | 2 USDT per qualified invitee | 2 USDT on first invest (via pending deep link) |
 
 Inviter can invite unlimited users in standard mode. Recovery principal applies **once per recovery-eligible investment** (linked via `ReferralRecoveryLink`).
@@ -425,8 +426,8 @@ Inviter can invite unlimited users in standard mode. Recovery principal applies 
 
 - **Window start:** `recoveryEligibleAt` is set when an investment first becomes recovery-eligible (sticky until expiry or completion).
 - **Window end:** `recoveryExpiresAt = recoveryEligibleAt + REFERRAL_RECOVERY_WINDOW_DAYS` (default **7 days**).
-- **On expiry:** `recoveryEligibleAt` is cleared; investment stays matured/unpaid; future invites follow **standard** 2+2 rules only.
-- **Mixed rewards during active window:**
+- **On expiry:** investment is forfeited (`recovery_window_expired`); future invites follow **standard** 2+2 rules only.
+- **Mixed rewards during active window** (example for **25 USDT** principal, N=2):
 
 | Invite # | Recovery slot | Inviter 2 USDT | Invitee 2 USDT |
 |----------|---------------|----------------|----------------|
@@ -434,7 +435,9 @@ Inviter can invite unlimited users in standard mode. Recovery principal applies 
 | 2 | Yes (2/2) → principal | No | Yes |
 | 3+ (slots full or recovery complete) | No | Yes | Yes |
 
-Example: 4 friends invest during the window → **25 USDT** principal + **2×2 USDT** inviter bonuses + **4×2 USDT** invitee bonuses.
+For **50 USDT**, N=4 slots before principal; for **100 USDT**, N=8. Extra friends beyond N earn standard inviter bonuses.
+
+Example (25 USDT): 4 friends invest during the window → **25 USDT** principal + **2×2 USDT** inviter bonuses + **4×2 USDT** invitee bonuses.
 
 ---
 
@@ -442,12 +445,12 @@ Example: 4 friends invest during the window → **25 USDT** principal + **2×2 U
 
 ### Constants (defaults)
 
-| Symbol | Env var | Value |
-|--------|---------|-------|
+| Symbol | Source | Value |
+|--------|--------|-------|
 | **B_invitee** | `REFERRAL_INVITEE_BONUS_USDT` | 2 |
 | **B_inviter** | `REFERRAL_INVITER_BONUS_USDT` | 2 |
-| **P_recovery** | `REFERRAL_RECOVERY_PRINCIPAL_USDT` | 25 |
-| **N_recovery** | `REFERRAL_RECOVERY_INVITEES_REQUIRED` | 2 |
+| **P_recovery** | `investment.amountUsdt` | 25 / 50 / 75 / 100 |
+| **N_recovery** | `getRecoveryInviteesRequired(amountUsdt)` | 2 / 4 / 6 / 8 |
 
 ### Standard mode ledger events
 
@@ -474,17 +477,17 @@ treasurySurplus -= 2
 TreasuryEvent: referral_bonus_outflow (role: invitee_bonus)
 ```
 
-**When 2nd invitee qualifies** (principal recovery):
+**When Nth invitee qualifies** (principal recovery, N = amount/25×2):
 
 ```
-poolAvailable -= 25
+poolAvailable -= investment.amountUsdt
 TreasuryEvent: referral_principal_recovery
 Investment.status → referral_recovered
 Investment.referralRecoveryCompletedAt = now
-// On-chain: transfer 25 USDT to inviter main wallet
+// On-chain: transfer investment.amountUsdt to inviter main wallet
 ```
 
-**Important:** Principal recovery is **25 USDT only** — projected earnings (e.g. 35 USDT on Aggressive Alpha) are **forfeited**. This matches product confirmation.
+**Important:** Principal recovery pays **`investment.amountUsdt` only** — projected earnings are **forfeited**.
 
 ### Surplus solvency guard
 
@@ -1015,9 +1018,9 @@ Admin notify action writes outbox row; worker sends when push infra ready.
 | `REFERRAL_PROGRAM_ENABLED` | `false` | Master switch |
 | `REFERRAL_INVITEE_BONUS_USDT` | `2` | Per invitee bonus |
 | `REFERRAL_INVITER_BONUS_USDT` | `2` | Standard mode inviter bonus |
-| `REFERRAL_RECOVERY_PRINCIPAL_USDT` | `25` | Principal recovery amount |
-| `REFERRAL_RECOVERY_INVITEES_REQUIRED` | `2` | Invitees needed for recovery |
 | `REFERRAL_RECOVERY_WINDOW_DAYS` | `7` | Days from `recoveryEligibleAt` to recover principal via invites |
+
+Principal recovery amount and invitee count are **not** env vars: payout = `investment.amountUsdt`, invitees = `getRecoveryInviteesRequired(amountUsdt)` (2 per 25 USDT).
 | `REFERRAL_MONTHLY_SURPLUS_CAP_USDT` | `500` | Pause bonuses when exceeded |
 | `REFERRAL_ATTRIBUTION_DAYS` | — | **Deprecated** — redeem is one-time per user lifetime, not time-windowed |
 | `SYMPATHY_RENOTIFY_COOLDOWN_DAYS` | `7` | Admin notify cooldown |

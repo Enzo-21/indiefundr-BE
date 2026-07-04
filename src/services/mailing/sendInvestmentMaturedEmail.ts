@@ -4,6 +4,7 @@ import InvestmentMaturedPayableEmail from "@/emails/InvestmentMaturedPayableEmai
 import InvestmentMaturedWaitingEmail from "@/emails/InvestmentMaturedWaitingEmail";
 import UnpaidMaturityChoiceRequiredEmail from "@/emails/UnpaidMaturityChoiceRequiredEmail";
 import type { InvestmentFund } from "@/lib/config/investmentFunds";
+import { getRecoveryInviteesRequired } from "@/lib/config/referralRecovery";
 import type { MaturityEmailScenario } from "@/lib/investments/resolveMaturityEmailScenario";
 import { UNPAID_MATURITY_CHOICE_HOURS } from "@/lib/config/unpaidMaturityChoice";
 import { getEnv } from "@/lib/env";
@@ -34,6 +35,7 @@ function maturityEmailContent(
     fundName: string;
     amountUsdt: number;
     projectedPayoutUsdt: number;
+    recoveryRequiredCount: number;
     choiceHours: number;
     choiceDeadlineLabel: string;
     portfolioUrl: string;
@@ -45,6 +47,7 @@ function maturityEmailContent(
     fundName,
     amountUsdt,
     projectedPayoutUsdt,
+    recoveryRequiredCount,
     choiceHours,
     choiceDeadlineLabel,
     portfolioUrl,
@@ -58,13 +61,14 @@ function maturityEmailContent(
       subject: `Action required: choose how to continue your ${fundName} investment`,
       text:
         `Your ${fundName} investment (${amountLabel} USDT) reached its term but payout is waiting on pool liquidity. ` +
-        `Within ${choiceHours} hours, choose wait longer for ${payoutLabel} USDT projected payout or invite friends to recover ${amountLabel} USDT principal: ${portfolioUrl}`,
+        `Within ${choiceHours} hours, choose wait longer for ${payoutLabel} USDT projected payout or invite ${recoveryRequiredCount} friends to recover ${amountLabel} USDT principal: ${portfolioUrl}`,
       htmlPromise: render(
         UnpaidMaturityChoiceRequiredEmail({
           username,
           fundName,
           amountUsdt,
           projectedPayoutUsdt,
+          recoveryRequiredCount,
           choiceHours,
           choiceDeadlineLabel,
           portfolioUrl,
@@ -140,6 +144,7 @@ export async function sendInvestmentMaturedEmail(params: {
       fundName: fund.name,
       amountUsdt: investment.amountUsdt,
       projectedPayoutUsdt: investment.projectedPayoutUsdt,
+      recoveryRequiredCount: getRecoveryInviteesRequired(investment.amountUsdt),
       choiceHours,
       choiceDeadlineLabel,
       portfolioUrl,

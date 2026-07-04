@@ -1,6 +1,7 @@
 import { render } from "@react-email/render";
 import type { ForfeitureReason, Investment, User } from "@prisma/client";
 import InvestmentForfeitedEmail from "@/emails/InvestmentForfeitedEmail";
+import { getRecoveryInviteesRequired } from "@/lib/config/referralRecovery";
 import type { InvestmentFund } from "@/lib/config/investmentFunds";
 import {
   getResendClient,
@@ -47,6 +48,9 @@ export async function sendInvestmentForfeitedEmail(params: {
         username: user.name || "",
         fundName: fund.name,
         amountUsdt: investment.amountUsdt,
+        recoveryRequiredCount: getRecoveryInviteesRequired(
+          investment.amountUsdt
+        ),
         forfeitureReason,
         portfolioUrl,
         logoUrl: resolveMailingLogoUrl(),

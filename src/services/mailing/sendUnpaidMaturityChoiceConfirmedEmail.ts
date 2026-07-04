@@ -3,8 +3,10 @@ import type { Investment, User } from "@prisma/client";
 import { UnpaidMaturityResolution } from "@prisma/client";
 import UnpaidMaturityChoiceConfirmedEmail from "@/emails/UnpaidMaturityChoiceConfirmedEmail";
 import type { InvestmentFund } from "@/lib/config/investmentFunds";
-import { recoveryExpiresAt } from "@/lib/config/referralRecovery";
-import { REFERRAL_RECOVERY_INVITEES_REQUIRED } from "@/lib/config/referralRecovery";
+import {
+  getRecoveryInviteesRequired,
+  recoveryExpiresAt,
+} from "@/lib/config/referralRecovery";
 import {
   getResendClient,
   getResendErrorMessage,
@@ -53,7 +55,9 @@ export async function sendUnpaidMaturityChoiceConfirmedEmail(params: {
         extensionDays: investment.termExtensionDays ?? undefined,
         newMaturesAt: investment.maturesAt?.toISOString(),
         recoveryExpiresAt: recoveryExpires,
-        recoveryRequiredCount: REFERRAL_RECOVERY_INVITEES_REQUIRED(),
+        recoveryRequiredCount: getRecoveryInviteesRequired(
+          investment.amountUsdt
+        ),
         portfolioUrl,
         logoUrl: resolveMailingLogoUrl(),
       })

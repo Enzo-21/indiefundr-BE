@@ -19,6 +19,7 @@ export type UnpaidMaturityChoiceRequiredEmailProps = {
   fundName?: string;
   amountUsdt?: number;
   projectedPayoutUsdt?: number;
+  recoveryRequiredCount?: number;
   choiceHours?: number;
   choiceDeadlineLabel?: string;
   portfolioUrl?: string;
@@ -31,6 +32,7 @@ export function UnpaidMaturityChoiceRequiredEmail({
   fundName = "your fund",
   amountUsdt = 0,
   projectedPayoutUsdt = 0,
+  recoveryRequiredCount = 2,
   choiceHours = 48,
   choiceDeadlineLabel = "",
   portfolioUrl = "",
@@ -105,7 +107,8 @@ export function UnpaidMaturityChoiceRequiredEmail({
           </Text>
           <Text style={{ color: "#000000", fontSize: "14px", lineHeight: "24px" }}>
             <strong>2. Invite friends</strong> — recover your {amountLabel} USDT
-            principal by inviting two friends who complete their first investment.
+            principal by inviting {recoveryRequiredCount} friends who complete
+            their first investment.
           </Text>
           <Text style={{ color: "#000000", fontSize: "14px", lineHeight: "24px" }}>
             If you do not choose in time, your investment may be forfeited.

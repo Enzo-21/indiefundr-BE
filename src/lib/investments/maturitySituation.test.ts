@@ -41,6 +41,16 @@ describe("resolveMaturitySituation", () => {
     assert.equal(view.statusLabel, "Choose next step");
     assert.equal(view.needsUnpaidMaturityChoice, true);
     assert.equal(view.nextDeadlineLabel, "Choice deadline");
+    assert.match(view.statusDetail, /invite 2 friends/);
+  });
+
+  it("scales choice_required invite count with principal", () => {
+    const view = resolveMaturitySituation(
+      { ...maturedBase, amountUsdt: 100 },
+      { fifoEligibleIds: new Set(), now: choiceNow }
+    );
+    assert.equal(view.situation, "choice_required");
+    assert.match(view.statusDetail, /invite 8 friends/);
   });
 
   it("returns extended_active after term extension", () => {

@@ -4,7 +4,7 @@ import { getEnv } from "@/lib/env";
 import { canUserClaim } from "@/lib/investments/presentation";
 import { resolveMaturitySituation } from "@/lib/investments/maturitySituation";
 import { unlockSlotEquivalent } from "@/lib/config/investmentCohort";
-import { REFERRAL_RECOVERY_INVITEES_REQUIRED } from "@/lib/config/referralRecovery";
+import { getRecoveryInviteesRequired } from "@/lib/config/referralRecovery";
 import * as tron from "@/services/tron/client";
 import { prisma } from "@/lib/prisma";
 import {
@@ -386,8 +386,6 @@ async function mapInvestmentsToAdminRows(
   const recoveryQualifiedById = new Map(
     recoveryLinks.map((link) => [link.investmentId, link.inviteIds.length])
   );
-  const recoveryRequiredCount = REFERRAL_RECOVERY_INVITEES_REQUIRED();
-
   const ledgerViews = await buildInvestmentLedgerSnapshotMap(
     rows.map((inv) => inv.id),
     rows
@@ -452,7 +450,9 @@ async function mapInvestmentsToAdminRows(
       fifoEligibleIds,
       recoveryQualifiedCount,
       recoveryRequiredCount:
-        inv.recoveryEligibleAt != null ? recoveryRequiredCount : null,
+        inv.recoveryEligibleAt != null
+          ? getRecoveryInviteesRequired(inv.amountUsdt)
+          : null,
       now,
     });
 
@@ -533,7 +533,9 @@ async function mapInvestmentsToAdminRows(
       termExtensionDays: inv.termExtensionDays,
       recoveryQualifiedCount,
       recoveryRequiredCount:
-        inv.recoveryEligibleAt != null ? recoveryRequiredCount : null,
+        inv.recoveryEligibleAt != null
+          ? getRecoveryInviteesRequired(inv.amountUsdt)
+          : null,
       nextDeadlineAt: maturity.nextDeadlineAt
         ? new Date(maturity.nextDeadlineAt)
         : null,

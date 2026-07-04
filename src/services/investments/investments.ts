@@ -56,10 +56,9 @@ export async function getUserInvestments(userId: string) {
     recoveryLinks.map((link) => [link.investmentId, link.inviteIds.length])
   );
 
-  const { REFERRAL_RECOVERY_INVITEES_REQUIRED } = await import(
+  const { getRecoveryInviteesRequired } = await import(
     "@/lib/config/referralRecovery"
   );
-  const requiredCount = REFERRAL_RECOVERY_INVITEES_REQUIRED();
   const fifoIds = await loadFifoEligibleIds();
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -72,7 +71,9 @@ export async function getUserInvestments(userId: string) {
     return enrichInvestment(investment, {
       fifoEligibleIds: fifoIds,
       recoveryQualifiedCount: qualifiedByInvestment.get(investment.id) ?? null,
-      recoveryRequiredCount: investment.recoveryEligibleAt ? requiredCount : null,
+      recoveryRequiredCount: investment.recoveryEligibleAt
+        ? getRecoveryInviteesRequired(investment.amountUsdt)
+        : null,
       canChooseReferralRecovery: choiceCtx?.canChooseReferralRecovery ?? false,
       canChooseTermExtension: choiceCtx?.canChooseTermExtension ?? false,
       extensionMinDays: choiceCtx?.extensionMinDays ?? null,

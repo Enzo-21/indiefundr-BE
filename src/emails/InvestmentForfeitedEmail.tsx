@@ -19,12 +19,16 @@ export type InvestmentForfeitedEmailProps = {
   username?: string;
   fundName?: string;
   amountUsdt?: number;
+  recoveryRequiredCount?: number;
   forfeitureReason?: ForfeitureReason;
   portfolioUrl?: string;
   logoUrl?: string;
 };
 
-function forfeitureCopy(reason: ForfeitureReason | undefined): {
+function forfeitureCopy(
+  reason: ForfeitureReason | undefined,
+  recoveryRequiredCount = 2
+): {
   heading: string;
   body: string;
   preview: string;
@@ -51,7 +55,7 @@ function forfeitureCopy(reason: ForfeitureReason | undefined): {
         heading: "Recovery window ended",
         preview: "Your invite recovery window closed without enough qualified friends",
         body:
-          "The invite recovery window closed before two friends completed their " +
+          `The invite recovery window closed before ${recoveryRequiredCount} friends completed their ` +
           "first investments. Your principal was not recovered through this path.",
       };
     default:
@@ -67,12 +71,13 @@ export function InvestmentForfeitedEmail({
   username = "",
   fundName = "your fund",
   amountUsdt = 0,
+  recoveryRequiredCount = 2,
   forfeitureReason,
   portfolioUrl = "",
   logoUrl = "",
 }: InvestmentForfeitedEmailProps) {
   const amountLabel = amountUsdt.toFixed(2);
-  const copy = forfeitureCopy(forfeitureReason);
+  const copy = forfeitureCopy(forfeitureReason, recoveryRequiredCount);
 
   return (
     <Html>

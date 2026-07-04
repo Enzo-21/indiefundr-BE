@@ -121,13 +121,15 @@ export async function enqueueReferralPayoutOrder(params: {
     await markInviterReferralProcessingActivity(
       params.userId,
       wallet.id,
-      params.referralInviteId
+      params.referralInviteId,
+      params.amountUsdt
     );
   } else {
     await markInviterReferralProcessingActivity(
       params.userId,
       wallet.id,
-      `principal-${params.investmentId ?? params.referralInviteId}`
+      `principal-${params.investmentId ?? params.referralInviteId}`,
+      params.amountUsdt
     );
   }
 
