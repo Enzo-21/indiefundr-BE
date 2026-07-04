@@ -60,6 +60,35 @@ export function userAwaitingPayoutCopy(): UserFacingMaturityCopy {
   };
 }
 
+export function userRecoveryInProgressCopy(
+  qualified: number,
+  required: number
+): UserFacingMaturityCopy {
+  return {
+    statusLabel: "Recover via invites",
+    statusDetail: `You chose to recover your principal through invites. ${qualified} of ${required} friends have completed their first investments.`,
+  };
+}
+
+export function userExtendedActiveCopy(
+  termExtensionDays: number | null
+): UserFacingMaturityCopy {
+  return {
+    statusLabel: "Extended — waiting",
+    statusDetail:
+      termExtensionDays != null
+        ? `You chose to give our fund strategies ${termExtensionDays} more days. We'll try again when the extended term ends.`
+        : `You chose to give our fund strategies more time. We'll try again when the extended term ends.`,
+  };
+}
+
+export function userRedeemingCopy(): UserFacingMaturityCopy {
+  return {
+    statusLabel: "Claiming…",
+    statusDetail: "Your payout is on its way to your wallet.",
+  };
+}
+
 export function userForfeitureDetail(
   reason: ForfeitureReason | null,
   recoveryRequiredCount?: number | null
@@ -131,6 +160,20 @@ function forfeitureReasonFromLabel(statusLabel: string): ForfeitureReason | null
   return null;
 }
 
+function parseRecoveryProgressFromDetail(statusDetail: string): {
+  qualified: number;
+  required: number;
+} {
+  const match = statusDetail.match(/(\d+) of (\d+) friends/);
+  if (match) {
+    return {
+      qualified: Number.parseInt(match[1], 10),
+      required: Number.parseInt(match[2], 10),
+    };
+  }
+  return { qualified: 0, required: 2 };
+}
+
 function parseRecoveryRequiredFromDetail(statusDetail: string): number | null {
   const match = statusDetail.match(/before (\d+) friends/);
   return match ? Number.parseInt(match[1], 10) : null;
@@ -159,6 +202,16 @@ export function toUserFacingMaturityCopy(
       return userWaitingUnlockCopy();
     case "awaiting_admin_payout":
       return userAwaitingPayoutCopy();
+    case "recovery_in_progress": {
+      const { qualified, required } = parseRecoveryProgressFromDetail(
+        view.statusDetail
+      );
+      return userRecoveryInProgressCopy(qualified, required);
+    }
+    case "extended_active":
+      return userExtendedActiveCopy(view.termExtensionDays);
+    case "redeeming":
+      return userRedeemingCopy();
     case "forfeited": {
       const reason = forfeitureReasonFromLabel(view.statusLabel);
       const recoveryRequired =

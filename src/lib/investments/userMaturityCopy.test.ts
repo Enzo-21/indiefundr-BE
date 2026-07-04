@@ -150,4 +150,57 @@ describe("userMaturityCopy", () => {
     assert.doesNotMatch(user.statusDetail, /Unlocked after/i);
     assert.doesNotMatch(user.statusDetail, /cohort/i);
   });
+
+  it("maps recovery_in_progress to invite recovery copy", () => {
+    const internal = resolveMaturitySituation(
+      {
+        ...maturedBase,
+        unpaidMaturityChoiceDeadlineAt: null,
+        recoveryEligibleAt: new Date("2026-06-01T00:00:00.000Z"),
+        unpaidMaturityResolution: "referral_recovery" as const,
+      },
+      {
+        fifoEligibleIds: new Set(),
+        recoveryQualifiedCount: 1,
+        recoveryRequiredCount: 3,
+        now: choiceNow,
+      }
+    );
+    const user = toUserFacingMaturityCopy(internal);
+    assert.equal(user.statusLabel, "Recover via invites");
+    assert.match(user.statusDetail, /1 of 3 friends/);
+    assertNoInternalInfraTerms(`${user.statusLabel} ${user.statusDetail}`);
+  });
+
+  it("maps extended_active to strategy wait copy", () => {
+    const internal = resolveMaturitySituation(
+      {
+        ...maturedBase,
+        status: InvestmentStatus.active,
+        unpaidMaturityChoiceDeadlineAt: null,
+        unpaidMaturityResolution: "term_extension" as const,
+        termExtensionDays: 30,
+        maturesAt: new Date("2026-08-01T00:00:00.000Z"),
+      },
+      { now: choiceNow }
+    );
+    const user = toUserFacingMaturityCopy(internal);
+    assert.equal(user.statusLabel, "Extended — waiting");
+    assert.match(user.statusDetail, /30 more days/);
+    assert.match(user.statusDetail, /fund strategies/);
+  });
+
+  it("maps redeeming to payout on the way copy", () => {
+    const internal = resolveMaturitySituation(
+      {
+        ...maturedBase,
+        status: InvestmentStatus.redeeming,
+        unpaidMaturityChoiceDeadlineAt: null,
+      },
+      { now: choiceNow }
+    );
+    const user = toUserFacingMaturityCopy(internal);
+    assert.equal(user.statusLabel, "Claiming…");
+    assert.match(user.statusDetail, /on its way/);
+  });
 });
