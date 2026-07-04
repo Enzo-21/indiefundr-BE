@@ -32,15 +32,15 @@ export const heroDecorCopy = {
   fundSubscribe: {
     fundName: "High Roller Syndicate",
     label: "Fund subscribe",
-    amount: "$2,500",
+    amount: "-$25",
   },
   maturity: {
-    title: "Maturity in 47 days",
-    subtitle: "2,750 payout pending",
+    title: "Earnings credited",
+    subtitle: "+$140 sent to your wallet",
   },
   portfolio: {
-    label: "Portfolio +10%",
-    amount: "+$250",
+    label: "Portfolio +35%",
+    amount: "+$2,490",
     period: "this term",
   },
 };
