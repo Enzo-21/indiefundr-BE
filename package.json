@@ -16,6 +16,7 @@
     "dev:init": "npm run db:setup && npm run dev",
     "cutover:smoke": "tsx scripts/cutover-smoke.ts",
     "audit:db-vs-chain": "tsx scripts/audit-db-vs-chain.ts",
+    "audit:forfeiture-ledger": "tsx scripts/audit-forfeiture-ledger-drift.ts",
     "heal:purchase-orders": "tsx scripts/heal-purchase-orders.ts",
     "backfill:referral-payout-orders": "tsx scripts/backfill-referral-payout-orders.ts",
     "backfill:unpaid-maturity-resolution": "tsx scripts/backfill-unpaid-maturity-resolution.ts",

@@ -8,9 +8,11 @@ import {
 import {
   fieldsMismatch,
   LEDGER_RECONCILE_EPSILON,
+  replayExpectedLedgerFromEvents,
   type LedgerIntegrityReport,
   type ExpectedLedgerValues,
 } from "./ledgerReconcile";
+import { TreasuryEventType } from "@prisma/client";
 import {
   buildSequentialCohort,
   cohortToExpectedLedger,
@@ -153,5 +155,89 @@ describe("expected ledger math", () => {
     };
 
     assert.equal(fieldsMismatch(stored, expected), true);
+  });
+});
+
+describe("replayExpectedLedgerFromEvents", () => {
+  it("retains subscribe inflow when obligation_forfeiture is recorded", () => {
+    const principal = 25;
+    const surplusSlice = surplusPerSubscription(35, principal);
+    const replayed = replayExpectedLedgerFromEvents([
+      { type: TreasuryEventType.subscribe_inflow, amountUsdt: principal, meta: null },
+      {
+        type: TreasuryEventType.surplus_credit,
+        amountUsdt: surplusSlice,
+        meta: null,
+      },
+      {
+        type: TreasuryEventType.obligation_forfeiture,
+        amountUsdt: 35,
+        meta: { reason: "choice_deadline_expired" },
+      },
+    ]);
+
+    assert.equal(replayed.poolAvailable, principal);
+    assert.equal(replayed.treasurySurplus, surplusSlice);
+    assert.equal(replayed.protectedRevenueWithdrawn, 0);
+  });
+
+  it("nets referral principal recovery against subscribe inflow", () => {
+    const principal = 25;
+    const replayed = replayExpectedLedgerFromEvents([
+      { type: TreasuryEventType.subscribe_inflow, amountUsdt: principal, meta: null },
+      {
+        type: TreasuryEventType.referral_principal_recovery,
+        amountUsdt: principal,
+        meta: null,
+      },
+    ]);
+
+    assert.equal(replayed.poolAvailable, 0);
+  });
+
+  it("applies ledger_adjustment delta to the meta field", () => {
+    const replayed = replayExpectedLedgerFromEvents([
+      { type: TreasuryEventType.subscribe_inflow, amountUsdt: 100, meta: null },
+      {
+        type: TreasuryEventType.ledger_adjustment,
+        amountUsdt: -5,
+        meta: { field: "treasurySurplus", reason: "triad_surplus_reconcile" },
+      },
+      {
+        type: TreasuryEventType.ledger_adjustment,
+        amountUsdt: 10,
+        meta: { field: "poolAvailable" },
+      },
+    ]);
+
+    assert.equal(replayed.poolAvailable, 110);
+    assert.equal(replayed.treasurySurplus, 0);
+  });
+
+  it("cohort-style expectation is lower than event replay when principal is forfeited", () => {
+    const principal = 25;
+    const surplusSlice = surplusPerSubscription(35, principal);
+    const eventReplay = replayExpectedLedgerFromEvents([
+      { type: TreasuryEventType.subscribe_inflow, amountUsdt: principal, meta: null },
+      {
+        type: TreasuryEventType.surplus_credit,
+        amountUsdt: surplusSlice,
+        meta: null,
+      },
+      {
+        type: TreasuryEventType.obligation_forfeiture,
+        amountUsdt: 35,
+        meta: { reason: "choice_deadline_expired" },
+      },
+    ]);
+
+    const cohortExpected: ExpectedLedgerValues = {
+      poolAvailable: 0,
+      treasurySurplus: 0,
+      protectedRevenueWithdrawn: 0,
+    };
+
+    assert.equal(fieldsMismatch(eventReplay, cohortExpected), true);
+    assert.equal(fieldsMismatch(eventReplay, eventReplay), false);
   });
 });

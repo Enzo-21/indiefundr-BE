@@ -3,7 +3,7 @@ import type { MarketingPlatform } from "./detectPlatform";
 export const installModalCopy = {
   headerTitle: "Get IndieFundr on your phone",
   headerSubtitle:
-    "Native apps are coming to the App Store and Google Play. Use the options below in the meantime.",
+    "IndieFundr is not on Google Play yet. Install the Android beta APK below while we prepare the official store release.",
   ios: {
     steps: [
       {
@@ -20,7 +20,7 @@ export const installModalCopy = {
   },
   android: {
     intro:
-      "IndieFundr runs as a native Android app. Tap below to install the APK when it is available.",
+      "Install the IndieFundr beta APK directly on your Android device. You may need to allow installs from unknown sources in Settings before opening the file.",
     primaryCta: "Install APK",
     apkInProgress: "APK in progress",
     apkInProgressDetail: "The Android APK is not available yet.",

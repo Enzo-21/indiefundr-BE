@@ -79,3 +79,7 @@ Deploy `frontend/dist/` to the `app` subdomain. No service worker or web manifes
 4. **Marketing site** — App Store / Play badges open updated modals (no “Add to Home Screen” copy).
 5. **Dev bypass** — `?allowBrowser=1` on phone loads full web app.
 6. **`npm run build:web`** — succeeds; `dist/` has no `sw.js`.
+
+## Android APK (staging + OTA)
+
+Plan completo Android APK + OTA deprecación: [frontend/docs/APK_ANDROID_BETA_PLAN.md](../../frontend/docs/APK_ANDROID_BETA_PLAN.md)
