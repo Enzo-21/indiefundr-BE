@@ -55,7 +55,7 @@ describe("enrichInvestment", () => {
     const json = enrichInvestment(baseInvestment);
     assert.equal(json._id, baseInvestment.id);
     assert.equal(json.fundName, "Hustle Collective");
-    assert.equal(json.statusLabel, "Awaiting admin payout");
+    assert.equal(json.statusLabel, "Payout processing");
     assert.equal(json.situation, "awaiting_admin_payout");
     assert.ok(json.statusDetail);
     assert.equal(json.canClaim, false);

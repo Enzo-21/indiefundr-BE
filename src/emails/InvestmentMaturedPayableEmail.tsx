@@ -11,6 +11,7 @@ import {
   Section,
   Text,
 } from "@react-email/components";
+import { userMaturedPayableEmailBody } from "@/lib/investments/userMaturityCopy";
 
 const currentYear = new Date().getFullYear();
 
@@ -87,8 +88,7 @@ export function InvestmentMaturedPayableEmail({
             term. Your projected payout is {payoutLabel} USDT.
           </Text>
           <Text style={{ color: "#000000", fontSize: "14px", lineHeight: "24px" }}>
-            Our team will process eligible payouts according to fund liquidity and
-            queue order. You can track the latest status anytime in your Portfolio.
+            {userMaturedPayableEmailBody()}
           </Text>
 
           {portfolioUrl ? (

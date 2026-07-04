@@ -11,6 +11,7 @@ import {
   Section,
   Text,
 } from "@react-email/components";
+import { userUnpaidChoiceEmailIntro } from "@/lib/investments/userMaturityCopy";
 
 const currentYear = new Date().getFullYear();
 
@@ -94,7 +95,7 @@ export function UnpaidMaturityChoiceRequiredEmail({
 
           <Text style={{ color: "#000000", fontSize: "14px", lineHeight: "24px" }}>
             Your {fundName} position ({amountLabel} USDT) has reached its maximum
-            term, but payout is not available yet because of limited pool liquidity.
+            term. {userUnpaidChoiceEmailIntro()}
           </Text>
           <Text style={{ color: "#000000", fontSize: "14px", lineHeight: "24px" }}>
             You have {choiceHours} hours

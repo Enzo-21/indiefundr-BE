@@ -35,9 +35,9 @@ const maturedUnlocked: Investment = {
 describe("admin-only payout fulfillment (user-facing)", () => {
   it("disables canClaim and shows awaiting admin payout label when triad-unlocked", () => {
     assert.equal(canUserClaim(maturedUnlocked), false);
-    assert.equal(getUserStatusLabel(maturedUnlocked), "Awaiting admin payout");
+    assert.equal(getUserStatusLabel(maturedUnlocked), "Payout processing");
     const json = enrichInvestment(maturedUnlocked);
     assert.equal(json.canClaim, false);
-    assert.equal(json.statusLabel, "Awaiting admin payout");
+    assert.equal(json.statusLabel, "Payout processing");
   });
 });

@@ -7,6 +7,7 @@ import {
   canUserClaim,
   resolveInvestmentMaturitySituation,
 } from "@/lib/investments/presentation";
+import { toUserFacingMaturityCopy } from "@/lib/investments/userMaturityCopy";
 
 export type EnrichedInvestmentJson = {
   _id: string;
@@ -82,6 +83,7 @@ export function enrichInvestment(
     recoveryQualifiedCount: options.recoveryQualifiedCount,
     recoveryRequiredCount: options.recoveryRequiredCount,
   });
+  const userCopy = toUserFacingMaturityCopy(maturity);
 
   return {
     _id: investment.id,
@@ -106,8 +108,8 @@ export function enrichInvestment(
     date: investment.date.toISOString(),
     fundName: fund?.name || investment.fundId,
     situation: maturity.situation,
-    statusLabel: maturity.statusLabel,
-    statusDetail: maturity.statusDetail,
+    statusLabel: userCopy.statusLabel,
+    statusDetail: userCopy.statusDetail,
     chosenPath: maturity.chosenPath,
     nextDeadlineAt: maturity.nextDeadlineAt,
     nextDeadlineLabel: maturity.nextDeadlineLabel,

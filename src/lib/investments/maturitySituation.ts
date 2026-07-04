@@ -102,11 +102,7 @@ function forfeitureDetail(
   recoveryRequiredCount?: number | null
 ): string {
   if (reason === ForfeitureReason.choice_deadline_expired) {
-    return (
-      "We couldn't generate the payout from pool activity in time. We offered you the choice to wait longer " +
-      "or recover your principal through invites, but the decision window closed without a response. " +
-      "This investment is now closed and no payout will be processed."
-    );
+    return "The 48-hour choice window expired without selecting wait or invite recovery.";
   }
   if (reason === ForfeitureReason.second_maturity_unpaid) {
     return "The extended term ended and payout was still unavailable.";

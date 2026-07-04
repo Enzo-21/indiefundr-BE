@@ -7,6 +7,7 @@ import type {
   MaturitySituation,
 } from "@/lib/investments/maturitySituation";
 import { resolveInvestmentMaturitySituation } from "@/lib/investments/presentation";
+import { toUserFacingMaturityCopy } from "@/lib/investments/userMaturityCopy";
 import {
   defaultTypicalPayoutDays,
   payoutDaysBetweenFloor,
@@ -143,11 +144,12 @@ function investmentLifecycleInsights(
   const maturity = resolveInvestmentMaturitySituation(investment, {
     fifoEligibleIds: context.fifoEligibleIds,
   });
+  const userCopy = toUserFacingMaturityCopy(maturity);
   return {
     investmentStatus: investment.status,
     situation: maturity.situation,
-    statusLabel: maturity.statusLabel,
-    statusDetail: maturity.statusDetail,
+    statusLabel: userCopy.statusLabel,
+    statusDetail: userCopy.statusDetail,
     chosenPath: maturity.chosenPath,
     nextDeadlineAt: maturity.nextDeadlineAt,
     nextDeadlineLabel: maturity.nextDeadlineLabel,

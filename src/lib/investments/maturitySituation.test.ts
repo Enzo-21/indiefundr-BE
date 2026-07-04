@@ -177,7 +177,7 @@ describe("resolveMaturitySituation", () => {
     );
     assert.equal(view.situation, "forfeited");
     assert.equal(view.statusLabel, "Term ended — no choice made");
-    assert.match(view.statusDetail, /decision window closed without a response/);
+    assert.match(view.statusDetail, /48-hour choice window expired/);
     assert.equal(view.needsUnpaidMaturityChoice, false);
   });
 });

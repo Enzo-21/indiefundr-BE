@@ -12,6 +12,7 @@ import {
   Text,
 } from "@react-email/components";
 import type { ForfeitureReason } from "@prisma/client";
+import { userForfeitureDetail } from "@/lib/investments/userMaturityCopy";
 
 const currentYear = new Date().getFullYear();
 
@@ -38,26 +39,21 @@ function forfeitureCopy(
       return {
         heading: "Investment ended — no choice made",
         preview: "Your investment term ended without a selected next step",
-        body:
-          "We couldn't generate the payout from pool activity in time. We offered you the choice to wait longer " +
-          "or recover your principal through invites, but the decision window closed without a response. " +
-          "This investment is now closed and no payout will be processed.",
+        body: userForfeitureDetail("choice_deadline_expired"),
       };
     case "second_maturity_unpaid":
       return {
         heading: "Extended term ended — no payout",
         preview: "Your extended investment term ended without payout",
         body:
-          "Your extended term ended and payout was still unavailable. " +
-          "There are no further payout attempts for this investment.",
+          userForfeitureDetail("second_maturity_unpaid") +
+          " There are no further payout attempts for this investment.",
       };
     case "recovery_window_expired":
       return {
         heading: "Recovery window ended",
         preview: "Your invite recovery window closed without enough qualified friends",
-        body:
-          `The invite recovery window closed before ${recoveryRequiredCount} friends completed their ` +
-          "first investments. Your principal was not recovered through this path.",
+        body: userForfeitureDetail("recovery_window_expired", recoveryRequiredCount),
       };
     default:
       return {

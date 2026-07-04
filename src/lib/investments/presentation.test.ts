@@ -34,7 +34,7 @@ const maturedUnlocked: Investment = {
 describe("presentation", () => {
   it("admin-only payouts: triad-unlocked matured investments are not user-claimable", () => {
     assert.equal(canUserClaim(maturedUnlocked), false);
-    assert.equal(getUserStatusLabel(maturedUnlocked), "Awaiting admin payout");
+    assert.equal(getUserStatusLabel(maturedUnlocked), "Payout processing");
   });
 
   it("payable without triad unlock shows queue or waiting state", () => {
@@ -43,7 +43,7 @@ describe("presentation", () => {
       payoutUnlockedAt: null,
       globalQueueRank: 1,
     } as Investment;
-    assert.equal(getUserStatusLabel(maturedPayableOnly), "Payout queue #1");
+    assert.equal(getUserStatusLabel(maturedPayableOnly), "Payout in progress (#1)");
   });
 
   it("canUserClaim false when active", () => {
