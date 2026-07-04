@@ -175,7 +175,7 @@ export async function processInvestmentForfeitures(options?: {
   const forfeitedIds: string[] = [];
 
   for (const row of expiredChoice) {
-    if (!isUnpaidMaturityChoicePending(row, fifoIds)) continue;
+    if (isUnpaidMaturityChoicePending(row, fifoIds, now)) continue;
     const result = await forfeitInvestment(
       row.id,
       ForfeitureReason.choice_deadline_expired

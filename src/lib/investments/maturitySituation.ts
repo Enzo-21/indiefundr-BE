@@ -102,7 +102,11 @@ function forfeitureDetail(
   recoveryRequiredCount?: number | null
 ): string {
   if (reason === ForfeitureReason.choice_deadline_expired) {
-    return "The 48-hour choice window expired without selecting wait or invite recovery.";
+    return (
+      "We couldn't generate the payout from pool activity in time. We offered you the choice to wait longer " +
+      "or recover your principal through invites, but the decision window closed without a response. " +
+      "This investment is now closed and no payout will be processed."
+    );
   }
   if (reason === ForfeitureReason.second_maturity_unpaid) {
     return "The extended term ended and payout was still unavailable.";
@@ -308,12 +312,18 @@ export function resolveMaturitySituation(
     !isChoiceDeadlineActive(investment.unpaidMaturityChoiceDeadlineAt, now) &&
     investment.unpaidMaturityResolution == null
   ) {
+    const recoveryRequired =
+      context.recoveryRequiredCount ??
+      getRecoveryInviteesRequired(investment.amountUsdt);
     return {
       ...base,
-      situation: "waiting_liquidity",
-      statusLabel: "Payout pending",
-      statusDetail:
-        "Your term ended. The choice window closed without a selection; payout depends on pool liquidity and queue order.",
+      situation: "forfeited",
+      statusLabel: forfeitureLabel(ForfeitureReason.choice_deadline_expired),
+      statusDetail: forfeitureDetail(
+        ForfeitureReason.choice_deadline_expired,
+        recoveryRequired
+      ),
+      chosenPath: null,
     };
   }
 

@@ -39,8 +39,9 @@ function forfeitureCopy(
         heading: "Investment ended — no choice made",
         preview: "Your investment term ended without a selected next step",
         body:
-          "The 48-hour window to choose your next step expired without a selection. " +
-          "Your investment is no longer active and no payout will be processed.",
+          "We couldn't generate the payout from pool activity in time. We offered you the choice to wait longer " +
+          "or recover your principal through invites, but the decision window closed without a response. " +
+          "This investment is now closed and no payout will be processed.",
       };
     case "second_maturity_unpaid":
       return {

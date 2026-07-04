@@ -67,4 +67,46 @@ describe("investment forfeiture helpers", () => {
       false
     );
   });
+
+  it("treats active choice deadline as pending", () => {
+    const fifo = new Set<string>();
+    const now = new Date("2026-06-01T00:00:00.000Z");
+    const deadline = new Date("2026-06-05T00:00:00.000Z");
+    assert.equal(
+      isUnpaidMaturityChoicePending(
+        {
+          id: "inv-1",
+          status: InvestmentStatus.matured,
+          payoutUnlockedAt: null,
+          referralRecoveryCompletedAt: null,
+          unpaidMaturityResolution: null,
+          unpaidMaturityChoiceDeadlineAt: deadline,
+          subscribedAt: new Date("2026-01-01T00:00:00.000Z"),
+          projectedPayoutUsdt: 30,
+          maturesAt: new Date("2026-04-01T00:00:00.000Z"),
+        },
+        fifo,
+        now
+      ),
+      true
+    );
+  });
+
+  it("expired choice rows should not be skipped by forfeiture loop guard", () => {
+    const fifo = new Set<string>();
+    const now = new Date("2026-06-10T00:00:00.000Z");
+    const row = {
+      id: "inv-expired",
+      status: InvestmentStatus.matured,
+      payoutUnlockedAt: null,
+      referralRecoveryCompletedAt: null,
+      unpaidMaturityResolution: null,
+      unpaidMaturityChoiceDeadlineAt: new Date("2026-06-01T00:00:00.000Z"),
+      subscribedAt: new Date("2026-01-01T00:00:00.000Z"),
+      projectedPayoutUsdt: 30,
+      maturesAt: new Date("2026-04-01T00:00:00.000Z"),
+    };
+    const shouldSkip = isUnpaidMaturityChoicePending(row, fifo, now);
+    assert.equal(shouldSkip, false);
+  });
 });

@@ -162,4 +162,22 @@ describe("resolveMaturitySituation", () => {
     assert.equal(view.situation, "forfeited");
     assert.equal(view.statusLabel, "Term ended — no choice made");
   });
+
+  it("returns forfeited when choice deadline expired while still matured", () => {
+    const expiredDeadline = new Date("2026-06-01T00:00:00.000Z");
+    const afterDeadline = new Date("2026-06-10T00:00:00.000Z");
+    const view = resolveMaturitySituation(
+      {
+        ...maturedBase,
+        status: InvestmentStatus.matured,
+        unpaidMaturityChoiceDeadlineAt: expiredDeadline,
+        unpaidMaturityResolution: null,
+      },
+      { fifoEligibleIds: new Set(), now: afterDeadline }
+    );
+    assert.equal(view.situation, "forfeited");
+    assert.equal(view.statusLabel, "Term ended — no choice made");
+    assert.match(view.statusDetail, /decision window closed without a response/);
+    assert.equal(view.needsUnpaidMaturityChoice, false);
+  });
 });
