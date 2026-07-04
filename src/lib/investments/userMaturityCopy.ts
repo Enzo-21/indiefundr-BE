@@ -6,6 +6,27 @@ export type UserFacingMaturityCopy = {
   statusDetail: string;
 };
 
+export type UserFacingMaturityCopyContext = {
+  fundName?: string;
+};
+
+export function userRedeemedPayoutDetail(fundName: string): string {
+  return (
+    `We grew your ${fundName} investment through our fund strategies, ` +
+    `and your earnings have been paid out.`
+  );
+}
+
+export function isInternalPayoutReason(text: string): boolean {
+  return (
+    /Unlocked after/i.test(text) ||
+    /2× cohort|2x cohort/i.test(text) ||
+    /treasury surplus/i.test(text) ||
+    /later investments.*unlocked/i.test(text) ||
+    /newer investors/i.test(text)
+  );
+}
+
 export function userChoiceRequiredDetail(recoveryRequiredCount: number): string {
   return (
     `Your term ended, but your projected payout isn't ready yet. Choose within 48 hours ` +
@@ -116,7 +137,8 @@ function parseRecoveryRequiredFromDetail(statusDetail: string): number | null {
 }
 
 export function toUserFacingMaturityCopy(
-  view: MaturitySituationView
+  view: MaturitySituationView,
+  context: UserFacingMaturityCopyContext = {}
 ): UserFacingMaturityCopy {
   switch (view.situation) {
     case "choice_required":
@@ -154,7 +176,22 @@ export function toUserFacingMaturityCopy(
         statusDetail: userForfeitureDetail(reason, recoveryRequired),
       };
     }
+    case "redeemed":
+      return {
+        statusLabel: view.statusLabel,
+        statusDetail: userRedeemedPayoutDetail(
+          context.fundName?.trim() || "your investment"
+        ),
+      };
     default:
+      if (isInternalPayoutReason(view.statusDetail)) {
+        return {
+          statusLabel: view.statusLabel,
+          statusDetail: userRedeemedPayoutDetail(
+            context.fundName?.trim() || "your investment"
+          ),
+        };
+      }
       return {
         statusLabel: view.statusLabel,
         statusDetail: view.statusDetail,

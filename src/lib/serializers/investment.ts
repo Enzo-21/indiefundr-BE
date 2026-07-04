@@ -83,7 +83,9 @@ export function enrichInvestment(
     recoveryQualifiedCount: options.recoveryQualifiedCount,
     recoveryRequiredCount: options.recoveryRequiredCount,
   });
-  const userCopy = toUserFacingMaturityCopy(maturity);
+  const userCopy = toUserFacingMaturityCopy(maturity, {
+    fundName: fund?.name || investment.fundId,
+  });
 
   return {
     _id: investment.id,

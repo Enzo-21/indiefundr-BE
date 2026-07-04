@@ -10,6 +10,7 @@ import {
   toUserFacingMaturityCopy,
   userForfeitureDetail,
   userMaturedWaitingEmailBody,
+  userRedeemedPayoutDetail,
 } from "./userMaturityCopy";
 
 const choiceDeadline = new Date("2099-06-05T12:00:00.000Z");
@@ -123,5 +124,30 @@ describe("userMaturityCopy", () => {
       userForfeitureDetail(ForfeitureReason.choice_deadline_expired)
     );
     assertNoInternalInfraTerms(userMaturedWaitingEmailBody());
+  });
+
+  it("maps redeemed payout to fund-strategies copy", () => {
+    const payoutReason =
+      "Unlocked after 2 later investments (25 USDT + 25 USDT). Head invested 25 USDT; required 50 USDT from newer investors (2× cohort). Received 50 USDT (2× equivalent).";
+    const internal = resolveMaturitySituation(
+      {
+        ...maturedBase,
+        status: InvestmentStatus.redeemed,
+        payoutReason,
+        unpaidMaturityChoiceDeadlineAt: null,
+        redeemedAt: new Date("2026-06-30T00:00:00.000Z"),
+      },
+      { now: choiceNow }
+    );
+    const user = toUserFacingMaturityCopy(internal, {
+      fundName: "Hustle Collective",
+    });
+    assert.equal(user.statusLabel, "Redeemed");
+    assert.equal(
+      user.statusDetail,
+      userRedeemedPayoutDetail("Hustle Collective")
+    );
+    assert.doesNotMatch(user.statusDetail, /Unlocked after/i);
+    assert.doesNotMatch(user.statusDetail, /cohort/i);
   });
 });

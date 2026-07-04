@@ -6,6 +6,7 @@ import {
   PurchaseOrderStep,
 } from "@prisma/client";
 import { defaultTypicalPayoutDays } from "@/services/funds/typicalPayoutDays";
+import { userRedeemedPayoutDetail } from "@/lib/investments/userMaturityCopy";
 import {
   insightsFromInvestment,
   insightsFromPurchaseOrder,
@@ -257,7 +258,7 @@ describe("transactionInsights", () => {
     assert.equal(insights.unlockDetail, null);
     assert.match(
       insights.statusDetail ?? "",
-      /Our team will process the transfer/
+      /send your transfer shortly/
     );
     assert.doesNotMatch(insights.statusDetail ?? "", /2×/);
   });
@@ -301,6 +302,61 @@ describe("transactionInsights", () => {
     });
 
     assert.equal(insights.unlockDetail, null);
-    assert.equal(insights.statusDetail, "Payout completed.");
+    assert.equal(
+      insights.statusDetail,
+      userRedeemedPayoutDetail("Arbitrage Circuit")
+    );
+  });
+
+  it("replaces internal payoutReason on redemption insights", () => {
+    const payoutReason =
+      "Unlocked after 2 later investments (25 USDT + 25 USDT). Head invested 25 USDT; required 50 USDT from newer investors (2× cohort). Received 50 USDT (2× equivalent).";
+    const insights = insightsFromRedemption(
+      {
+        id: "inv-1",
+        userId: "u1",
+        walletId: "w1",
+        fundId: "balanced-growth",
+        amountUsdt: 25,
+        returnPercent90d: 15,
+        projectedPayoutUsdt: 28.75,
+        status: InvestmentStatus.redeemed,
+        purchaseOrderId: null,
+        transaction: null,
+        redemptionTransaction: null,
+        subscribedAt: new Date("2026-01-01T00:00:00.000Z"),
+        maturesAt: new Date("2026-03-01T00:00:00.000Z"),
+        redeemedAt: new Date("2026-01-06T12:00:00.000Z"),
+        payabilityStatus: "payable",
+        payoutEligibleAt: null,
+        markedPayableAt: null,
+        payoutUnlockedAt: new Date("2026-01-05T00:00:00.000Z"),
+        autoPayoutAt: null,
+        payoutUnlockingInvestmentIds: ["inv-2", "inv-3"],
+        payoutUnlockingUserIds: [],
+        payoutReason,
+        payoutTriggeredBy: null,
+        payoutFailureReason: null,
+        globalQueueRank: null,
+        newSubscribersNeeded: null,
+        chainMemo: null,
+        recoveryEligibleAt: null,
+        sympathyNotifiedAt: null,
+        referralRecoveryCompletedAt: null,
+        unpaidMaturityResolution: null,
+        unpaidMaturityResolvedAt: null,
+        termExtensionDays: null,
+        date: new Date("2026-01-01T00:00:00.000Z"),
+      },
+      undefined,
+      28.75
+    );
+
+    assert.equal(insights.unlockDetail, null);
+    assert.equal(
+      insights.statusDetail,
+      userRedeemedPayoutDetail("Hustle Collective")
+    );
+    assert.doesNotMatch(insights.statusDetail ?? "", /cohort/i);
   });
 });
