@@ -257,13 +257,27 @@ You may reuse the same JSON file uploaded to EAS for Android FCM V1 if it is fro
 
 ### Step 7.2 — Add backend env var
 
-In `backend/.env` (document in `.env.example` when implementing):
+**Local development** — in `backend/.env`:
 
 ```bash
 FIREBASE_SERVICE_ACCOUNT_PATH=./secrets/firebase-sa.json
 ```
 
-Alternative: base64-encode the JSON for deployment platforms that prefer a single secret var.
+**Vercel (staging/production)** — the JSON file is not deployed (gitignored). Set a **Sensitive** environment variable in the Vercel project:
+
+| Variable | Value |
+|----------|-------|
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | Full minified JSON from `backend/secrets/firebase-sa.json` |
+
+Generate the one-line value locally:
+
+```bash
+cd backend && node -e "console.log(JSON.stringify(require('./secrets/firebase-sa.json')))"
+```
+
+Copy the output into Vercel for **Preview** and **Production**, then **redeploy**. `FIREBASE_SERVICE_ACCOUNT_JSON` takes priority over `FIREBASE_SERVICE_ACCOUNT_PATH`.
+
+Optional alternative: `FIREBASE_SERVICE_ACCOUNT_BASE64` (same JSON, base64-encoded).
 
 ### Step 7.3 — Install Admin SDK (implementation)
 
@@ -273,6 +287,19 @@ npm install firebase-admin
 ```
 
 ### Step 7.4 — Initialize and send (minimal example)
+
+[`backend/src/lib/firebase/admin.ts`](../../src/lib/firebase/admin.ts) loads credentials from `FIREBASE_SERVICE_ACCOUNT_JSON`, `FIREBASE_SERVICE_ACCOUNT_BASE64`, or `FIREBASE_SERVICE_ACCOUNT_PATH` (in that order).
+
+```ts
+import { getFirebaseAdmin } from '@/lib/firebase/admin';
+
+const admin = getFirebaseAdmin();
+if (admin) {
+  await admin.messaging().send({ /* ... */ });
+}
+```
+
+Legacy manual init (not used in this repo):
 
 ```ts
 import admin from 'firebase-admin';
