@@ -75,7 +75,10 @@ export function BroadcastPushForm({ initialStats }: BroadcastPushFormProps) {
 
       toast.success(
         `Sent ${result.data.sent} notification${result.data.sent === 1 ? "" : "s"}` +
-          (result.data.failed > 0 ? ` (${result.data.failed} failed)` : "")
+          (result.data.failed > 0 ? ` (${result.data.failed} failed)` : "") +
+          (result.data.clearedInvalidTokens > 0
+            ? `; cleared ${result.data.clearedInvalidTokens} invalid token${result.data.clearedInvalidTokens === 1 ? "" : "s"}`
+            : "")
       );
     });
   }
@@ -110,7 +113,9 @@ export function BroadcastPushForm({ initialStats }: BroadcastPushFormProps) {
         <CardHeader>
           <CardTitle>Compose notification</CardTitle>
           <CardDescription>
-            The same title and message will be sent to all {stats.uniqueTokens}{" "}
+            Mobile notifications use the title and message separately. Web
+            notifications combine them as &quot;Title - Message&quot; in the
+            body. The same content will be sent to all {stats.uniqueTokens}{" "}
             unique device token{stats.uniqueTokens === 1 ? "" : "s"}.
           </CardDescription>
         </CardHeader>

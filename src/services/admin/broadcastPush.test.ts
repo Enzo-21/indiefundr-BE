@@ -67,7 +67,7 @@ describe("pushNotify batch helpers", () => {
       countExpoBatchResult({
         data: [{ status: "ok" }, { status: "error" }, { status: "ok" }],
       }),
-      { sent: 2, failed: 1 }
+      { sent: 2, failed: 1, invalidTokens: [] }
     );
   });
 });

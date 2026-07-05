@@ -20,6 +20,7 @@ export type BroadcastPushResult = BroadcastAudienceStats & {
   sent: number;
   failed: number;
   skippedNoDevice: number;
+  clearedInvalidTokens: number;
 };
 
 export type BroadcastPushInput = {
@@ -125,6 +126,7 @@ export async function broadcastPushNotifications(
       sent: 0,
       failed: 0,
       skippedNoDevice: stats.totalUsers,
+      clearedInvalidTokens: 0,
     };
   }
 
@@ -134,14 +136,34 @@ export async function broadcastPushNotifications(
     title,
   });
 
-  const { sent, failed } = await sendPushNotificationBatch(tokens, title, body, {
-    type: "ADMIN_BROADCAST",
-  });
+  const { sent, failed, invalidTokens } = await sendPushNotificationBatch(
+    tokens,
+    title,
+    body,
+    {
+      type: "ADMIN_BROADCAST",
+    }
+  );
+
+  let clearedInvalidTokens = 0;
+  if (invalidTokens.length > 0) {
+    const cleared = await prisma.user.updateMany({
+      where: { device: { in: invalidTokens } },
+      data: { device: null },
+    });
+    clearedInvalidTokens = cleared.count;
+    console.info("[admin broadcast] cleared invalid push tokens", {
+      clearedInvalidTokens,
+    });
+  }
+
+  const refreshedStats = await getBroadcastAudienceStats();
 
   return {
-    ...stats,
+    ...refreshedStats,
     sent,
     failed,
-    skippedNoDevice: stats.totalUsers - stats.usersWithDevice,
+    skippedNoDevice: refreshedStats.totalUsers - refreshedStats.usersWithDevice,
+    clearedInvalidTokens,
   };
 }
