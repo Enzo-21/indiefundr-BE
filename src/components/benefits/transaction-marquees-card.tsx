@@ -17,7 +17,8 @@ import {
 import { Marquee } from "@/components/marquee";
 import { MotionPreset } from "@/components/motion-preset";
 import { Card, CardContent } from "@/components/ui/card";
-import { benefitMarqueeRows, benefits, type BenefitTransactionIcon } from "@/lib/content";
+import { useMarketingContent } from "@/components/marketing/marketing-content-provider";
+import { benefitMarqueeRows, type BenefitTransactionIcon } from "@/lib/content";
 import { cn } from "@/lib/utils";
 
 const iconMap: Record<BenefitTransactionIcon, LucideIcon> = {
@@ -35,6 +36,7 @@ const iconMap: Record<BenefitTransactionIcon, LucideIcon> = {
 };
 
 export function TransactionMarqueesCard() {
+  const { benefits } = useMarketingContent();
   return (
     <Card className="bg-muted group/palette h-full gap-6 py-6 shadow-none ring-0 lg:col-span-2">
       <MotionPreset

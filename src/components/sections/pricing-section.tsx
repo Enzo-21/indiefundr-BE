@@ -5,9 +5,10 @@ import { MotionPreset } from "@/components/motion-preset";
 import { SpinBadgeIcon } from "@/components/swipe-logo";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { howItWorksSection, pricingPlans } from "@/lib/content";
+import { useMarketingContent } from "@/components/marketing/marketing-content-provider";
 
 export function PricingSection() {
+  const { howItWorksSection, pricingPlans } = useMarketingContent();
   return (
     <section id="how-it-works" className="py-8 sm:py-16 lg:py-24">
       <div className="mx-auto max-w-7xl space-y-14 px-4 sm:px-6 lg:px-8">

@@ -7,9 +7,10 @@ import { MotionPreset } from "@/components/motion-preset";
 import { SpinBadgeIcon } from "@/components/swipe-logo";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { benefits, benefitsSection } from "@/lib/content";
+import { useMarketingContent } from "@/components/marketing/marketing-content-provider";
 
 export function BenefitsSection() {
+  const { benefits, benefitsSection } = useMarketingContent();
   return (
     <section id="benefits" className="py-8 sm:py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

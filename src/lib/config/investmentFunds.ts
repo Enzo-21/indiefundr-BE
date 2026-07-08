@@ -14,8 +14,6 @@ export type InvestmentFund = {
   icon: string;
 };
 
-const TERM_DAYS = getInvestmentTermApproxDays();
-
 const FUND_DEFINITIONS: Omit<InvestmentFund, "termDays">[] = [
   {
     id: "aggressive-alpha",
@@ -25,10 +23,10 @@ const FUND_DEFINITIONS: Omit<InvestmentFund, "termDays">[] = [
     riskLevel: "high",
     riskLabel: "High risk",
     destinations: [
-      'Sport betting',
-      'Crypto trading and arbitrage',
-      'Online casinos',
-      'NFT trading and arbitrage',
+      "Sport betting",
+      "Crypto trading and arbitrage",
+      "Online casinos",
+      "NFT trading and arbitrage",
     ],
     accentColor: "#c0392b",
     icon: "dice",
@@ -104,15 +102,16 @@ const FUND_DEFINITIONS: Omit<InvestmentFund, "termDays">[] = [
   },
 ];
 
-export const INVESTMENT_FUNDS: InvestmentFund[] = FUND_DEFINITIONS.map(
-  (fund) => ({
+export function getInvestmentFunds(): InvestmentFund[] {
+  const termDays = getInvestmentTermApproxDays();
+  return FUND_DEFINITIONS.map((fund) => ({
     ...fund,
-    termDays: TERM_DAYS,
-  })
-);
+    termDays,
+  }));
+}
 
 export function getFundById(fundId: string): InvestmentFund | undefined {
-  return INVESTMENT_FUNDS.find((f) => f.id === fundId);
+  return getInvestmentFunds().find((f) => f.id === fundId);
 }
 
 export function isValidFundId(fundId: string): boolean {

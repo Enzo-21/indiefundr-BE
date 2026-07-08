@@ -13,8 +13,8 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
+import { useMarketingContent } from "@/components/marketing/marketing-content-provider";
 import {
-  benefits,
   budgetCarouselTransactions,
   budgetCategories,
   budgetInitialBalance,
@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export function BudgetPaletteCard() {
+  const { benefits } = useMarketingContent();
   const [leftApi, setLeftApi] = useState<CarouselApi>();
   const [rightApi, setRightApi] = useState<CarouselApi>();
   const [balance, setBalance] = useState(budgetInitialBalance);

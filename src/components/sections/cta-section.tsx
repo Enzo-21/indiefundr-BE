@@ -1,17 +1,19 @@
+"use client";
+
 import Image from "next/image";
 import { MotionPreset } from "@/components/motion-preset";
 import { StoreDownloadBadges } from "@/components/marketing/store-download-badges";
+import { useMarketingContent } from "@/components/marketing/marketing-content-provider";
 import { SpinBadgeIcon } from "@/components/swipe-logo";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ctaSection } from "@/lib/content";
 
 export function CtaSection({
   requestHost,
 }: {
   requestHost?: string | null;
 }) {
-
+  const { ctaSection } = useMarketingContent();
   return (
     <section id="cta" className="bg-muted scroll-mt-20 py-8 sm:py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

@@ -3,9 +3,16 @@
 import Link from "next/link";
 import { FooterTextHoverEffect } from "@/components/footer-text-hover-effect";
 import { SwipeLogoSmall } from "@/components/swipe-logo";
-import { footerLinks, footerShareHint, footerShareLine, footerTagline, siteConfig } from "@/lib/content";
+import { useMarketingContent } from "@/components/marketing/marketing-content-provider";
 
 export function Footer() {
+  const {
+    footerLinks,
+    footerShareHint,
+    footerShareLine,
+    footerTagline,
+    siteConfig,
+  } = useMarketingContent();
   return (
     <footer className="bg-muted relative overflow-hidden">
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8">

@@ -8,7 +8,11 @@ import { SpinBadgeIcon } from "@/components/swipe-logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { brandLogos, testimonials, testimonialsSection } from "@/lib/content";
+import { useMarketingContent } from "@/components/marketing/marketing-content-provider";
+import { brandLogos } from "@/lib/content";
+import type { SiteContent } from "@/lib/content";
+
+type Testimonial = SiteContent["testimonials"][number];
 
 function TestimonialCard({
   quote,
@@ -17,7 +21,7 @@ function TestimonialCard({
   avatar,
   brand,
   rating,
-}: (typeof testimonials)[number]) {
+}: Testimonial) {
   return (
     <Card data-slot="card" className="w-96 shrink-0 shadow-none ring-1 hover:shadow-md">
       <CardContent className="space-y-4">
@@ -44,9 +48,9 @@ function TestimonialCard({
   );
 }
 
-const marqueeTestimonials = [...testimonials, ...testimonials];
-
 export function TestimonialsSection() {
+  const { testimonials, testimonialsSection } = useMarketingContent();
+  const marqueeTestimonials = [...testimonials, ...testimonials];
   return (
     <section id="testimonials" className="bg-muted space-y-12 py-8 sm:space-y-16 sm:py-16 lg:space-y-24 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

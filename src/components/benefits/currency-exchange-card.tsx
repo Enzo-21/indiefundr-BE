@@ -13,10 +13,11 @@ import { useEffect, useState } from "react";
 import { MotionPreset } from "@/components/motion-preset";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { benefits } from "@/lib/content";
+import { useMarketingContent } from "@/components/marketing/marketing-content-provider";
 import { cn } from "@/lib/utils";
 
 export function CurrencyExchangeCard() {
+  const { benefits } = useMarketingContent();
   const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
