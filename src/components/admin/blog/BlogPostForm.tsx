@@ -23,7 +23,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { slugifyTitle } from "@/lib/blog/slug";
 import { BlogPostStatus, type BlogPostStatusValue } from "@/lib/blog/blogPostStatus";
 import { DEFAULT_COVER_POSITION_Y } from "@/lib/blog/coverImage";
 import { DEFAULT_BLOG_COVER_PUBLIC_PATH } from "@/lib/blog/defaultBlogImage";
@@ -119,25 +118,46 @@ export function BlogPostForm({ mode, post }: BlogPostFormProps) {
 
   function handleTitleBlur() {
     if (slugTouched || !title.trim()) return;
-    setSlug(slugifyTitle(title));
+    void suggestBlogPostSlug(title.trim()).then((result) => {
+      if (result.ok) {
+        setSlug(result.data);
+      }
+    });
   }
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     startTransition(async () => {
-      const result =
-        mode === "create"
-          ? await createBlogPostAction(payload)
-          : await updateBlogPostAction(post!.id, payload);
+      try {
+        const result =
+          mode === "create"
+            ? await createBlogPostAction(payload)
+            : await updateBlogPostAction(post!.id, payload);
 
-      if (!result.ok) {
-        toast.error(result.error.msg);
-        return;
+        if (!result.ok) {
+          toast.error(result.error.msg ?? "Failed to save post");
+          return;
+        }
+
+        if (mode === "create" && result.data.slug !== payload.slug.trim()) {
+          toast.info(
+            `Slug adjusted to "${result.data.slug}" because the original was taken.`
+          );
+        }
+
+        const published = result.data.status === BlogPostStatus.PUBLISHED;
+        if (mode === "create") {
+          toast.success(published ? "Post published" : "Post created");
+          router.push("/admin/blog");
+          router.refresh();
+          return;
+        }
+
+        toast.success(published ? "Post published" : "Post updated");
+        router.refresh();
+      } catch {
+        toast.error("Failed to save post. Please try again.");
       }
-
-      toast.success(mode === "create" ? "Post created" : "Post updated");
-      router.push("/admin/blog");
-      router.refresh();
     });
   }
 

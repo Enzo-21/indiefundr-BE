@@ -41,13 +41,17 @@ export function BlogPostsTable({ posts }: BlogPostsTableProps) {
 
   function runAction(action: () => Promise<{ ok: boolean; error?: { msg: string } }>, success: string) {
     startTransition(async () => {
-      const result = await action();
-      if (!result.ok) {
-        toast.error(result.error?.msg ?? "Action failed");
-        return;
+      try {
+        const result = await action();
+        if (!result.ok) {
+          toast.error(result.error?.msg ?? "Action failed");
+          return;
+        }
+        toast.success(success);
+        router.refresh();
+      } catch {
+        toast.error("Action failed. Please try again.");
       }
-      toast.success(success);
-      router.refresh();
     });
   }
 

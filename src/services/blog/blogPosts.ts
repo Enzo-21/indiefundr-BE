@@ -229,14 +229,11 @@ export async function createBlogPost(
   const cover = prepareImageField(data.coverImage, "Cover image");
   const og = prepareImageField(data.ogImage, "OG image");
 
-  const available = await isBlogSlugAvailable(data.slug);
-  if (!available) {
-    throw new Error("Slug is already in use");
-  }
+  const slug = await suggestBlogSlug(data.slug);
 
   return prisma.blogPost.create({
     data: {
-      slug: data.slug,
+      slug,
       title: data.title,
       excerpt: data.excerpt,
       contentHtml,
