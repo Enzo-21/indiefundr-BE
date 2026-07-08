@@ -222,7 +222,7 @@ export function buildMarketingCopy() {
 
   const footerCopy = {
     tagline: `Deploy your money into studied, unconventional ${investmentTermHyphenated} funds.`,
-    shareLine: `$25 in. ${investmentTermLabel}. Returns beyond traditional.`,
+    shareLine: "Returns beyond traditional.",
     shareHint: "Know someone sitting on idle cash? Send them this.",
     company: [
       { label: "Features", href: "#features" },
