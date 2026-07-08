@@ -21,7 +21,7 @@ function getServerSnapshot() {
 export function AdminThemeSwitch() {
   const { resolvedTheme, setTheme } = useTheme();
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const isDark = resolvedTheme === "dark";
+  const isDark = mounted && resolvedTheme === "dark";
 
   return (
     <div className="flex items-center justify-between gap-3 px-3 py-2">
@@ -31,7 +31,7 @@ export function AdminThemeSwitch() {
           aria-hidden
         />
         <Label htmlFor="admin-theme-switch" className="text-sm font-normal">
-          {mounted ? (isDark ? "Dark mode" : "Light mode") : "Theme"}
+          {isDark ? "Dark mode" : mounted ? "Light mode" : "Theme"}
         </Label>
         <MoonStar
           className={`size-4 shrink-0 ${isDark ? "text-foreground" : "text-muted-foreground"}`}
@@ -40,7 +40,7 @@ export function AdminThemeSwitch() {
       </div>
       <Switch
         id="admin-theme-switch"
-        checked={mounted ? isDark : false}
+        checked={isDark}
         disabled={!mounted}
         onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
         aria-label="Toggle dark mode"
