@@ -1,4 +1,5 @@
 import { unlockPrincipalRequired } from "@/lib/config/investmentCohort";
+import { getRecoveryInviteesRequired } from "@/lib/config/referralRecovery";
 import type { AdminInvestmentRow } from "@/services/admin/investmentAdminTypes";
 import type { MaturitySituationView } from "@/lib/investments/maturitySituation";
 import { isSurplusPayoutTrigger } from "@/services/revenueEngine/payoutTriggers";
@@ -83,7 +84,9 @@ export function buildInvestmentReasonNote(inv: AdminInvestmentRow): string | nul
 
   if (inv.unpaidMaturityResolution === "referral_recovery") {
     const qualified = inv.recoveryQualifiedCount ?? 0;
-    const required = inv.recoveryRequiredCount ?? 2;
+    const required =
+      inv.recoveryRequiredCount ??
+      getRecoveryInviteesRequired(inv.amountUsdt);
     return `User chose invites — ${qualified}/${required}`;
   }
 

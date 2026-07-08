@@ -3,6 +3,7 @@ import {
   PurchaseOrderStatus,
   type Investment,
 } from "@prisma/client";
+import type { MaturitySituation } from "@/lib/investments/maturitySituation";
 import { getFundById } from "@/lib/config/investmentFunds";
 import { getEnv } from "@/lib/env";
 import { uiSnapshotLog } from "@/lib/uiSnapshotLog";
@@ -10,6 +11,10 @@ import { getUserStatusLabel } from "@/lib/investments/presentation";
 import { serializePortfolioMainWallet } from "@/lib/serializers/wallet";
 import { getMainWallet, getTronscanTxUrl } from "@/lib/wallets/helpers";
 import { prisma } from "@/lib/prisma";
+import {
+  enrichInvestmentsWithContext,
+  loadInvestmentEnrichmentContext,
+} from "@/services/investments/investmentEnrichmentContext";
 import * as tron from "@/services/tron/client";
 import {
   type WalletActivationSyncStatus,
@@ -60,6 +65,7 @@ export function emptyPortfolio(walletSetupStatus: WalletSetupStatus) {
     },
     needsOnChainSettlement: false,
     byFund: [] as ByFundRow[],
+    investmentPositions: [] as PortfolioInvestmentPosition[],
     activePurchaseOrders: [] as Array<{
       orderId: string;
       fundId: string;
@@ -108,6 +114,98 @@ const BY_FUND_STATUS_PRIORITY: Record<string, number> = {
   pending: 2,
   processing: 1,
 };
+
+export type PortfolioInvestmentPosition = {
+  id: string;
+  kind: "investment" | "processing_order";
+  fundId: string;
+  fundName: string;
+  amountUsdt: number;
+  situation: MaturitySituation;
+  statusLabel: string;
+  statusDetail: string;
+};
+
+const POSITION_SITUATION_PRIORITY: Partial<Record<MaturitySituation, number>> = {
+  choice_required: 9,
+  recovery_in_progress: 8,
+  awaiting_admin_payout: 7,
+  redeeming: 6,
+  waiting_liquidity: 5,
+  waiting_unlock: 4,
+  extended_active: 3,
+  active: 2,
+  pending: 1,
+};
+
+/** Exported for unit tests — one portfolio row per investment or in-flight order. */
+export function buildPortfolioInvestmentPositions(
+  activeOrders: Array<{
+    id: string;
+    fundId: string;
+    costUsdt: number;
+    reservedUsdt: number | null;
+  }>,
+  investments: Investment[],
+  enrichedById: Map<
+    string,
+    {
+      fundName: string;
+      amountUsdt: number;
+      situation: MaturitySituation;
+      statusLabel: string;
+      statusDetail: string;
+    }
+  >
+): PortfolioInvestmentPosition[] {
+  const fundsWithActiveOrder = new Set(activeOrders.map((order) => order.fundId));
+  const positions: PortfolioInvestmentPosition[] = [];
+
+  for (const order of activeOrders) {
+    const fund = getFundById(order.fundId);
+    positions.push({
+      id: order.id,
+      kind: "processing_order",
+      fundId: order.fundId,
+      fundName: fund?.name || order.fundId,
+      amountUsdt: parseFloat(
+        Number(order.costUsdt || order.reservedUsdt || 0).toFixed(4)
+      ),
+      situation: "pending",
+      statusLabel: "Processing",
+      statusDetail: "Your investment order is being processed.",
+    });
+  }
+
+  for (const inv of investments) {
+    if (inv.status === "pending" && fundsWithActiveOrder.has(inv.fundId)) {
+      continue;
+    }
+    const enriched = enrichedById.get(inv.id);
+    if (!enriched) {
+      continue;
+    }
+    positions.push({
+      id: inv.id,
+      kind: "investment",
+      fundId: inv.fundId,
+      fundName: enriched.fundName,
+      amountUsdt: parseFloat(Number(enriched.amountUsdt || 0).toFixed(4)),
+      situation: enriched.situation,
+      statusLabel: enriched.statusLabel,
+      statusDetail: enriched.statusDetail,
+    });
+  }
+
+  return positions.sort((a, b) => {
+    const priorityA = POSITION_SITUATION_PRIORITY[a.situation] ?? 0;
+    const priorityB = POSITION_SITUATION_PRIORITY[b.situation] ?? 0;
+    if (priorityA !== priorityB) {
+      return priorityB - priorityA;
+    }
+    return b.amountUsdt - a.amountUsdt;
+  });
+}
 
 function mergeByFundRow(existing: ByFundRow, incoming: ByFundRow): ByFundRow {
   const amountUsdt = parseFloat(
@@ -518,6 +616,25 @@ export async function getInvestmentPortfolio(
     settledInvestedBalance
   );
 
+  const enrichmentContext = await loadInvestmentEnrichmentContext(
+    userId,
+    investments
+  );
+  const enrichedById = enrichInvestmentsWithContext(
+    investments,
+    enrichmentContext
+  );
+  const investmentPositions = buildPortfolioInvestmentPositions(
+    activeOrders.map((order) => ({
+      id: order.id,
+      fundId: order.fundId,
+      costUsdt: order.costUsdt,
+      reservedUsdt: order.reservedUsdt,
+    })),
+    investments,
+    enrichedById
+  );
+
   const serializedMainWallet = serializePortfolioMainWallet(mainWallet, {
     activationStatus,
     tronscanActivationUrl,
@@ -588,6 +705,7 @@ export async function getInvestmentPortfolio(
     breakdown,
     needsOnChainSettlement: settlementPending > 0,
     byFund,
+    investmentPositions,
     activePurchaseOrders,
     activePurchaseOrder: activePurchaseOrders[0] || null,
     activeWithdrawalOrders,

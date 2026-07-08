@@ -107,7 +107,7 @@ Preserve legacy JSON shapes where the frontend depends on them:
 
 ## Investment timing
 
-Investment term length is configured in [`src/lib/config/investmentTiming.ts`](src/lib/config/investmentTiming.ts) using duration strings (`90D`, `12H`, `30Mi`, `3Mo`). Optional env override: `INVESTMENT_TERM` (see [`backend/.env.example`](.env.example)). Payouts are manual via admin; changing term affects **new** investments only. Parser: [`src/lib/duration/parseDuration.ts`](src/lib/duration/parseDuration.ts).
+Investment term length is configured in [`src/lib/config/investmentTiming.ts`](src/lib/config/investmentTiming.ts) using duration strings (`90D`, `12H`, `30Mi`, `3Mo`). Default term follows `BLOCKCHAIN_NETWORK` (`testnet` → `3D`, `mainnet` → `90D`). Optional env override: `INVESTMENT_TERM` (see [`backend/.env.example`](.env.example)). Payouts are manual via admin; changing term affects **new** investments only. Parser: [`src/lib/duration/parseDuration.ts`](src/lib/duration/parseDuration.ts).
 
 ---
 

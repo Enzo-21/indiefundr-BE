@@ -12,6 +12,7 @@ import {
   Text,
 } from "@react-email/components";
 import type { ForfeitureReason } from "@prisma/client";
+import { userForfeitureDetail } from "@/lib/investments/userMaturityCopy";
 
 const currentYear = new Date().getFullYear();
 
@@ -19,12 +20,16 @@ export type InvestmentForfeitedEmailProps = {
   username?: string;
   fundName?: string;
   amountUsdt?: number;
+  recoveryRequiredCount?: number;
   forfeitureReason?: ForfeitureReason;
   portfolioUrl?: string;
   logoUrl?: string;
 };
 
-function forfeitureCopy(reason: ForfeitureReason | undefined): {
+function forfeitureCopy(
+  reason: ForfeitureReason | undefined,
+  recoveryRequiredCount = 2
+): {
   heading: string;
   body: string;
   preview: string;
@@ -34,25 +39,21 @@ function forfeitureCopy(reason: ForfeitureReason | undefined): {
       return {
         heading: "Investment ended — no choice made",
         preview: "Your investment term ended without a selected next step",
-        body:
-          "The 48-hour window to choose your next step expired without a selection. " +
-          "Your investment is no longer active and no payout will be processed.",
+        body: userForfeitureDetail("choice_deadline_expired"),
       };
     case "second_maturity_unpaid":
       return {
         heading: "Extended term ended — no payout",
         preview: "Your extended investment term ended without payout",
         body:
-          "Your extended term ended and payout was still unavailable. " +
-          "There are no further payout attempts for this investment.",
+          userForfeitureDetail("second_maturity_unpaid") +
+          " There are no further payout attempts for this investment.",
       };
     case "recovery_window_expired":
       return {
         heading: "Recovery window ended",
         preview: "Your invite recovery window closed without enough qualified friends",
-        body:
-          "The invite recovery window closed before two friends completed their " +
-          "first investments. Your principal was not recovered through this path.",
+        body: userForfeitureDetail("recovery_window_expired", recoveryRequiredCount),
       };
     default:
       return {
@@ -67,12 +68,13 @@ export function InvestmentForfeitedEmail({
   username = "",
   fundName = "your fund",
   amountUsdt = 0,
+  recoveryRequiredCount = 2,
   forfeitureReason,
   portfolioUrl = "",
   logoUrl = "",
 }: InvestmentForfeitedEmailProps) {
   const amountLabel = amountUsdt.toFixed(2);
-  const copy = forfeitureCopy(forfeitureReason);
+  const copy = forfeitureCopy(forfeitureReason, recoveryRequiredCount);
 
   return (
     <Html>

@@ -17,7 +17,13 @@ type LedgerRow = {
   expected: number;
 };
 
-function LedgerCompareTable({ rows }: { rows: LedgerRow[] }) {
+function LedgerCompareTable({
+  rows,
+  expectedHeader = "Expected",
+}: {
+  rows: LedgerRow[];
+  expectedHeader?: string;
+}) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -25,7 +31,7 @@ function LedgerCompareTable({ rows }: { rows: LedgerRow[] }) {
           <tr className="border-b text-left text-muted-foreground">
             <th className="pb-2 pr-4 font-medium">Field</th>
             <th className="pb-2 pr-4 font-medium text-right">Stored</th>
-            <th className="pb-2 font-medium text-right">Expected</th>
+            <th className="pb-2 font-medium text-right">{expectedHeader}</th>
           </tr>
         </thead>
         <tbody>
@@ -59,10 +65,22 @@ export function TreasuryLedgerIntegrityCard({
   report: LedgerIntegrityReport;
   subscribeDiagnostics?: SubscribeInflowDiagnostics;
 }) {
-  const { stored, expected, mismatch, confirmedSubscriptionCount } = report;
+  const {
+    stored,
+    expected,
+    cohortExpected,
+    mismatch,
+    cohortMismatch,
+    forfeitureImpact,
+    confirmedSubscriptionCount,
+  } = report;
 
-  const rows: LedgerRow[] = [
-    { label: "Pool available", stored: stored.poolAvailable, expected: expected.poolAvailable },
+  const primaryRows: LedgerRow[] = [
+    {
+      label: "Pool available",
+      stored: stored.poolAvailable,
+      expected: expected.poolAvailable,
+    },
     {
       label: "Treasury surplus",
       stored: stored.treasurySurplus,
@@ -82,22 +100,64 @@ export function TreasuryLedgerIntegrityCard({
     },
   ];
 
+  const cohortRows: LedgerRow[] = [
+    {
+      label: "Pool available",
+      stored: stored.poolAvailable,
+      expected: cohortExpected.poolAvailable,
+    },
+    {
+      label: "Treasury surplus",
+      stored: stored.treasurySurplus,
+      expected: cohortExpected.treasurySurplus,
+    },
+  ];
+
   return (
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-base">Ledger diagnostic (read-only)</CardTitle>
         <CardDescription>
-          Compares stored ledger to cohort-aware expectations (per-investment
-          amounts). Does not auto-adjust stored values. On-chain wallet balance
-          is not included in pool or surplus.
+          Compares stored ledger to an event replay of all treasury events.
+          Does not auto-adjust stored values. On-chain wallet balance is not
+          included in pool or surplus.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          {confirmedSubscriptionCount} confirmed subscription
-          {confirmedSubscriptionCount === 1 ? "" : "s"} in cohort.
+          {confirmedSubscriptionCount} active-cohort subscription
+          {confirmedSubscriptionCount === 1 ? "" : "s"} (excludes forfeited).
         </p>
-        <LedgerCompareTable rows={rows} />
+        <LedgerCompareTable
+          rows={primaryRows}
+          expectedHeader="Expected (event replay)"
+        />
+        {forfeitureImpact.count > 0 ? (
+          <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+            <p>
+              {forfeitureImpact.count} forfeited investment
+              {forfeitureImpact.count === 1 ? "" : "s"} retain{" "}
+              {formatUsdtDisplay(forfeitureImpact.principalTotal)} USDT principal
+              and {formatUsdtDisplay(forfeitureImpact.surplusSliceTotal)} USDT
+              surplus slice in the pool by design.
+            </p>
+            {cohortMismatch && !mismatch ? (
+              <p className="mt-1">
+                The legacy cohort formula below would under-count pool by{" "}
+                {formatUsdtDisplay(forfeitureImpact.poolCohortDrift)} USDT
+                (informational).
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        {cohortMismatch ? (
+          <div className="space-y-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Legacy cohort formula (informational)
+            </p>
+            <LedgerCompareTable rows={cohortRows} expectedHeader="Cohort expected" />
+          </div>
+        ) : null}
         {subscribeDiagnostics ? (
           <div className="space-y-2 text-sm">
             <p className="text-muted-foreground">
@@ -135,17 +195,17 @@ export function TreasuryLedgerIntegrityCard({
           </div>
         ) : null}
         {mismatch ? (
-          <Alert>
-            <AlertTitle>Stored ledger differs from diagnostic expectation</AlertTitle>
+          <Alert variant="destructive">
+            <AlertTitle>Stored ledger differs from event replay</AlertTitle>
             <AlertDescription>
-              Investigate treasury events and subscribe inflows. Auto-reconcile is
-              disabled for mixed investment cohorts — pool updates come from app
+              Investigate missing or duplicate treasury events and subscribe
+              inflows. Auto-reconcile is disabled — pool updates come from app
               events only.
             </AlertDescription>
           </Alert>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Stored ledger matches subscription-derived expectations.
+            Stored ledger matches event replay expectations.
           </p>
         )}
       </CardContent>

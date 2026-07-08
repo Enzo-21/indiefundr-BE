@@ -7,6 +7,7 @@ import type {
   MaturitySituation,
 } from "@/lib/investments/maturitySituation";
 import { resolveInvestmentMaturitySituation } from "@/lib/investments/presentation";
+import { toUserFacingMaturityCopy } from "@/lib/investments/userMaturityCopy";
 import {
   defaultTypicalPayoutDays,
   payoutDaysBetweenFloor,
@@ -126,7 +127,8 @@ function baseInsights(
 
 function investmentLifecycleInsights(
   investment: Investment,
-  context: TransactionInsightsContext = {}
+  context: TransactionInsightsContext = {},
+  fundName?: string
 ): Pick<
   TransactionInsights,
   | "investmentStatus"
@@ -143,11 +145,12 @@ function investmentLifecycleInsights(
   const maturity = resolveInvestmentMaturitySituation(investment, {
     fifoEligibleIds: context.fifoEligibleIds,
   });
+  const userCopy = toUserFacingMaturityCopy(maturity, { fundName });
   return {
     investmentStatus: investment.status,
     situation: maturity.situation,
-    statusLabel: maturity.statusLabel,
-    statusDetail: maturity.statusDetail,
+    statusLabel: userCopy.statusLabel,
+    statusDetail: userCopy.statusDetail,
     chosenPath: maturity.chosenPath,
     nextDeadlineAt: maturity.nextDeadlineAt,
     nextDeadlineLabel: maturity.nextDeadlineLabel,
@@ -180,7 +183,7 @@ export function insightsFromInvestment(
       investmentId: investment.id,
       purchaseOrderId: investment.purchaseOrderId,
       unlockDetail: null,
-      ...investmentLifecycleInsights(investment, context),
+      ...investmentLifecycleInsights(investment, context, f.name),
     }
   );
 }
@@ -213,7 +216,7 @@ export function insightsFromPurchaseOrder(
         investmentId: linkedInvestment.id,
         purchaseOrderId: linkedInvestment.purchaseOrderId ?? order.id,
         unlockDetail: null,
-        ...investmentLifecycleInsights(linkedInvestment, context),
+        ...investmentLifecycleInsights(linkedInvestment, context, f.name),
       }
     );
   }
@@ -276,7 +279,7 @@ export function insightsFromRedemption(
       investmentId: investment.id,
       purchaseOrderId: investment.purchaseOrderId,
       unlockDetail: null,
-      ...investmentLifecycleInsights(investment, context),
+      ...investmentLifecycleInsights(investment, context, f.name),
     }
   );
 }

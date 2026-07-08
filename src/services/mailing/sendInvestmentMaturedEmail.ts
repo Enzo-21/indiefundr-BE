@@ -4,6 +4,11 @@ import InvestmentMaturedPayableEmail from "@/emails/InvestmentMaturedPayableEmai
 import InvestmentMaturedWaitingEmail from "@/emails/InvestmentMaturedWaitingEmail";
 import UnpaidMaturityChoiceRequiredEmail from "@/emails/UnpaidMaturityChoiceRequiredEmail";
 import type { InvestmentFund } from "@/lib/config/investmentFunds";
+import { getRecoveryInviteesRequired } from "@/lib/config/referralRecovery";
+import {
+  userChoiceRequiredDetail,
+  userMaturedWaitingEmailBody,
+} from "@/lib/investments/userMaturityCopy";
 import type { MaturityEmailScenario } from "@/lib/investments/resolveMaturityEmailScenario";
 import { UNPAID_MATURITY_CHOICE_HOURS } from "@/lib/config/unpaidMaturityChoice";
 import { getEnv } from "@/lib/env";
@@ -34,6 +39,7 @@ function maturityEmailContent(
     fundName: string;
     amountUsdt: number;
     projectedPayoutUsdt: number;
+    recoveryRequiredCount: number;
     choiceHours: number;
     choiceDeadlineLabel: string;
     portfolioUrl: string;
@@ -45,6 +51,7 @@ function maturityEmailContent(
     fundName,
     amountUsdt,
     projectedPayoutUsdt,
+    recoveryRequiredCount,
     choiceHours,
     choiceDeadlineLabel,
     portfolioUrl,
@@ -57,14 +64,16 @@ function maturityEmailContent(
     return {
       subject: `Action required: choose how to continue your ${fundName} investment`,
       text:
-        `Your ${fundName} investment (${amountLabel} USDT) reached its term but payout is waiting on pool liquidity. ` +
-        `Within ${choiceHours} hours, choose wait longer for ${payoutLabel} USDT projected payout or invite friends to recover ${amountLabel} USDT principal: ${portfolioUrl}`,
+        `Your ${fundName} investment (${amountLabel} USDT) reached its term. ` +
+        `${userChoiceRequiredDetail(recoveryRequiredCount)} ` +
+        `Open Portfolio within ${choiceHours} hours: ${portfolioUrl}`,
       htmlPromise: render(
         UnpaidMaturityChoiceRequiredEmail({
           username,
           fundName,
           amountUsdt,
           projectedPayoutUsdt,
+          recoveryRequiredCount,
           choiceHours,
           choiceDeadlineLabel,
           portfolioUrl,
@@ -79,7 +88,7 @@ function maturityEmailContent(
       subject: `Your ${fundName} investment reached its term`,
       text:
         `Your ${fundName} investment (${amountLabel} USDT) reached its term. ` +
-        `Projected payout: ${payoutLabel} USDT. Payout is pending pool liquidity — track status in Portfolio: ${portfolioUrl}`,
+        `Projected payout: ${payoutLabel} USDT. ${userMaturedWaitingEmailBody()} ${portfolioUrl}`,
       htmlPromise: render(
         InvestmentMaturedWaitingEmail({
           username,
@@ -140,6 +149,7 @@ export async function sendInvestmentMaturedEmail(params: {
       fundName: fund.name,
       amountUsdt: investment.amountUsdt,
       projectedPayoutUsdt: investment.projectedPayoutUsdt,
+      recoveryRequiredCount: getRecoveryInviteesRequired(investment.amountUsdt),
       choiceHours,
       choiceDeadlineLabel,
       portfolioUrl,

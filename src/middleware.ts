@@ -9,10 +9,11 @@ import {
   isProductionAppOrigin,
   resolveAppRedirectTarget,
 } from "@/lib/marketing/appUrl";
+import { shouldBlockSideloadRequest } from "@/lib/mobile/sideloadDeprecation";
 
 const CORS_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 const CORS_HEADERS =
-  "Content-Type, Authorization, x-auth-token, X-IndieFundr-Poll-Source";
+  "Content-Type, Authorization, x-auth-token, X-IndieFundr-Poll-Source, X-App-Channel";
 
 function corsHeadersForRequest(request: NextRequest): Headers {
   const headers = new Headers();
@@ -74,6 +75,19 @@ function handleApiCors(request: NextRequest): NextResponse | null {
   const { pathname } = request.nextUrl;
   if (!pathname.startsWith("/api")) {
     return null;
+  }
+
+  if (shouldBlockSideloadRequest(request)) {
+    return withCors(
+      request,
+      NextResponse.json(
+        {
+          error: "This beta app is no longer available. Download the official app from Google Play.",
+          code: "SIDELOAD_DEPRECATED",
+        },
+        { status: 403 }
+      )
+    );
   }
 
   if (request.method === "OPTIONS") {

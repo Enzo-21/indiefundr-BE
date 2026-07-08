@@ -11,6 +11,7 @@ import {
   Section,
   Text,
 } from "@react-email/components";
+import { userMaturedWaitingEmailBody } from "@/lib/investments/userMaturityCopy";
 
 const currentYear = new Date().getFullYear();
 
@@ -87,9 +88,7 @@ export function InvestmentMaturedWaitingEmail({
             term. Your projected payout is {payoutLabel} USDT.
           </Text>
           <Text style={{ color: "#000000", fontSize: "14px", lineHeight: "24px" }}>
-            Payout is not available yet and depends on pool liquidity and queue
-            order. We will notify you when your position moves forward. Track status
-            anytime in your Portfolio.
+            {userMaturedWaitingEmailBody()}
           </Text>
 
           {portfolioUrl ? (

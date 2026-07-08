@@ -90,7 +90,10 @@ describe("unpaid maturity choice eligibility", () => {
     assert.equal(ctx?.choiceDeadlineAt, choiceDeadlineAt.toISOString());
     assert.equal(ctx?.canChooseReferralRecovery, true);
     assert.equal(ctx?.canChooseTermExtension, true);
+    assert.equal(ctx?.principalUsdt, 25);
+    assert.equal(ctx?.recoveryRequiredCount, 2);
   });
+
 
   it("marks choice paths unavailable when power cards are depleted", () => {
     const ctx = getUnpaidMaturityChoiceContext(

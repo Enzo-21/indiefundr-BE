@@ -4,7 +4,7 @@ import {
   InvestmentStatus,
   UnpaidMaturityResolution,
 } from "@prisma/client";
-import { REFERRAL_RECOVERY_PRINCIPAL_USDT } from "@/lib/config/referralRecovery";
+import { getRecoveryInviteesRequired } from "@/lib/config/referralRecovery";
 import { isExcludedFromNormalPayout } from "@/lib/investments/referralRecoveryNormalPayout";
 import {
   computeFifoSurplusEligibleInvestmentIds,
@@ -15,9 +15,12 @@ import { buildGlobalQueue } from "@/services/revenueEngine/queue";
 import { shouldUseRecoverySlot } from "./referralRewardEngine";
 
 describe("referral recovery triad isolation", () => {
-  it("recovery slots enqueue principal recovery amount only (25 USDT)", () => {
-    assert.equal(REFERRAL_RECOVERY_PRINCIPAL_USDT(), 25);
+  it("recovery invitees required scales with principal", () => {
+    assert.equal(getRecoveryInviteesRequired(25), 2);
+    assert.equal(getRecoveryInviteesRequired(50), 4);
+    assert.equal(getRecoveryInviteesRequired(100), 8);
   });
+
 
   it("recovery invitees do not unlock triad for another user's matured investment", () => {
     const otherUsersMaturedHead = {

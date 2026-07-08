@@ -13,6 +13,7 @@ const links = [
   { href: "/admin/orders", label: "Orders", showPendingCount: true },
   { href: "/admin/investments", label: "Investments" },
   { href: "/admin/treasury", label: "Treasury" },
+  { href: "/admin/notifications", label: "Notifications" },
   { href: "/admin/history", label: "History" },
 ];
 

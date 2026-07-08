@@ -1,12 +1,8 @@
-import { enrichInvestment } from "@/lib/serializers/investment";
 import { isValidObjectId } from "@/lib/validators/objectId";
 import { prisma } from "@/lib/prisma";
-import {
-  getUnpaidMaturityChoiceContext,
-  healStuckUnpaidMaturityChoiceDeadlines,
-  loadFifoEligibleIds,
-} from "@/services/investments/unpaidMaturityChoice";
-import { getPowerInventory } from "@/services/playerPowers/playerPowers";
+import { enrichInvestmentWithContext, loadInvestmentEnrichmentContext } from "@/services/investments/investmentEnrichmentContext";
+import type { EnrichedInvestmentJson } from "@/lib/serializers/investment";
+import { healStuckUnpaidMaturityChoiceDeadlines } from "@/services/investments/unpaidMaturityChoice";
 
 export type InvestmentsServiceResult<T> =
   | { ok: true; data: T }
@@ -35,50 +31,14 @@ export async function getUserInvestments(userId: string) {
     orderBy: { date: "desc" },
   });
 
-  const recoveryIds = investments
-    .filter(
-      (row) =>
-        row.recoveryEligibleAt &&
-        !row.referralRecoveryCompletedAt &&
-        row.status === "matured"
-    )
-    .map((row) => row.id);
-
-  const recoveryLinks =
-    recoveryIds.length > 0
-      ? await prisma.referralRecoveryLink.findMany({
-          where: { investmentId: { in: recoveryIds } },
-          select: { investmentId: true, inviteIds: true },
-        })
-      : [];
-
-  const qualifiedByInvestment = new Map(
-    recoveryLinks.map((link) => [link.investmentId, link.inviteIds.length])
+  const enrichmentContext = await loadInvestmentEnrichmentContext(
+    userId,
+    investments
   );
 
-  const { REFERRAL_RECOVERY_INVITEES_REQUIRED } = await import(
-    "@/lib/config/referralRecovery"
+  return investments.map((investment) =>
+    enrichInvestmentWithContext(investment, enrichmentContext)
   );
-  const requiredCount = REFERRAL_RECOVERY_INVITEES_REQUIRED();
-  const fifoIds = await loadFifoEligibleIds();
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { level: true },
-  });
-  const powers = await getPowerInventory(userId, user?.level ?? 0);
-
-  return investments.map((investment) => {
-    const choiceCtx = getUnpaidMaturityChoiceContext(investment, fifoIds, powers);
-    return enrichInvestment(investment, {
-      fifoEligibleIds: fifoIds,
-      recoveryQualifiedCount: qualifiedByInvestment.get(investment.id) ?? null,
-      recoveryRequiredCount: investment.recoveryEligibleAt ? requiredCount : null,
-      canChooseReferralRecovery: choiceCtx?.canChooseReferralRecovery ?? false,
-      canChooseTermExtension: choiceCtx?.canChooseTermExtension ?? false,
-      extensionMinDays: choiceCtx?.extensionMinDays ?? null,
-      extensionMaxDays: choiceCtx?.extensionMaxDays ?? null,
-    });
-  });
 }
 
 export async function redeemInvestment(
@@ -87,7 +47,7 @@ export async function redeemInvestment(
 ): Promise<
   InvestmentsServiceResult<{
     msg: string;
-    investment: ReturnType<typeof enrichInvestment>;
+    investment: EnrichedInvestmentJson;
   }>
 > {
   if (!isValidObjectId(investmentId)) {

@@ -2,6 +2,7 @@ import { render } from "@react-email/render";
 import type { Investment, User } from "@prisma/client";
 import UnpaidMaturityChoiceRequiredEmail from "@/emails/UnpaidMaturityChoiceRequiredEmail";
 import type { InvestmentFund } from "@/lib/config/investmentFunds";
+import { getRecoveryInviteesRequired } from "@/lib/config/referralRecovery";
 import { UNPAID_MATURITY_CHOICE_HOURS } from "@/lib/config/unpaidMaturityChoice";
 import {
   getResendClient,
@@ -38,6 +39,9 @@ export async function sendUnpaidMaturityChoiceReminderEmail(params: {
         fundName: fund.name,
         amountUsdt: investment.amountUsdt,
         projectedPayoutUsdt: investment.projectedPayoutUsdt,
+        recoveryRequiredCount: getRecoveryInviteesRequired(
+          investment.amountUsdt
+        ),
         choiceHours,
         choiceDeadlineLabel: deadlineLabel,
         portfolioUrl,

@@ -9,6 +9,7 @@ import {
   resolveMaturityEmailScenario,
   type MaturityEmailScenario,
 } from "@/lib/investments/resolveMaturityEmailScenario";
+import { userMaturedWaitingPushBody } from "@/lib/investments/userMaturityCopy";
 import { sendInvestmentMaturedEmail } from "@/services/mailing/sendInvestmentMaturedEmail";
 import { sendPushNotification } from "@/services/orders/pushNotify";
 import { loadFifoEligibleIds } from "@/services/investments/unpaidMaturityChoice";
@@ -61,7 +62,7 @@ function maturityPushContent(
   if (scenario === "waiting") {
     return {
       title: "Investment matured",
-      body: `Your ${fundName} position reached its term. Payout is pending pool liquidity.`,
+      body: userMaturedWaitingPushBody(fundName),
       type: "INVESTMENT_MATURED_WAITING",
     };
   }

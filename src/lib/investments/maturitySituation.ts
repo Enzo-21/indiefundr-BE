@@ -5,7 +5,10 @@ import {
   type Investment,
 } from "@prisma/client";
 import { isChoiceDeadlineActive } from "@/lib/config/unpaidMaturityChoice";
-import { recoveryExpiresAt } from "@/lib/config/referralRecovery";
+import {
+  getRecoveryInviteesRequired,
+  recoveryExpiresAt,
+} from "@/lib/config/referralRecovery";
 import { isUnpaidMaturityChoicePending } from "@/services/investments/unpaidMaturityChoice";
 
 export type MaturitySituation =
@@ -94,7 +97,10 @@ function forfeitureLabel(reason: ForfeitureReason | null): string {
   return "Investment forfeited";
 }
 
-function forfeitureDetail(reason: ForfeitureReason | null): string {
+function forfeitureDetail(
+  reason: ForfeitureReason | null,
+  recoveryRequiredCount?: number | null
+): string {
   if (reason === ForfeitureReason.choice_deadline_expired) {
     return "The 48-hour choice window expired without selecting wait or invite recovery.";
   }
@@ -102,7 +108,11 @@ function forfeitureDetail(reason: ForfeitureReason | null): string {
     return "The extended term ended and payout was still unavailable.";
   }
   if (reason === ForfeitureReason.recovery_window_expired) {
-    return "The invite recovery window ended before two friends completed investments.";
+    const friends =
+      recoveryRequiredCount != null && recoveryRequiredCount > 0
+        ? recoveryRequiredCount
+        : "enough";
+    return `The invite recovery window ended before ${friends} friends completed investments.`;
   }
   return "This investment was forfeited.";
 }
@@ -185,7 +195,11 @@ export function resolveMaturitySituation(
       ...base,
       situation: "forfeited",
       statusLabel: label,
-      statusDetail: forfeitureDetail(investment.forfeitureReason),
+      statusDetail: forfeitureDetail(
+        investment.forfeitureReason,
+        context.recoveryRequiredCount ??
+          getRecoveryInviteesRequired(investment.amountUsdt)
+      ),
       chosenPath:
         investment.unpaidMaturityResolution ===
         UnpaidMaturityResolution.term_extension
@@ -234,12 +248,14 @@ export function resolveMaturitySituation(
   }
 
   if (choicePending) {
+    const required =
+      context.recoveryRequiredCount ??
+      getRecoveryInviteesRequired(investment.amountUsdt);
     return {
       ...base,
       situation: "choice_required",
       statusLabel: "Choose next step",
-      statusDetail:
-        "Your term ended but payout is waiting on pool liquidity. Choose within 48 hours to wait longer or invite two friends to recover your principal.",
+      statusDetail: `Your term ended but payout is waiting on pool liquidity. Choose within 48 hours to wait longer or invite ${required} friends to recover your principal.`,
       nextDeadlineAt: choiceDeadlineIso,
       nextDeadlineLabel: "Choice deadline",
     };
@@ -253,7 +269,9 @@ export function resolveMaturitySituation(
   ) {
     const expires = recoveryExpiresAt(investment.recoveryEligibleAt);
     const qualified = context.recoveryQualifiedCount ?? 0;
-    const required = context.recoveryRequiredCount ?? 2;
+    const required =
+      context.recoveryRequiredCount ??
+      getRecoveryInviteesRequired(investment.amountUsdt);
     return {
       ...base,
       situation: "recovery_in_progress",
@@ -290,12 +308,18 @@ export function resolveMaturitySituation(
     !isChoiceDeadlineActive(investment.unpaidMaturityChoiceDeadlineAt, now) &&
     investment.unpaidMaturityResolution == null
   ) {
+    const recoveryRequired =
+      context.recoveryRequiredCount ??
+      getRecoveryInviteesRequired(investment.amountUsdt);
     return {
       ...base,
-      situation: "waiting_liquidity",
-      statusLabel: "Payout pending",
-      statusDetail:
-        "Your term ended. The choice window closed without a selection; payout depends on pool liquidity and queue order.",
+      situation: "forfeited",
+      statusLabel: forfeitureLabel(ForfeitureReason.choice_deadline_expired),
+      statusDetail: forfeitureDetail(
+        ForfeitureReason.choice_deadline_expired,
+        recoveryRequired
+      ),
+      chosenPath: null,
     };
   }
 

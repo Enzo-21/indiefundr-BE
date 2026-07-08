@@ -41,6 +41,16 @@ describe("resolveMaturitySituation", () => {
     assert.equal(view.statusLabel, "Choose next step");
     assert.equal(view.needsUnpaidMaturityChoice, true);
     assert.equal(view.nextDeadlineLabel, "Choice deadline");
+    assert.match(view.statusDetail, /invite 2 friends/);
+  });
+
+  it("scales choice_required invite count with principal", () => {
+    const view = resolveMaturitySituation(
+      { ...maturedBase, amountUsdt: 100 },
+      { fifoEligibleIds: new Set(), now: choiceNow }
+    );
+    assert.equal(view.situation, "choice_required");
+    assert.match(view.statusDetail, /invite 8 friends/);
   });
 
   it("returns extended_active after term extension", () => {
@@ -151,5 +161,23 @@ describe("resolveMaturitySituation", () => {
     );
     assert.equal(view.situation, "forfeited");
     assert.equal(view.statusLabel, "Term ended — no choice made");
+  });
+
+  it("returns forfeited when choice deadline expired while still matured", () => {
+    const expiredDeadline = new Date("2026-06-01T00:00:00.000Z");
+    const afterDeadline = new Date("2026-06-10T00:00:00.000Z");
+    const view = resolveMaturitySituation(
+      {
+        ...maturedBase,
+        status: InvestmentStatus.matured,
+        unpaidMaturityChoiceDeadlineAt: expiredDeadline,
+        unpaidMaturityResolution: null,
+      },
+      { fifoEligibleIds: new Set(), now: afterDeadline }
+    );
+    assert.equal(view.situation, "forfeited");
+    assert.equal(view.statusLabel, "Term ended — no choice made");
+    assert.match(view.statusDetail, /48-hour choice window expired/);
+    assert.equal(view.needsUnpaidMaturityChoice, false);
   });
 });

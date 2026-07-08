@@ -3,10 +3,9 @@ import {
   ReferralPayoutOrderKind,
 } from "@prisma/client";
 import {
+  getRecoveryInviteesRequired,
   REFERRAL_INVITEE_BONUS_USDT,
   REFERRAL_INVITER_BONUS_USDT,
-  REFERRAL_RECOVERY_INVITEES_REQUIRED,
-  REFERRAL_RECOVERY_PRINCIPAL_USDT,
 } from "@/lib/config/referralRecovery";
 import { prisma } from "@/lib/prisma";
 import { getRecoveryContextForInviter } from "./recoveryEligibility";
@@ -21,10 +20,11 @@ import {
 } from "./referralPayoutEligibility";
 import { enqueueReferralPayoutOrder } from "./referralPayoutOrderQueue";
 import { scheduleUserLevelRecalculation } from "@/services/playerLevels/scheduleUserLevelRecalculation";
+
 export function shouldUseRecoverySlot(
   link: { completedAt: Date | null; inviteIds: string[] } | null,
   inviteId: string,
-  required: number = REFERRAL_RECOVERY_INVITEES_REQUIRED()
+  required: number
 ): boolean {
   const recoveryComplete = Boolean(link?.completedAt);
   const slotsFull = (link?.inviteIds.length ?? 0) >= required;
@@ -56,7 +56,7 @@ async function trackRecoveryInvite(inviterUserId: string, inviteId: string) {
     });
   }
 
-  return { link, investmentId };
+  return { link, investmentId, principalUsdt: ctx.recovery.principalUsdt };
 }
 
 async function maybeEnqueuePrincipalRecoveryOrder(
@@ -66,16 +66,16 @@ async function maybeEnqueuePrincipalRecoveryOrder(
   const tracked = await trackRecoveryInvite(inviterUserId, inviteId);
   if (!tracked) return;
 
-  const { link, investmentId } = tracked;
-  if (link.inviteIds.length < REFERRAL_RECOVERY_INVITEES_REQUIRED()) return;
+  const { link, investmentId, principalUsdt } = tracked;
+  const required = getRecoveryInviteesRequired(principalUsdt);
+  if (link.inviteIds.length < required) return;
   if (link.completedAt) return;
 
-  const principal = REFERRAL_RECOVERY_PRINCIPAL_USDT();
   await enqueueReferralPayoutOrder({
     userId: inviterUserId,
     referralInviteId: inviteId,
     kind: ReferralPayoutOrderKind.principal_recovery,
-    amountUsdt: principal,
+    amountUsdt: principalUsdt,
     investmentId,
   });
 }
@@ -116,7 +116,9 @@ export async function issueReferralRewards(
   const recoveryCtx = await getRecoveryContextForInviter(invite.inviterUserId);
   if (recoveryCtx.mode === "recovery" && recoveryCtx.recovery) {
     const investmentIdForRecovery = recoveryCtx.recovery.investmentId;
-    const required = REFERRAL_RECOVERY_INVITEES_REQUIRED();
+    const required = getRecoveryInviteesRequired(
+      recoveryCtx.recovery.principalUsdt
+    );
     const link = await prisma.referralRecoveryLink.findUnique({
       where: { investmentId: investmentIdForRecovery },
     });

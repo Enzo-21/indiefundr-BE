@@ -4,6 +4,7 @@ import {
   type MaturitySituationContext,
   type MaturitySituationView,
 } from "@/lib/investments/maturitySituation";
+import { toUserFacingMaturityCopy } from "@/lib/investments/userMaturityCopy";
 
 /** Legacy rows may have payoutEligibleAt; new rows rely on payabilityStatus. */
 export function isPastPayoutEligible(investment: Investment): boolean {
@@ -32,10 +33,11 @@ export function getUserStatusLabel(
     if (options.needsUnpaidMaturityChoice && investment.status === "matured") {
       return "Choose next step";
     }
-    return view.statusLabel;
+    return toUserFacingMaturityCopy(view).statusLabel;
   }
 
-  return resolveMaturitySituation(investment, options).statusLabel;
+  const view = resolveMaturitySituation(investment, options);
+  return toUserFacingMaturityCopy(view).statusLabel;
 }
 
 export function canUserClaim(_investment: Investment): boolean {

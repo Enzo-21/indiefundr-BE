@@ -4,7 +4,6 @@ import { getMainWallet } from "@/lib/wallets/helpers";
 import {
   REFERRAL_INVITEE_BONUS_USDT,
   REFERRAL_INVITER_BONUS_USDT,
-  REFERRAL_RECOVERY_PRINCIPAL_USDT,
 } from "@/lib/config/referralRecovery";
 
 const PENDING_ENTITY_PREFIX = "referral-pending:";
@@ -385,7 +384,8 @@ export async function markInviteeReferralProcessingActivity(
 export async function markInviterReferralProcessingActivity(
   userId: string,
   walletId: string,
-  inviteKey: string
+  inviteKey: string,
+  amountUsdt?: number
 ) {
   const entityId = inviteKey.startsWith(INVITER_PENDING_ENTITY_PREFIX)
     ? inviteKey
@@ -394,9 +394,11 @@ export async function markInviterReferralProcessingActivity(
           inviteKey.slice("principal-".length)
         )
       : inviterReferralActivityEntityId(inviteKey);
-  const amount = inviteKey.startsWith("principal-")
-    ? REFERRAL_RECOVERY_PRINCIPAL_USDT()
-    : REFERRAL_INVITER_BONUS_USDT();
+  const amount =
+    amountUsdt ??
+    (inviteKey.startsWith("principal-")
+      ? 0
+      : REFERRAL_INVITER_BONUS_USDT());
   const existing = await findReferralActivityByEntityId(
     userId,
     walletId,

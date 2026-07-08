@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronUp, Star } from "lucide-react";
+import { ChartSpline, ChevronUp, Star, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Marquee } from "@/components/marquee";
 import { MotionPreset } from "@/components/motion-preset";
@@ -107,10 +107,7 @@ export function HeroSection({
             floatIndex={0}
             className="top-[3.5%] left-[19%] flex -rotate-3 items-center gap-2 rounded-lg border px-3 py-1.5"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/brand-logo/amazon.webp" alt="Fund icon" className="size-4 dark:hidden" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/brand-logo/amazon-dark.webp" alt="Fund icon dark" className="hidden size-4 dark:inline-block" />
+            <ChartSpline className="size-4 text-primary" aria-hidden />
             <span className="font-medium">{heroDecorCopy.fundSubscribe.fundName}</span>
             <span className="text-muted-foreground text-xs font-light">{heroDecorCopy.fundSubscribe.label}</span>
             <span className="text-destructive ml-6 text-sm">{heroDecorCopy.fundSubscribe.amount}</span>
@@ -120,15 +117,14 @@ export function HeroSection({
             floatIndex={1}
             className="top-[16.4%] left-3 flex -rotate-3 items-center gap-1.5 rounded-full px-3 py-2"
           >
-            <span className="grid size-10 place-content-center rounded-full border shadow-sm">
-              <svg width="25" height="25" viewBox="0 0 25 25" fill="none" className="size-5.5" aria-hidden>
-                <path d="M23.75 5.46872C23.75 3.13879 21.8612 1.25 19.5312 1.25H5.46875C3.1388 1.25 1.25 3.13879 1.25 5.46873V19.5313C1.25 21.8612 3.1388 23.75 5.46875 23.75H19.5313C21.8612 23.75 23.75 21.8612 23.75 19.5313V5.46872Z" fill="var(--primary)" />
-                <path d="M12.4995 7.13083V7.22664M10.7417 11.3282H13.0855L13.0859 18.3594M19.5312 1.25C21.8612 1.25 23.75 3.13879 23.75 5.46873L23.75 19.5313C23.75 21.8612 21.8612 23.75 19.5313 23.75H5.46875C3.1388 23.75 1.25 21.8612 1.25 19.5313V5.46873C1.25 3.13879 3.1388 1.25 5.46875 1.25H19.5312Z" stroke="var(--background)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+            <span className="grid size-10 place-content-center rounded-full border bg-green-600/10 shadow-sm dark:bg-green-400/10">
+              <TrendingUp className="size-5 text-green-600 dark:text-green-400" aria-hidden />
             </span>
             <div className="flex flex-col text-left">
               <span className="font-medium">{heroDecorCopy.maturity.title}</span>
-              <span className="text-muted-foreground text-xs">{heroDecorCopy.maturity.subtitle}</span>
+              <span className="text-xs text-green-600 dark:text-green-400">
+                {heroDecorCopy.maturity.subtitle}
+              </span>
             </div>
           </FloatingCard>
 

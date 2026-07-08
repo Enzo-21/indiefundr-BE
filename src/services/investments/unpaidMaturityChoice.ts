@@ -5,6 +5,7 @@ import {
   type Investment,
 } from "@prisma/client";
 import { getFundById } from "@/lib/config/investmentFunds";
+import { getRecoveryInviteesRequired } from "@/lib/config/referralRecovery";
 import {
   clampExtensionDays,
   choiceDeadlineAt,
@@ -69,6 +70,7 @@ export type UnpaidMaturityChoiceContext = {
   fundId: string;
   fundName: string;
   principalUsdt: number;
+  recoveryRequiredCount: number;
   needsChoice: boolean;
   extensionMinDays: number;
   extensionMaxDays: number;
@@ -279,6 +281,7 @@ export function getUnpaidMaturityChoiceContext(
     fundId: investment.fundId,
     fundName: fund?.name ?? investment.fundId,
     principalUsdt: investment.amountUsdt,
+    recoveryRequiredCount: getRecoveryInviteesRequired(investment.amountUsdt),
     needsChoice: true,
     extensionMinDays: bounds.minDays,
     extensionMaxDays: bounds.maxDays,

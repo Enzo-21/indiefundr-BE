@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { fieldIsNullOrUnset } from "@/lib/prisma/mongoFieldFilters";
 import { getFundById } from "@/lib/config/investmentFunds";
 import {
+  getRecoveryInviteesRequired,
   isRecoveryWindowActive,
-  REFERRAL_RECOVERY_INVITEES_REQUIRED,
   REFERRAL_RECOVERY_WINDOW_DAYS,
   recoveryExpiresAt,
 } from "@/lib/config/referralRecovery";
@@ -217,14 +217,15 @@ function buildRecoveryPayload(
 
   const fund = getFundById(investment.fundId);
   const eligibleAt = investment.recoveryEligibleAt;
-  const requiredCount = REFERRAL_RECOVERY_INVITEES_REQUIRED();
+  const principalUsdt = investment.amountUsdt;
+  const requiredCount = getRecoveryInviteesRequired(principalUsdt);
 
   return {
     investmentId: investment.id,
     fundName: fund?.name ?? investment.fundId,
     qualifiedCount,
     requiredCount,
-    principalUsdt: investment.amountUsdt,
+    principalUsdt,
     recoveryEligibleAt: eligibleAt.toISOString(),
     recoveryExpiresAt: recoveryExpiresAt(eligibleAt).toISOString(),
     windowDays: REFERRAL_RECOVERY_WINDOW_DAYS(),
