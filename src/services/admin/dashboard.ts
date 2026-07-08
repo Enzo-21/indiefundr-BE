@@ -65,6 +65,49 @@ function walletFieldsFromStats(stats: UserWalletStats): AdminUserWalletFields {
   };
 }
 
+export async function getAdminOverviewFast() {
+  const [totalUsers, investments, pendingOrders, treasury] = await Promise.all([
+    prisma.user.count(),
+    prisma.investment.findMany({
+      select: { userId: true, status: true },
+    }),
+    prisma.purchaseOrder.count({
+      where: {
+        status: {
+          in: [PurchaseOrderStatus.queued, PurchaseOrderStatus.processing],
+        },
+      },
+    }),
+    getLedgerSnapshot(),
+  ]);
+
+  const investedUserIds = new Set<string>();
+  let activeInvestments = 0;
+  let maturedInvestments = 0;
+  let redeemingInvestments = 0;
+  let investmentsPaid = 0;
+
+  for (const inv of investments) {
+    if (inv.status === InvestmentStatus.failed) continue;
+    investedUserIds.add(inv.userId);
+    if (inv.status === InvestmentStatus.active) activeInvestments++;
+    if (inv.status === InvestmentStatus.matured) maturedInvestments++;
+    if (inv.status === InvestmentStatus.redeeming) redeemingInvestments++;
+    if (inv.status === InvestmentStatus.redeemed) investmentsPaid++;
+  }
+
+  return {
+    totalUsers,
+    usersWithInvestment: investedUserIds.size,
+    investmentsPaid,
+    activeInvestments,
+    maturedInvestments,
+    redeemingInvestments,
+    pendingOrders,
+    treasury,
+  };
+}
+
 export async function getAdminOverviewStats() {
   const [totalUsers, investments, pendingOrders, usersWithWallets, walletCtx] =
     await Promise.all([

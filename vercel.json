@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/maturity",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/wallet-sync",
+      "schedule": "*/2 * * * *"
     }
   ]
 }
