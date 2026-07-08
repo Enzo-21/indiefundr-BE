@@ -19,8 +19,11 @@ import { useEffect, useRef, useState } from "react";
 import { MotionPreset } from "@/components/motion-preset";
 import { SpinBadgeIcon } from "@/components/swipe-logo";
 import { Badge } from "@/components/ui/badge";
-import { featurePanels, featuresSection } from "@/lib/content";
+import { useMarketingContent } from "@/components/marketing/marketing-content-provider";
+import type { SiteContent } from "@/lib/content";
 import { cn } from "@/lib/utils";
+
+type FeaturePanel = SiteContent["featurePanels"][number];
 
 const featureIcons: Record<string, LucideIcon> = {
   "tron-wallet": Wallet,
@@ -49,7 +52,7 @@ function FeatureScrollItem({
   feature,
   isMobile,
 }: {
-  feature: (typeof featurePanels)[number];
+  feature: FeaturePanel;
   isMobile: boolean;
 }) {
   const ref = useRef<HTMLElement>(null);
@@ -115,6 +118,7 @@ function FeatureScrollItem({
 }
 
 export function FeaturesSection() {
+  const { featurePanels, featuresSection } = useMarketingContent();
   const containerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const reduceMotion = useReducedMotion();

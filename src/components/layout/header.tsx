@@ -22,10 +22,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { navigationData } from "@/lib/content";
+import { useMarketingContent } from "@/components/marketing/marketing-content-provider";
 import { cn } from "@/lib/utils";
 
 export function Header() {
+  const { navigationData } = useMarketingContent();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 

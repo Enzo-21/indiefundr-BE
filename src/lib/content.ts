@@ -1,13 +1,6 @@
 import {
-  benefitsCopy,
-  ctaCopy,
-  faqCopy,
-  featuresCopy,
-  footerCopy,
-  heroCopy,
+  buildMarketingCopy,
   heroDecorCopy,
-  howItWorksCopy,
-  testimonialsCopy,
   MARKETING_BRAND,
 } from "@/lib/marketing/copy";
 import {
@@ -15,48 +8,6 @@ import {
   formatInvestmentTermLabel,
   getInvestmentTermApproxDays,
 } from "@/lib/config/investmentTiming";
-
-const investmentTermDays = getInvestmentTermApproxDays();
-const investmentTermLabel = formatInvestmentTermLabel(investmentTermDays);
-const investmentTermHyphenated = formatInvestmentTermHyphenated(investmentTermDays);
-
-export const siteConfig = {
-  name: MARKETING_BRAND,
-  title: `IndieFundr — Multiply your money in ${investmentTermLabel}`,
-  description:
-    `Put your money to work in five studied, unconventional ${investmentTermHyphenated} funds with illustrative targets from 6% to 40%. Start from $25. Fund and withdraw globally with USDT.`,
-  keywords: [
-    "invest money",
-    "multiply money",
-    "unconventional investing",
-    `${investmentTermDays} day investment`,
-    "high yield funds",
-    "mobile investing",
-    "IndieFundr",
-    "passive returns",
-    "alternative investments",
-    "fund investing from $25",
-  ],
-  url: "https://indiefundr.com",
-};
-
-export const heroStats = [
-  "From $25 per fund",
-  `Five studied, ${investmentTermHyphenated} funds`,
-  `Targets up to 40% in ${investmentTermLabel}`,
-  "Beyond traditional investing",
-  "Unconventional strategies, vetted funds",
-];
-
-export { heroDecorCopy };
-
-export const heroContent = {
-  title: heroCopy.title,
-  subtitle: heroCopy.subtitle,
-  primaryCta: heroCopy.primaryCta,
-  secondaryCta: heroCopy.secondaryCta,
-  secondaryHref: "#how-it-works",
-};
 
 const featureIds = [
   "tron-wallet",
@@ -66,34 +17,213 @@ const featureIds = [
   "usdt-withdraw",
 ];
 
-export const navigationData = [
-  {
-    title: "Features",
-    href: "/#features",
-    items: featuresCopy.items.slice(0, 3).map((item, index) => ({
-      title: item.title,
-      href: `/#${featureIds[index]}`,
-      description: item.description,
-    })),
-    imageSection: {
-      title: featuresCopy.items[3]?.title ?? "Portfolio tracking",
-      href: `/#${featureIds[3]}`,
-      description: featuresCopy.items[3]?.description ?? "",
-    },
-  },
-  { title: "Benefits", href: "/#benefits" },
-  { title: "Testimonials", href: "/#testimonials" },
-  { title: "How it works", href: "/#how-it-works" },
+const testimonialBrands = [
+  { name: "twitter", logo: "/images/brand-logo/twitter.webp" },
+  { name: "Trustpilot", logo: "/images/brand-logo/trustpilot.webp" },
+  { name: "reddit", logo: "/images/brand-logo/reddit.webp" },
 ];
 
-export const featurePanels = featuresCopy.items.map((item, index) => ({
-  id: featureIds[index] ?? `feature-${index}`,
-  title: item.title,
-  description: item.description,
-  position: (index % 2 === 0 ? "left" : "right") as "left" | "right",
-}));
+export type SiteContent = ReturnType<typeof buildSiteContent>;
 
-export const benefits = benefitsCopy.items;
+export function buildSiteContent() {
+  const copy = buildMarketingCopy();
+  const {
+    heroCopy,
+    featuresCopy,
+    benefitsCopy,
+    testimonialsCopy,
+    howItWorksCopy,
+    faqCopy,
+    ctaCopy,
+    footerCopy,
+    investmentTermDays,
+    investmentTermLabel,
+    investmentTermHyphenated,
+  } = copy;
+
+  const siteConfig = {
+    name: MARKETING_BRAND,
+    title: `IndieFundr — Multiply your money in ${investmentTermLabel}`,
+    description: `Put your money to work in five studied, unconventional ${investmentTermHyphenated} funds with illustrative targets from 6% to 40%. Start from $25. Fund and withdraw globally with USDT.`,
+    keywords: [
+      "invest money",
+      "multiply money",
+      "unconventional investing",
+      `${investmentTermDays} day investment`,
+      "high yield funds",
+      "mobile investing",
+      "IndieFundr",
+      "passive returns",
+      "alternative investments",
+      "fund investing from $25",
+    ],
+    url: "https://indiefundr.com",
+  };
+
+  const heroStats = [
+    "From $25 per fund",
+    `Five studied, ${investmentTermHyphenated} funds`,
+    `Targets up to 40% in ${investmentTermLabel}`,
+    "Beyond traditional investing",
+    "Unconventional strategies, vetted funds",
+  ];
+
+  const heroContent = {
+    title: heroCopy.title,
+    subtitle: heroCopy.subtitle,
+    primaryCta: heroCopy.primaryCta,
+    secondaryCta: heroCopy.secondaryCta,
+    secondaryHref: "#how-it-works",
+  };
+
+  const navigationData = [
+    {
+      title: "Features",
+      href: "/#features",
+      items: featuresCopy.items.slice(0, 3).map((item, index) => ({
+        title: item.title,
+        href: `/#${featureIds[index]}`,
+        description: item.description,
+      })),
+      imageSection: {
+        title: featuresCopy.items[3]?.title ?? "Portfolio tracking",
+        href: `/#${featureIds[3]}`,
+        description: featuresCopy.items[3]?.description ?? "",
+      },
+    },
+    { title: "Benefits", href: "/#benefits" },
+    { title: "Testimonials", href: "/#testimonials" },
+    { title: "How it works", href: "/#how-it-works" },
+  ];
+
+  const featurePanels = featuresCopy.items.map((item, index) => ({
+    id: featureIds[index] ?? `feature-${index}`,
+    title: item.title,
+    description: item.description,
+    position: (index % 2 === 0 ? "left" : "right") as "left" | "right",
+  }));
+
+  const benefits = benefitsCopy.items;
+
+  const testimonials = testimonialsCopy.items.map((item, index) => ({
+    quote: item.quote,
+    name: item.name,
+    handle: item.handle,
+    avatar: `/images/avatar/${(index % 6) + 1}.webp`,
+    brand: testimonialBrands[index % testimonialBrands.length],
+    rating: index === 0 ? 5 : 4.5,
+  }));
+
+  const pricingPlans = howItWorksCopy.steps.map((step) => ({
+    step: step.step,
+    name: step.name,
+    description: step.description,
+    features: step.highlights,
+  }));
+
+  const howItWorksSection = {
+    badge: "How it works",
+    title: howItWorksCopy.title,
+    subtitle: howItWorksCopy.subtitle,
+  };
+
+  const faqItems = faqCopy.items;
+
+  const faqSection = {
+    title: faqCopy.title,
+    subtitle: faqCopy.subtitle,
+    supportCard: faqCopy.supportCard,
+  };
+
+  const navCta = heroCopy.navCta;
+
+  const ctaSection = {
+    badge: "Try now",
+    title: ctaCopy.title,
+    subtitle: ctaCopy.subtitle,
+    appStore: ctaCopy.appStore,
+    playStore: ctaCopy.playStore,
+    orLabel: ctaCopy.orLabel,
+    desktopBrowser: ctaCopy.desktopBrowser,
+  };
+
+  const footerLinks = {
+    product: footerCopy.company.map((link) => ({
+      label: link.label,
+      href: link.href.startsWith("#") ? `/${link.href}` : link.href,
+    })),
+  };
+
+  const featuresSection = {
+    badge: "Features",
+    title: featuresCopy.title,
+    subtitle: featuresCopy.subtitle,
+  };
+
+  const benefitsSection = {
+    badge: "Benefits",
+    title: benefitsCopy.title,
+    subtitle: benefitsCopy.subtitle,
+  };
+
+  const testimonialsSection = {
+    badge: "testimonials",
+    title: testimonialsCopy.title,
+    subtitle: testimonialsCopy.subtitle,
+  };
+
+  return {
+    siteConfig,
+    heroStats,
+    heroContent,
+    navigationData,
+    featurePanels,
+    benefits,
+    testimonials,
+    pricingPlans,
+    howItWorksSection,
+    faqItems,
+    faqSection,
+    navCta,
+    ctaSection,
+    footerLinks,
+    footerShareLine: footerCopy.shareLine,
+    footerShareHint: footerCopy.shareHint,
+    footerTagline: footerCopy.tagline,
+    featuresSection,
+    benefitsSection,
+    testimonialsSection,
+  };
+}
+
+/** Server-only helper for metadata and non-marketing consumers. */
+export function buildSiteConfig() {
+  const investmentTermDays = getInvestmentTermApproxDays();
+  const investmentTermLabel = formatInvestmentTermLabel(investmentTermDays);
+  const investmentTermHyphenated =
+    formatInvestmentTermHyphenated(investmentTermDays);
+
+  return {
+    name: MARKETING_BRAND,
+    title: `IndieFundr — Multiply your money in ${investmentTermLabel}`,
+    description: `Put your money to work in five studied, unconventional ${investmentTermHyphenated} funds with illustrative targets from 6% to 40%. Start from $25. Fund and withdraw globally with USDT.`,
+    keywords: [
+      "invest money",
+      "multiply money",
+      "unconventional investing",
+      `${investmentTermDays} day investment`,
+      "high yield funds",
+      "mobile investing",
+      "IndieFundr",
+      "passive returns",
+      "alternative investments",
+      "fund investing from $25",
+    ],
+    url: "https://indiefundr.com",
+  };
+}
+
+export { heroDecorCopy };
 
 export const budgetInitialBalance = 0;
 
@@ -166,65 +296,6 @@ export const benefitMarqueeRows = [
   },
 ];
 
-const testimonialBrands = [
-  { name: "twitter", logo: "/images/brand-logo/twitter.webp" },
-  { name: "Trustpilot", logo: "/images/brand-logo/trustpilot.webp" },
-  { name: "reddit", logo: "/images/brand-logo/reddit.webp" },
-];
-
-export const testimonials = testimonialsCopy.items.map((item, index) => ({
-  quote: item.quote,
-  name: item.name,
-  handle: item.handle,
-  avatar: `/images/avatar/${(index % 6) + 1}.webp`,
-  brand: testimonialBrands[index % testimonialBrands.length],
-  rating: index === 0 ? 5 : 4.5,
-}));
-
-export const pricingPlans = howItWorksCopy.steps.map((step) => ({
-  step: step.step,
-  name: step.name,
-  description: step.description,
-  features: step.highlights,
-}));
-
-export const howItWorksSection = {
-  badge: "How it works",
-  title: howItWorksCopy.title,
-  subtitle: howItWorksCopy.subtitle,
-};
-
-export const faqItems = faqCopy.items;
-
-export const faqSection = {
-  title: faqCopy.title,
-  subtitle: faqCopy.subtitle,
-  supportCard: faqCopy.supportCard,
-};
-
-export const navCta = heroCopy.navCta;
-
-export const ctaSection = {
-  badge: "Try now",
-  title: ctaCopy.title,
-  subtitle: ctaCopy.subtitle,
-  appStore: ctaCopy.appStore,
-  playStore: ctaCopy.playStore,
-  orLabel: ctaCopy.orLabel,
-  desktopBrowser: ctaCopy.desktopBrowser,
-};
-
-export const footerLinks = {
-  product: footerCopy.company.map((link) => ({
-    label: link.label,
-    href: link.href.startsWith("#") ? `/${link.href}` : link.href,
-  })),
-};
-
-export const footerShareLine = footerCopy.shareLine;
-export const footerShareHint = footerCopy.shareHint;
-export const footerTagline = footerCopy.tagline;
-
 export const quoteParts = [
   "Your",
   "money",
@@ -244,21 +315,3 @@ export const brandLogos = [
   { src: "/images/brand-logo/trustpilot.webp", alt: "Portfolio" },
   { src: "/images/brand-logo/reddit.webp", alt: "IndieFundr" },
 ];
-
-export const featuresSection = {
-  badge: "Features",
-  title: featuresCopy.title,
-  subtitle: featuresCopy.subtitle,
-};
-
-export const benefitsSection = {
-  badge: "Benefits",
-  title: benefitsCopy.title,
-  subtitle: benefitsCopy.subtitle,
-};
-
-export const testimonialsSection = {
-  badge: "testimonials",
-  title: testimonialsCopy.title,
-  subtitle: testimonialsCopy.subtitle,
-};

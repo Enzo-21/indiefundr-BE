@@ -12,10 +12,11 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { faqItems, faqSection } from "@/lib/content";
+import { useMarketingContent } from "@/components/marketing/marketing-content-provider";
 import { cn } from "@/lib/utils";
 
 export function FaqSection() {
+  const { faqItems, faqSection } = useMarketingContent();
   return (
     <section className="py-8 sm:py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

@@ -1,6 +1,6 @@
 import { normalizePlayerLevel } from "@/lib/config/playerLevels";
 
-export { getFundById, isValidFundId, INVESTMENT_FUNDS } from "./investmentFunds";
+export { getFundById, getInvestmentFunds, isValidFundId } from "./investmentFunds";
 export type { InvestmentFund } from "./investmentFunds";
 export {
   getMaturityDate,

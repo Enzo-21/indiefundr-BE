@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { INVESTMENT_FUNDS } from "@/lib/config/investmentFunds";
+import { getInvestmentFunds } from "@/lib/config/investmentFunds";
 import { buildInvestmentReasonDetail } from "@/lib/admin/investmentReasonNotes";
 import { shouldShowInvestmentMaturityCountdown } from "@/lib/admin/investmentMaturityCountdown";
 import {
@@ -405,7 +405,7 @@ export function InvestmentsTable({
             onChange={(event) => applyFundFilter(event.target.value)}
           >
             <option value="">All funds</option>
-            {INVESTMENT_FUNDS.map((fund) => (
+            {getInvestmentFunds().map((fund) => (
               <option key={fund.id} value={fund.id}>
                 {fund.name}
               </option>

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { siteConfig } from "@/lib/content";
+import { buildSiteConfig } from "@/lib/content";
 
 /** Placeholder until a dedicated social image is shipped. */
 const OG_IMAGE_PATH = "/images/og-image.png";
 
 export function createSiteMetadata(overrides?: Metadata): Metadata {
-  const { name, title, description, url, keywords } = siteConfig;
+  const { name, title, description, url, keywords } = buildSiteConfig();
 
   return {
     metadataBase: new URL(url),

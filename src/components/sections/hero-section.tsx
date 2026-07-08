@@ -6,7 +6,8 @@ import { useEffect, useState } from "react";
 import { Marquee } from "@/components/marquee";
 import { MotionPreset } from "@/components/motion-preset";
 import { PrimarySwipeButton, SecondarySwipeButton } from "@/components/swipe-buttons";
-import { heroStats, heroContent, heroDecorCopy } from "@/lib/content";
+import { useMarketingContent } from "@/components/marketing/marketing-content-provider";
+import { heroDecorCopy } from "@/lib/content";
 import { cn } from "@/lib/utils";
 
 const floatClasses = [
@@ -44,6 +45,7 @@ export function HeroSection({
 }: {
   requestHost?: string | null;
 }) {
+  const { heroStats, heroContent } = useMarketingContent();
   const [statIndex, setStatIndex] = useState(0);
   const reduceMotion = useReducedMotion();
 

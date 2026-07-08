@@ -19,7 +19,9 @@ const robotoMono = Roboto_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = createSiteMetadata();
+export async function generateMetadata(): Promise<Metadata> {
+  return createSiteMetadata();
+}
 
 export default function RootLayout({
   children,
