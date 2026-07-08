@@ -13,12 +13,10 @@ import {
 } from "@/components/ui/dialog";
 import { getAppOpenUrl } from "@/lib/marketing/appUrl";
 import type { MarketingPlatform } from "@/lib/marketing/detectPlatform";
-import { installModalCopy } from "@/lib/marketing/installCopy";
 import {
-  APK_DOWNLOAD_URL,
-  IOS_BETA_TESTFLIGHT_URL,
-  TESTFLIGHT_APP_STORE_URL,
-} from "@/lib/marketing/nativeDistribution";
+  getInstallModalCopy,
+  getInstallModalLocale,
+} from "@/lib/marketing/installCopy";
 
 export function InstallAppModal({
   open,
@@ -32,13 +30,23 @@ export function InstallAppModal({
   requestHost?: string | null;
 }) {
   const [copied, setCopied] = useState(false);
-  const [apkMessage, setApkMessage] = useState<string | null>(null);
+  const [locale, setLocale] = useState<"en" | "es">("en");
   const appUrl = getAppOpenUrl({ host: requestHost });
+  const copy = getInstallModalCopy(locale);
+  const mobileCopy =
+    platform === "ios"
+      ? copy.ios
+      : platform === "android"
+        ? copy.android
+        : null;
+
+  useEffect(() => {
+    setLocale(getInstallModalLocale());
+  }, []);
 
   useEffect(() => {
     if (!open) {
       setCopied(false);
-      setApkMessage(null);
     }
   }, [open]);
 
@@ -51,29 +59,21 @@ export function InstallAppModal({
     }
   };
 
-  const handleAndroidInstall = () => {
-    if (APK_DOWNLOAD_URL) {
-      window.location.href = APK_DOWNLOAD_URL;
-      return;
-    }
-    setApkMessage(installModalCopy.android.apkInProgressDetail);
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base leading-snug">
-            {installModalCopy.headerTitle}
+            {copy.headerTitle}
           </DialogTitle>
           <DialogDescription className="text-sm">
-            {installModalCopy.headerSubtitle}
+            {copy.headerSubtitle}
           </DialogDescription>
         </DialogHeader>
 
-        {platform === "ios" ? (
+        {mobileCopy ? (
           <div className="space-y-3">
-            {installModalCopy.ios.steps.map((step, index) => (
+            {mobileCopy.steps.map((step, index) => (
               <MotionPreset
                 key={step.title}
                 fade
@@ -90,24 +90,13 @@ export function InstallAppModal({
           </div>
         ) : null}
 
-        {platform === "android" ? (
-          <div className="space-y-3">
-            <p className="text-muted-foreground rounded-lg border bg-muted/40 px-3 py-2.5 text-sm">
-              {installModalCopy.android.intro}
-            </p>
-            {apkMessage ? (
-              <p className="text-foreground text-sm font-medium">{apkMessage}</p>
-            ) : null}
-          </div>
-        ) : null}
-
         {platform === "desktop" ? (
           <div className="space-y-2">
             <p className="text-foreground text-sm font-medium">
-              {installModalCopy.desktop.title}
+              {copy.desktop.title}
             </p>
             <p className="text-muted-foreground text-sm">
-              {installModalCopy.desktop.body}
+              {copy.desktop.body}
             </p>
             <p className="text-muted-foreground break-all rounded-md border bg-muted/30 px-3 py-2 font-mono text-xs">
               {appUrl}
@@ -117,38 +106,31 @@ export function InstallAppModal({
 
         <div className="flex flex-col gap-2 pt-1 sm:flex-row">
           {platform === "desktop" ? (
-            <Button type="button" className="flex-1" onClick={copyLink}>
-              {copied ? "Copied!" : installModalCopy.desktop.primaryCta}
-            </Button>
-          ) : platform === "ios" ? (
             <>
+              <Button type="button" className="flex-1" onClick={copyLink}>
+                {copied ? (locale === "es" ? "¡Copiado!" : "Copied!") : copy.desktop.primaryCta}
+              </Button>
               <a
-                href={IOS_BETA_TESTFLIGHT_URL}
-                className={cn(buttonVariants(), "flex-1")}
-              >
-                {installModalCopy.ios.primaryCta}
-              </a>
-              <a
-                href={TESTFLIGHT_APP_STORE_URL}
+                href={appUrl}
                 className={cn(buttonVariants({ variant: "outline" }), "flex-1")}
               >
-                {installModalCopy.ios.secondaryCta}
+                {copy.desktop.secondaryCta}
               </a>
             </>
-          ) : (
-            <Button type="button" className="flex-1" onClick={handleAndroidInstall}>
-              {apkMessage
-                ? installModalCopy.android.apkInProgress
-                : installModalCopy.android.primaryCta}
-            </Button>
-          )}
-          {platform === "desktop" ? (
-            <a
-              href={appUrl}
-              className={cn(buttonVariants({ variant: "outline" }), "flex-1")}
-            >
-              {installModalCopy.desktop.secondaryCta}
-            </a>
+          ) : mobileCopy ? (
+            <>
+              <a href={appUrl} className={cn(buttonVariants(), "flex-1")}>
+                {mobileCopy.openAppCta}
+              </a>
+              <a
+                href={mobileCopy.fullGuideUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(buttonVariants({ variant: "outline" }), "flex-1")}
+              >
+                {mobileCopy.fullGuideLabel}
+              </a>
+            </>
           ) : null}
         </div>
       </DialogContent>

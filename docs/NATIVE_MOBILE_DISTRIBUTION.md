@@ -1,54 +1,35 @@
-# Native mobile distribution (web gate)
+# Mobile web distribution (PWA install gate)
 
-Mobile browsers do not run the full IndieFundr web app. Instead they see platform-specific install instructions. Desktop browsers continue to use the full Expo web app at `app.{domain}`.
+Mobile browsers do not run the full IndieFundr web app until the user installs the PWA. Desktop browsers continue to use the full Expo web app at `app.{domain}`.
 
 ## Flow
 
 | Visitor | Experience |
 |---------|------------|
 | Desktop browser on `app.{domain}` | Full web app (login, invest, etc.) |
-| iPhone / iPad Safari (or other mobile browser) | TestFlight two-step screen |
-| Android Chrome (or other mobile browser) | APK install card |
+| iPhone / iPad mobile browser | PWA install instructions (Add to Home Screen → Open as Web App) |
+| Android Chrome mobile browser | PWA install instructions (Add to Home screen → Install) |
+| Installed PWA (standalone) | Full web app |
 | Marketing landing store badges | Same instructions in a modal |
 
 ```text
 Landing badge / app URL on phone
         │
         ▼
-  Mobile native gate (Expo web)
+  PWA install gate (Expo web)
         │
    ┌────┴────┐
    ▼         ▼
  iOS       Android
-TestFlight   APK card
-  steps    (placeholder)
+Add to    Install web
+Home      app steps
+Screen
 ```
-
-## Placeholder URLs
-
-Until native builds are published, defaults point at distribution tooling:
-
-| Constant | Default | Replace with |
-|----------|---------|--------------|
-| `IOS_BETA_TESTFLIGHT_URL` | [Expo Go beta](https://testflight.apple.com/join/GZJxxfUU) | IndieFundr TestFlight public join link |
-| `TESTFLIGHT_APP_STORE_URL` | TestFlight on App Store | (unchanged) |
-| `APK_DOWNLOAD_URL` | `null` | Hosted `.apk` URL |
-
-**Frontend** (`frontend/constants/nativeDistribution.ts`):
-
-- Edit constants directly, or use env at build time if you add `EXPO_PUBLIC_*` overrides later.
-
-**Marketing** (`backend/src/lib/marketing/nativeDistribution.ts`):
-
-- `NEXT_PUBLIC_IOS_BETA_TESTFLIGHT_URL`
-- `NEXT_PUBLIC_TESTFLIGHT_APP_STORE_URL`
-- `NEXT_PUBLIC_APK_DOWNLOAD_URL`
 
 ## Dev bypass
 
-To load the full web app on a phone during development:
+To load the full web app in a mobile browser during local development only:
 
-- Append `?allowBrowser=1` to the Expo web URL, or
 - Set `EXPO_PUBLIC_ALLOW_MOBILE_BROWSER=1` in `frontend/.env`.
 
 ## Build and deploy
@@ -57,7 +38,7 @@ To load the full web app on a phone during development:
 cd frontend && npm run build:web   # expo export -p web
 ```
 
-Deploy `frontend/dist/` to the `app` subdomain. No service worker or web manifest is required.
+Deploy `frontend/dist/` to the `app` subdomain. `site.webmanifest` and Apple web-app meta tags are included for install UX.
 
 **LAN development:** Marketing CTAs on a private IP use `http://<ip>:3000/__open-app`, which middleware redirects to Expo on the same IP (`APP_WEB_URL`, default port 8081). See [backend README](../README.md).
 
@@ -65,8 +46,10 @@ Deploy `frontend/dist/` to the `app` subdomain. No service worker or web manifes
 
 | Area | Path |
 |------|------|
-| Expo mobile gate | `frontend/components/mobile-native/MobileNativeGate.tsx` |
-| Distribution constants | `frontend/constants/nativeDistribution.ts` |
+| Expo PWA install gate | `frontend/components/mobile-native/PwaInstallGate.tsx` |
+| Gate logic | `frontend/utils/pwaInstallGate.ts` |
+| Install copy (en/es) | `frontend/constants/pwaInstallCopy.ts` |
+| Distribution constants (future native) | `frontend/constants/nativeDistribution.ts` |
 | Marketing install modal | `backend/src/components/marketing/install-app-modal.tsx` |
 | Marketing constants | `backend/src/lib/marketing/nativeDistribution.ts` |
 | App open URLs | `backend/src/lib/marketing/appUrl.ts` |
@@ -74,11 +57,12 @@ Deploy `frontend/dist/` to the `app` subdomain. No service worker or web manifes
 ## Manual test checklist
 
 1. **Desktop Chrome** at `http://localhost:8081` — no gate; app works normally.
-2. **iPhone Safari** — TestFlight steps; buttons open TestFlight App Store and Expo Go beta join link.
-3. **Android Chrome** — APK card; **Install APK** shows “APK in progress”.
-4. **Marketing site** — App Store / Play badges open updated modals (no “Add to Home Screen” copy).
-5. **Dev bypass** — `?allowBrowser=1` on phone loads full web app.
-6. **`npm run build:web`** — succeeds; `dist/` has no `sw.js`.
+2. **iPhone Safari (browser)** — PWA install steps; link opens Apple Support guide.
+3. **iPhone Safari (installed PWA)** — no gate; app works normally.
+4. **Android Chrome (browser)** — PWA install steps; optional Install button if `beforeinstallprompt` fires.
+5. **Marketing site** — App Store / Play badges open updated modals.
+6. **Dev bypass** — `EXPO_PUBLIC_ALLOW_MOBILE_BROWSER=1` loads full web app in mobile browser.
+7. **`npm run build:web`** — succeeds; `dist/` includes `site.webmanifest`.
 
 ## Android APK (staging + OTA)
 
