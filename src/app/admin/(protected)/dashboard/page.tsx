@@ -1,9 +1,5 @@
 import Link from "next/link";
-import {
-  fetchAdminOverview,
-  fetchFundedUsers,
-  fetchTronLimiterDiagnostics,
-} from "@/actions/admin/dashboard";
+import { fetchAdminOverviewFast } from "@/actions/admin/dashboard";
 import { triggerEvaluate } from "@/actions/treasury";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
@@ -15,17 +11,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
 import { buildTreasuryLedgerHints } from "@/services/revenueEngine/ledgerDisplay";
 import { EvaluateButton } from "./EvaluateButton";
+import { DashboardWalletSection } from "./DashboardWalletSection";
+import {
+  adminErrorDescription,
+  adminErrorTitle,
+} from "./dashboardAdminErrors";
 
 export const dynamic = "force-dynamic";
 
@@ -57,42 +50,8 @@ function StatCard({
   );
 }
 
-function formatDate(d: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    dateStyle: "medium",
-  }).format(d);
-}
-
-function formatUsdt(value: number) {
-  return formatUsdtDisplay(value, 4);
-}
-
-type AdminActionError = {
-  code: string;
-  msg: string;
-};
-
-function isTronRateLimit(error: AdminActionError) {
-  return error.code === "TRON_RATE_LIMIT";
-}
-
-function adminErrorTitle(error: AdminActionError, fallback: string) {
-  return isTronRateLimit(error) ? "Tron provider rate limit" : fallback;
-}
-
-function adminErrorDescription(error: AdminActionError) {
-  if (isTronRateLimit(error)) {
-    return `${error.msg} This dashboard reads live on-chain wallet data, so it can be temporarily blocked when cron jobs or other admin pages are also scanning TronGrid.`;
-  }
-  return error.msg;
-}
-
 export default async function AdminDashboardPage() {
-  const [overviewResult, fundedResult, diagnosticsResult] = await Promise.all([
-    fetchAdminOverview(),
-    fetchFundedUsers(15),
-    fetchTronLimiterDiagnostics(),
-  ]);
+  const overviewResult = await fetchAdminOverviewFast();
 
   if (!overviewResult.ok) {
     return (
@@ -110,9 +69,6 @@ export default async function AdminDashboardPage() {
   const s = overviewResult.data;
   const t = s.treasury;
   const treasuryHints = buildTreasuryLedgerHints(t);
-  const fundedUsers = fundedResult.ok ? fundedResult.data : [];
-  const fundedUsersError = fundedResult.ok ? null : fundedResult.error;
-  const limiter = diagnosticsResult.ok ? diagnosticsResult.data.tronLimiter : null;
 
   return (
     <div className="space-y-6">
@@ -128,14 +84,6 @@ export default async function AdminDashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total users" value={s.totalUsers} />
-        <StatCard
-          title="Users with funded wallets"
-          value={s.usersWithFundedWallet}
-        />
-        <StatCard
-          title="USDT on user wallets"
-          value={`${formatUsdtDisplay(s.totalUsdtOnUserWallets, 4)} USDT`}
-        />
         <StatCard title="Users invested" value={s.usersWithInvestment} />
         <StatCard
           title="Investments paid (redeemed)"
@@ -163,97 +111,9 @@ export default async function AdminDashboardPage() {
             `Platform withdrawn (audit): ${formatUsdtDisplay(t.protectedRevenueWithdrawn)} USDT`,
           ]}
         />
-        {limiter ? (
-          <StatCard
-            title="Tron limiter"
-            value={`${limiter.config.rpsLimit} req/s`}
-            hint={[
-              `queued: ${limiter.stats.queuedRequests} · inFlight: ${limiter.stats.inFlightRequests}`,
-              `retries: ${limiter.stats.retryCount} · 429s: ${limiter.stats.rateLimit429Count}`,
-              `cache hit/miss: ${limiter.stats.cacheHits}/${limiter.stats.cacheMisses}`,
-              `requests ok/fail: ${limiter.stats.successfulResponses}/${limiter.stats.failedResponses}`,
-              `total requests: ${limiter.stats.totalRequests}`,
-            ]}
-          />
-        ) : null}
       </div>
 
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-lg font-semibold">Recently funded users</h2>
-            <p className="text-sm text-muted-foreground">
-              On-chain deposits and balances (invest/redemption excluded).
-            </p>
-          </div>
-          <Link
-            href="/admin/users"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-          >
-            All users
-          </Link>
-        </div>
-        {fundedUsersError ? (
-          <Alert variant="destructive">
-            <AlertTitle>
-              {adminErrorTitle(
-                fundedUsersError,
-                "Could not load recently funded users"
-              )}
-            </AlertTitle>
-            <AlertDescription>
-              {isTronRateLimit(fundedUsersError)
-                ? "The funded-users table needs live Tron wallet history and balances. TronGrid is rate limiting those reads right now, so wait a minute and refresh."
-                : fundedUsersError.msg}
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead className="text-right">Balance</TableHead>
-                <TableHead className="text-right">Deposited</TableHead>
-                <TableHead className="text-right">Withdrawn</TableHead>
-                <TableHead>Joined</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {fundedUsers.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-muted-foreground"
-                  >
-                    {fundedUsersError
-                      ? "Recently funded users could not load."
-                      : "No funded wallets yet."}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                fundedUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.email}</TableCell>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell className="text-right">
-                      {formatUsdt(user.currentBalance)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatUsdt(user.totalDeposited)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatUsdt(user.totalWithdrawn)}
-                    </TableCell>
-                    <TableCell>{formatDate(user.joinedAt)}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      <DashboardWalletSection />
 
       <div className="flex flex-wrap gap-3">
         <Link

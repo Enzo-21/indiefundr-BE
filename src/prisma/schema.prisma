@@ -718,3 +718,34 @@ model ReferralRecoveryLink {
   @@index([inviterUserId])
   @@map("referralrecoverylinks")
 }
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model BlogPost {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  slug             String         @unique
+  title            String
+  excerpt          String?
+  contentHtml      String
+  coverImageBase64 String?
+  coverImageMime   String?
+  coverImagePositionY Int @default(50)
+  metaTitle        String?
+  metaDescription  String?
+  metaKeywords     String?
+  ogImageBase64    String?
+  ogImageMime      String?
+  canonicalPath    String?
+  noIndex          Boolean        @default(false)
+  status           BlogPostStatus @default(DRAFT)
+  publishedAt      DateTime?
+  authorEmail      String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([status, publishedAt(sort: Desc)])
+  @@map("blogposts")
+}

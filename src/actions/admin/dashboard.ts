@@ -4,6 +4,7 @@ import { withAdminAction } from "@/actions/_lib/withAdminAction";
 import type { ListAdminInvestmentsOptions } from "@/services/admin/adminInvestmentListQuery";
 import { getAdminPayoutSummary } from "@/services/admin/adminPayoutSummary";
 import {
+  getAdminOverviewFast,
   getAdminOverviewStats,
   getTronLimiterDiagnostics,
   listAdminInvestments,
@@ -11,6 +12,8 @@ import {
   listAppWithdrawals,
   listFundedUsers,
 } from "@/services/admin/dashboard";
+import { getAdminWalletStatsFromDb } from "@/services/admin/dashboardWalletStats";
+import { syncWalletsNeedingWork } from "@/services/wallets/walletSyncService";
 import {
   payInvestmentNow,
   payInvestmentWithSurplus,
@@ -20,6 +23,21 @@ import { revalidatePath } from "next/cache";
 
 export async function fetchAdminOverview() {
   return withAdminAction(() => getAdminOverviewStats());
+}
+
+export async function fetchAdminOverviewFast() {
+  return withAdminAction(() => getAdminOverviewFast());
+}
+
+export async function fetchAdminWalletStats(fundedLimit = 15) {
+  return withAdminAction(() => getAdminWalletStatsFromDb({ fundedLimit }));
+}
+
+export async function triggerAdminWalletSync() {
+  return withAdminAction(async () => {
+    const result = await syncWalletsNeedingWork();
+    return { synced: result.synced };
+  });
 }
 
 export async function fetchAdminUsers() {

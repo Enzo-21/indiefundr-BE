@@ -94,6 +94,7 @@ export function buildSiteContent() {
     { title: "Benefits", href: "/#benefits" },
     { title: "Testimonials", href: "/#testimonials" },
     { title: "How it works", href: "/#how-it-works" },
+    { title: "Blog", href: "/blog" },
   ];
 
   const featurePanels = featuresCopy.items.map((item, index) => ({
@@ -148,10 +149,13 @@ export function buildSiteContent() {
   };
 
   const footerLinks = {
-    product: footerCopy.company.map((link) => ({
-      label: link.label,
-      href: link.href.startsWith("#") ? `/${link.href}` : link.href,
-    })),
+    product: [
+      { label: "Blog", href: "/blog" },
+      ...footerCopy.company.map((link) => ({
+        label: link.label,
+        href: link.href.startsWith("#") ? `/${link.href}` : link.href,
+      })),
+    ],
   };
 
   const featuresSection = {

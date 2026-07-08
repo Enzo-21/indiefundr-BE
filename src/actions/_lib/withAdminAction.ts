@@ -4,6 +4,7 @@ import { getEnv } from "@/lib/env";
 import { isInsufficientWithdrawalError } from "@/services/admin/treasury";
 import { PayoutInProgressError } from "@/services/revenueEngine/payoutLock";
 import { isRetryableFeeBroadcastError, isInsufficientTrxBalanceError } from "@/services/tron/client";
+import { ZodError } from "zod";
 import {
   actionError,
   actionSuccess,
@@ -69,6 +70,11 @@ export function isExternalRateLimitError(error: unknown): boolean {
   return withResponse.cause ? isExternalRateLimitError(withResponse.cause) : false;
 }
 
+function isUserFacingAdminError(message: string): boolean {
+  if (!message || message.length > 300) return false;
+  return !/(prisma|ECONNREFUSED|ENOENT|EACCES|stack|internal server)/i.test(message);
+}
+
 export async function withAdminAction<T>(
   handler: (session: { createdBy: string }) => Promise<T>
 ): Promise<ActionResult<T>> {
@@ -82,6 +88,12 @@ export async function withAdminAction<T>(
     }
     if (error instanceof PayoutInProgressError) {
       return actionError("CONFLICT", error.message);
+    }
+    if (error instanceof ZodError) {
+      return actionError(
+        "BAD_REQUEST",
+        error.issues[0]?.message ?? "Invalid input"
+      );
     }
     const message = error instanceof Error ? error.message : String(error);
     if (isInsufficientWithdrawalError(message)) {
@@ -99,6 +111,9 @@ export async function withAdminAction<T>(
     if (isExternalRateLimitError(error)) {
       console.warn("[admin action] Tron provider rate limit:", message);
       return actionError("TRON_RATE_LIMIT", tronRateLimitMessageWithHint());
+    }
+    if (isUserFacingAdminError(message)) {
+      return actionError("BAD_REQUEST", message);
     }
     console.error("[admin action]", message);
     return actionError("INTERNAL_ERROR", "Internal server error");
