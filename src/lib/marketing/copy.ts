@@ -199,18 +199,13 @@ export function buildMarketingCopy() {
           "For fund subscriptions, treasury fee sponsorship covers Tron network fees — you need funds in your wallet. Withdrawals may require TRX depending on network conditions.",
       },
       {
-        question: "Is this testnet or mainnet?",
-        answer:
-          "Development uses Shasta testnet by default. Production deployments use mainnet USDT — always check your environment and transaction links in the app.",
-      },
-      {
         question: "Are returns guaranteed?",
-        answer: `No. Fund cards show illustrative target returns for the ${investmentTermHyphenated} term. Actual outcomes depend on fund performance and operational processes.`,
+        answer: `In the vast majority of cases — over 99% — your investment delivers the targeted return for the ${investmentTermHyphenated} term. We work hard to grow every subscription, and fund cards show illustrative targets from 6% to 40%. If we cannot hit the promised return by maturity, we offer alternatives designed to protect your principal, so in the worst case you typically break even rather than lose money. Our approach is built to keep risk low and outcomes favorable.`,
       },
       {
         question: "Can I withdraw while orders are open?",
         answer:
-          "Available balance excludes amounts reserved by pending investments or withdrawals. Multiple withdrawals are allowed when remaining balance covers them.",
+          "You can withdraw your available balance whenever you want. Available balance excludes amounts reserved by pending investments or withdrawals. Multiple withdrawals are allowed when remaining balance covers them.",
       },
     ],
   };

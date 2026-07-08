@@ -16,6 +16,11 @@ describe("buildMarketingCopy", () => {
     assert.match(copy.featuresCopy.title, /90 days each/);
     assert.match(copy.howItWorksCopy.steps[1]?.description ?? "", /90 days/);
     assert.match(copy.faqCopy.items[0]?.answer ?? "", /90-day/);
+    assert.ok(
+      !copy.faqCopy.items.some((item) =>
+        item.question.toLowerCase().includes("testnet")
+      )
+    );
   });
 
   it("uses 3-day copy when BLOCKCHAIN_NETWORK is testnet", () => {

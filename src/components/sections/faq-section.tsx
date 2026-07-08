@@ -57,7 +57,7 @@ export function FaqSection() {
                       {faqSection.supportCard.description}
                     </p>
                   </div>
-                  <PrimarySwipeButton className="group w-fit has-[>svg]:px-6">
+                  <PrimarySwipeButton href="#cta" className="group w-fit has-[>svg]:px-6">
                     {faqSection.supportCard.cta}
                   </PrimarySwipeButton>
                 </CardContent>
