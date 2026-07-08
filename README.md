@@ -38,7 +38,7 @@ Configure in `backend/.env`:
 
 **Production:** Set `APP_WEB_URL=https://app.yourdomain.com` and `MARKETING_DOMAIN=yourdomain.com`. Build with `cd frontend && npm run build:web`, deploy `frontend/dist/` to the `app` subdomain; DNS apex points at this Next.js host.
 
-**Mobile web:** Phones visiting `app.{domain}` see native install instructions (TestFlight on iOS, APK on Android). Desktop browsers use the full web app. Store badges on the landing page open the same flows in a modal. See [docs/NATIVE_MOBILE_DISTRIBUTION.md](docs/NATIVE_MOBILE_DISTRIBUTION.md).
+**Mobile web:** Phones visiting `app.{domain}` see PWA install instructions (Add to Home Screen). Desktop browsers use the full web app. Store badges on the landing page open the same flows in a modal. See [docs/NATIVE_MOBILE_DISTRIBUTION.md](docs/NATIVE_MOBILE_DISTRIBUTION.md).
 
 ## Database (Prisma)
 
