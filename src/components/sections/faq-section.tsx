@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 export function FaqSection() {
   const { faqItems, faqSection } = useMarketingContent();
   return (
-    <section className="py-8 sm:py-16 lg:py-24">
+    <section id="faq" className="scroll-mt-20 py-8 sm:py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-8 md:gap-16 lg:grid-cols-2 lg:gap-24">
           <div className="flex flex-col justify-between">

@@ -21,7 +21,7 @@ export default async function MarketingHomePage() {
       <div className="flex h-full w-full min-w-0 flex-col">
         <Header />
         <main className="flex flex-1 flex-col *:scroll-mt-20">
-          <HeroSection requestHost={requestHost} />
+          <HeroSection />
           <FeaturesSection />
           <BenefitsSection />
           <QuoteSection />

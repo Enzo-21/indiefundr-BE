@@ -23,11 +23,14 @@ export function InstallAppModal({
   onOpenChange,
   platform,
   requestHost,
+  instructionsOnly = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   platform: MarketingPlatform;
   requestHost?: string | null;
+  /** Desktop web: show install steps only, without Open IndieFundr CTAs. */
+  instructionsOnly?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const [locale, setLocale] = useState<"en" | "es">("en");
@@ -104,35 +107,37 @@ export function InstallAppModal({
           </div>
         ) : null}
 
-        <div className="flex flex-col gap-2 pt-1 sm:flex-row">
-          {platform === "desktop" ? (
-            <>
-              <Button type="button" className="flex-1" onClick={copyLink}>
-                {copied ? (locale === "es" ? "¡Copiado!" : "Copied!") : copy.desktop.primaryCta}
-              </Button>
-              <a
-                href={appUrl}
-                className={cn(buttonVariants({ variant: "outline" }), "flex-1")}
-              >
-                {copy.desktop.secondaryCta}
-              </a>
-            </>
-          ) : mobileCopy ? (
-            <>
-              <a href={appUrl} className={cn(buttonVariants(), "flex-1")}>
-                {mobileCopy.openAppCta}
-              </a>
-              <a
-                href={mobileCopy.fullGuideUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(buttonVariants({ variant: "outline" }), "flex-1")}
-              >
-                {mobileCopy.fullGuideLabel}
-              </a>
-            </>
-          ) : null}
-        </div>
+        {!instructionsOnly ? (
+          <div className="flex flex-col gap-2 pt-1 sm:flex-row">
+            {platform === "desktop" ? (
+              <>
+                <Button type="button" className="flex-1" onClick={copyLink}>
+                  {copied ? (locale === "es" ? "¡Copiado!" : "Copied!") : copy.desktop.primaryCta}
+                </Button>
+                <a
+                  href={appUrl}
+                  className={cn(buttonVariants({ variant: "outline" }), "flex-1")}
+                >
+                  {copy.desktop.secondaryCta}
+                </a>
+              </>
+            ) : mobileCopy ? (
+              <>
+                <a href={appUrl} className={cn(buttonVariants(), "flex-1")}>
+                  {mobileCopy.openAppCta}
+                </a>
+                <a
+                  href={mobileCopy.fullGuideUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(buttonVariants({ variant: "outline" }), "flex-1")}
+                >
+                  {mobileCopy.fullGuideLabel}
+                </a>
+              </>
+            ) : null}
+          </div>
+        ) : null}
       </DialogContent>
     </Dialog>
   );

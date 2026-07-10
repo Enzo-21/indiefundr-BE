@@ -8,16 +8,16 @@ type StoreVariant = "apple" | "google";
 const storeConfig = {
   apple: {
     icon: "/images/apple-icon.webp",
-    alt: "App Store",
-    topLine: "Download on the",
-    bottomLine: "App Store",
+    alt: "Download for iPhone and iPad",
+    topLine: "Download for",
+    bottomLine: "iPhone & iPad",
     invertIcon: true,
   },
   google: {
     icon: "/images/google-play-icon.webp",
-    alt: "Google Play",
-    topLine: "Get it on",
-    bottomLine: "Google Play",
+    alt: "Download for Android",
+    topLine: "Download for",
+    bottomLine: "Android",
     invertIcon: false,
   },
 } as const;

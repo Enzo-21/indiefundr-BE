@@ -101,6 +101,7 @@ export function StoreDownloadBadges({
         onOpenChange={setOpen}
         platform={modalPlatform}
         requestHost={requestHost}
+        instructionsOnly={devicePlatform === "desktop"}
       />
     </>
   );
