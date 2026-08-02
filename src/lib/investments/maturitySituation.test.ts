@@ -16,8 +16,11 @@ const maturedBase = {
   status: InvestmentStatus.matured,
   payabilityStatus: InvestmentPayabilityStatus.pending_liquidity,
   payoutUnlockedAt: null,
+  payoutReason: null,
   recoveryEligibleAt: null,
   referralRecoveryCompletedAt: null,
+  boostActivatedAt: null,
+  boostCompletedAt: null,
   unpaidMaturityResolution: null,
   unpaidMaturityChoiceDeadlineAt: choiceDeadline,
   termExtensionDays: null,
@@ -90,6 +93,26 @@ describe("resolveMaturitySituation", () => {
     );
     assert.equal(view.situation, "recovery_in_progress");
     assert.equal(view.chosenPath, "referral_recovery");
+    assert.match(view.statusDetail, /1 of 2/);
+  });
+
+  it("returns boost_in_progress for an active Boost window", () => {
+    const boostAt = new Date("2099-06-01T00:00:00.000Z");
+    const view = resolveMaturitySituation(
+      {
+        ...maturedBase,
+        status: InvestmentStatus.active,
+        unpaidMaturityChoiceDeadlineAt: null,
+        boostActivatedAt: boostAt,
+      },
+      {
+        boostQualifiedCount: 1,
+        boostRequiredCount: 2,
+        now: choiceNow,
+      }
+    );
+    assert.equal(view.situation, "boost_in_progress");
+    assert.equal(view.chosenPath, "boost");
     assert.match(view.statusDetail, /1 of 2/);
   });
 

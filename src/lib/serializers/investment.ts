@@ -2,6 +2,7 @@ import type { Investment } from "@prisma/client";
 import { getFundById } from "@/lib/config/investmentFunds";
 import { isChoiceDeadlineActive } from "@/lib/config/unpaidMaturityChoice";
 import { recoveryExpiresAt } from "@/lib/config/referralRecovery";
+import { boostExpiresAt } from "@/lib/config/referralBoost";
 import type { MaturityChosenPath, MaturitySituation } from "@/lib/investments/maturitySituation";
 import {
   canUserClaim,
@@ -42,6 +43,12 @@ export type EnrichedInvestmentJson = {
   recoveryExpiresAt: string | null;
   recoveryQualifiedCount: number | null;
   recoveryRequiredCount: number | null;
+  boostActivatedAt: string | null;
+  boostExpiresAt: string | null;
+  boostCompletedAt: string | null;
+  boostQualifiedCount: number | null;
+  boostRequiredCount: number | null;
+  canActivateBoost: boolean;
   unpaidMaturityResolution: string | null;
   needsUnpaidMaturityChoice: boolean;
   canChooseReferralRecovery: boolean;
@@ -66,6 +73,9 @@ export type EnrichInvestmentOptions = {
   fifoEligibleIds?: ReadonlySet<string>;
   recoveryQualifiedCount?: number | null;
   recoveryRequiredCount?: number | null;
+  boostQualifiedCount?: number | null;
+  boostRequiredCount?: number | null;
+  canActivateBoost?: boolean;
   needsUnpaidMaturityChoice?: boolean;
   canChooseReferralRecovery?: boolean;
   canChooseTermExtension?: boolean;
@@ -82,6 +92,8 @@ export function enrichInvestment(
     fifoEligibleIds: options.fifoEligibleIds,
     recoveryQualifiedCount: options.recoveryQualifiedCount,
     recoveryRequiredCount: options.recoveryRequiredCount,
+    boostQualifiedCount: options.boostQualifiedCount,
+    boostRequiredCount: options.boostRequiredCount,
   });
   const userCopy = toUserFacingMaturityCopy(maturity, {
     fundName: fund?.name || investment.fundId,
@@ -122,6 +134,14 @@ export function enrichInvestment(
       : null,
     recoveryQualifiedCount: options.recoveryQualifiedCount ?? null,
     recoveryRequiredCount: options.recoveryRequiredCount ?? null,
+    boostActivatedAt: investment.boostActivatedAt?.toISOString() ?? null,
+    boostExpiresAt: investment.boostActivatedAt
+      ? boostExpiresAt(investment.boostActivatedAt).toISOString()
+      : null,
+    boostCompletedAt: investment.boostCompletedAt?.toISOString() ?? null,
+    boostQualifiedCount: options.boostQualifiedCount ?? null,
+    boostRequiredCount: options.boostRequiredCount ?? null,
+    canActivateBoost: options.canActivateBoost ?? false,
     unpaidMaturityResolution: investment.unpaidMaturityResolution ?? null,
     needsUnpaidMaturityChoice: maturity.needsUnpaidMaturityChoice,
     canChooseReferralRecovery: options.canChooseReferralRecovery ?? false,

@@ -1,6 +1,7 @@
 export type PlayerPowerGrants = {
   referral_recovery: number;
   term_extension: number;
+  boost: number;
 };
 
 export type PlayerLevelPerks = {
@@ -32,11 +33,12 @@ export const PLAYER_LEVELS: PlayerLevelDefinition[] = [
       "Access to every fund in the catalog",
       "1 Recovery Invite power card",
       "1 Extra Time power card",
+      "1 Boost power card",
     ],
     perks: {
       slotsPerFund: 1,
       maxTotalOpenInvestments: 3,
-      powerGrants: { referral_recovery: 1, term_extension: 1 },
+      powerGrants: { referral_recovery: 1, term_extension: 1, boost: 1 },
     },
   },
   {
@@ -52,11 +54,12 @@ export const PLAYER_LEVELS: PlayerLevelDefinition[] = [
       "Up to 5 open investments across all funds",
       "+2 Recovery Invite power cards",
       "+1 Extra Time power card",
+      "+2 Boost power cards",
     ],
     perks: {
       slotsPerFund: 2,
       maxTotalOpenInvestments: 5,
-      powerGrants: { referral_recovery: 2, term_extension: 1 },
+      powerGrants: { referral_recovery: 2, term_extension: 1, boost: 2 },
     },
   },
   {
@@ -72,11 +75,12 @@ export const PLAYER_LEVELS: PlayerLevelDefinition[] = [
       "Up to 8 open investments across all funds",
       "+3 Recovery Invite power cards",
       "+3 Extra Time power cards",
+      "+3 Boost power cards",
     ],
     perks: {
       slotsPerFund: 2,
       maxTotalOpenInvestments: 8,
-      powerGrants: { referral_recovery: 3, term_extension: 3 },
+      powerGrants: { referral_recovery: 3, term_extension: 3, boost: 3 },
     },
   },
   {
@@ -92,11 +96,12 @@ export const PLAYER_LEVELS: PlayerLevelDefinition[] = [
       "Up to 12 open investments across all funds",
       "+4 Recovery Invite power cards",
       "+4 Extra Time power cards",
+      "+4 Boost power cards",
     ],
     perks: {
       slotsPerFund: 3,
       maxTotalOpenInvestments: 12,
-      powerGrants: { referral_recovery: 4, term_extension: 4 },
+      powerGrants: { referral_recovery: 4, term_extension: 4, boost: 4 },
     },
   },
   {
@@ -111,11 +116,12 @@ export const PLAYER_LEVELS: PlayerLevelDefinition[] = [
       "Up to 20 open investments across all funds",
       "+5 Recovery Invite power cards",
       "+5 Extra Time power cards",
+      "+5 Boost power cards",
     ],
     perks: {
       slotsPerFund: 5,
       maxTotalOpenInvestments: 20,
-      powerGrants: { referral_recovery: 5, term_extension: 5 },
+      powerGrants: { referral_recovery: 5, term_extension: 5, boost: 5 },
     },
   },
   {
@@ -132,6 +138,7 @@ export const PLAYER_LEVELS: PlayerLevelDefinition[] = [
       "Unlimited open investments across all funds",
       "+7 Recovery Invite power cards",
       "+7 Extra Time power cards",
+      "+7 Boost power cards",
       "Priority access to new funds and features",
     ],
     perks: {
@@ -139,7 +146,7 @@ export const PLAYER_LEVELS: PlayerLevelDefinition[] = [
       maxTotalOpenInvestments: 20,
       unlimitedSlotsPerFund: true,
       unlimitedTotalOpenInvestments: true,
-      powerGrants: { referral_recovery: 7, term_extension: 7 },
+      powerGrants: { referral_recovery: 7, term_extension: 7, boost: 7 },
     },
   },
 ];
@@ -149,6 +156,7 @@ const MAX_DEFINED_LEVEL = PLAYER_LEVELS[PLAYER_LEVELS.length - 1]?.level ?? 0;
 export const PLAYER_POWER_TYPES = [
   "referral_recovery",
   "term_extension",
+  "boost",
 ] as const;
 
 export type PlayerPowerType = (typeof PLAYER_POWER_TYPES)[number];
@@ -188,11 +196,13 @@ export function getCumulativePowerGrants(
   const totals: PlayerPowerGrants = {
     referral_recovery: 0,
     term_extension: 0,
+    boost: 0,
   };
   for (const entry of PLAYER_LEVELS) {
     if (entry.level > normalized) break;
     totals.referral_recovery += entry.perks.powerGrants.referral_recovery;
     totals.term_extension += entry.perks.powerGrants.term_extension;
+    totals.boost += entry.perks.powerGrants.boost;
   }
   return totals;
 }
