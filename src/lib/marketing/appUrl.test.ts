@@ -4,11 +4,13 @@ import {
   DEV_LAN_APP_OPEN_PATH,
   getAppOpenUrl,
   getAppWebUrlFromEnv,
+  getMarketingDomainFromEnv,
   getProductionCorsOrigins,
   isAppSubdomainHost,
   isDevLocalOrigin,
   isPrivateLanIpv4,
   isProductionAppOrigin,
+  normalizeMarketingDomain,
   resolveAppRedirectTarget,
 } from "./appUrl";
 
@@ -104,6 +106,36 @@ describe("appUrl", () => {
         NODE_ENV: "production",
         APP_WEB_URL: "http://localhost:8081",
         MARKETING_DOMAIN: "indiefundr.com",
+      }),
+      "https://app.indiefundr.com"
+    );
+  });
+
+  it("normalizes MARKETING_DOMAIN from a full URL with www", () => {
+    assert.equal(
+      normalizeMarketingDomain("https://www.indiefundr.com"),
+      "indiefundr.com"
+    );
+    assert.equal(
+      normalizeMarketingDomain("https://www.indiefundr.com/"),
+      "indiefundr.com"
+    );
+    assert.equal(normalizeMarketingDomain("www.indiefundr.com"), "indiefundr.com");
+    assert.equal(normalizeMarketingDomain("indiefundr.com"), "indiefundr.com");
+  });
+
+  it("uses normalized MARKETING_DOMAIN URL for production CTA fallback", () => {
+    assert.equal(
+      getMarketingDomainFromEnv({
+        MARKETING_DOMAIN: "https://www.indiefundr.com",
+      }),
+      "indiefundr.com"
+    );
+    assert.equal(
+      getAppOpenUrl(undefined, {
+        NODE_ENV: "production",
+        APP_WEB_URL: "http://localhost:8081",
+        MARKETING_DOMAIN: "https://www.indiefundr.com",
       }),
       "https://app.indiefundr.com"
     );

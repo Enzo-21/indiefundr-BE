@@ -11,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getAppOpenUrl } from "@/lib/marketing/appUrl";
 import type { MarketingPlatform } from "@/lib/marketing/detectPlatform";
 import {
   getInstallModalCopy,
@@ -22,19 +21,19 @@ export function InstallAppModal({
   open,
   onOpenChange,
   platform,
-  requestHost,
+  appUrl,
   instructionsOnly = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   platform: MarketingPlatform;
-  requestHost?: string | null;
+  /** Server-resolved open URL — do not call getAppOpenUrl on the client. */
+  appUrl: string;
   /** Desktop web: show install steps only, without Open IndieFundr CTAs. */
   instructionsOnly?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const [locale, setLocale] = useState<"en" | "es">("en");
-  const appUrl = getAppOpenUrl({ host: requestHost });
   const copy = getInstallModalCopy(locale);
   const mobileCopy =
     platform === "ios"

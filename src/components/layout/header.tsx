@@ -18,6 +18,7 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -121,25 +122,29 @@ export function Header() {
             >
               <Menu className="size-5" />
             </SheetTrigger>
-            <SheetContent side="right" className="w-80">
-              <SheetHeader>
+            <SheetContent side="right" className="w-80 gap-0">
+              <SheetHeader className="pr-12">
                 <SheetTitle>Menu</SheetTitle>
               </SheetHeader>
-              <nav className="mt-6 flex flex-col gap-4">
+              <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-2">
                 {navigationData.map((item) =>
                   "items" in item && item.items ? (
-                    <div key={item.title} className="space-y-2">
-                      <p className="font-medium">{item.title}</p>
-                      {item.items.map((sub) => (
-                        <Link
-                          key={sub.href}
-                          href={sub.href}
-                          className="text-muted-foreground block pl-3 text-sm hover:text-foreground"
-                          onClick={() => setOpen(false)}
-                        >
-                          {sub.title}
-                        </Link>
-                      ))}
+                    <div key={item.title} className="space-y-3">
+                      <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                        {item.title}
+                      </p>
+                      <div className="flex flex-col gap-3">
+                        {item.items.map((sub) => (
+                          <Link
+                            key={sub.href}
+                            href={sub.href}
+                            className="text-foreground block text-base font-medium hover:text-primary"
+                            onClick={() => setOpen(false)}
+                          >
+                            {sub.title}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   ) : "external" in item && item.external ? (
                     <a
@@ -147,7 +152,7 @@ export function Header() {
                       href={item.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium"
+                      className="text-base font-medium"
                     >
                       {item.title}
                     </a>
@@ -155,18 +160,20 @@ export function Header() {
                     <Link
                       key={item.title}
                       href={item.href}
-                      className="font-medium"
+                      className="text-base font-medium"
                       onClick={() => setOpen(false)}
                     >
                       {item.title}
                     </Link>
                   )
                 )}
+              </nav>
+              <SheetFooter className="border-border border-t px-6">
                 <NavGetStartedButton
-                  className="mt-4 inline-flex w-fit"
+                  className="inline-flex w-full justify-center"
                   onClick={() => setOpen(false)}
                 />
-              </nav>
+              </SheetFooter>
             </SheetContent>
           </Sheet>
         </div>

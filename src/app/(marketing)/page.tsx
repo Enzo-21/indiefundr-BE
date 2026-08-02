@@ -11,9 +11,11 @@ import { PricingSection } from "@/components/sections/pricing-section";
 import { QuoteSection } from "@/components/sections/quote-section";
 import { TestimonialsSection } from "@/components/sections/testimonials-section";
 import { buildSiteContent } from "@/lib/content";
+import { getAppOpenUrl } from "@/lib/marketing/appUrl";
 
 export default async function MarketingHomePage() {
   const requestHost = (await headers()).get("host");
+  const appUrl = getAppOpenUrl({ host: requestHost });
   const content = buildSiteContent();
 
   return (
@@ -28,7 +30,7 @@ export default async function MarketingHomePage() {
           <TestimonialsSection />
           <PricingSection />
           <FaqSection />
-          <CtaSection requestHost={requestHost} />
+          <CtaSection appUrl={appUrl} />
         </main>
         <Footer />
       </div>

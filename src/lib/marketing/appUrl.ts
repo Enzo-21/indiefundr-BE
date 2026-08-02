@@ -18,10 +18,45 @@ export function getAppWebUrlFromEnv(
   return DEFAULT_APP_WEB_URL;
 }
 
+/**
+ * Accepts a bare host (`indiefundr.com`) or a full URL
+ * (`https://www.indiefundr.com`) and returns a hostname without leading `www.`.
+ * Ports are dropped (marketing domain is used as `app.{host}`).
+ */
+export function normalizeMarketingDomain(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return DEFAULT_MARKETING_DOMAIN;
+
+  let host = trimmed;
+  try {
+    if (trimmed.includes("://")) {
+      host = new URL(trimmed).hostname;
+    } else {
+      host = trimmed.split("/")[0] ?? trimmed;
+      // Strip port from host:port (not IPv6)
+      if (/^\[[^\]]+\]/.test(host)) {
+        host = host.replace(/^\[([^\]]+)\].*$/, "$1");
+      } else if (host.includes(":")) {
+        host = host.split(":")[0] ?? host;
+      }
+    }
+  } catch {
+    // keep trimmed as-is
+  }
+
+  host = host.toLowerCase();
+  if (host.startsWith("www.")) {
+    host = host.slice(4);
+  }
+  return host || DEFAULT_MARKETING_DOMAIN;
+}
+
 export function getMarketingDomainFromEnv(
   env: NodeJS.ProcessEnv = process.env
 ): string {
-  return env.MARKETING_DOMAIN?.trim() || DEFAULT_MARKETING_DOMAIN;
+  const configured = env.MARKETING_DOMAIN?.trim();
+  if (!configured) return DEFAULT_MARKETING_DOMAIN;
+  return normalizeMarketingDomain(configured);
 }
 
 /** Hostname the Expo / web app is served from (redirect target). */

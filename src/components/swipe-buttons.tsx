@@ -14,16 +14,17 @@ const secondaryClasses =
 
 export function PrimarySwipeButton({
   href,
-  requestHost,
+  appUrl,
   children,
   className,
 }: {
   href?: string;
-  requestHost?: string | null;
+  /** Server-resolved open URL when `href` is omitted. */
+  appUrl?: string;
   children: React.ReactNode;
   className?: string;
 }) {
-  const resolvedHref = href ?? getAppOpenUrl({ host: requestHost });
+  const resolvedHref = href ?? appUrl ?? getAppOpenUrl();
   return (
     <Link href={resolvedHref} className={cn(primaryClasses, className)}>
       {children}
