@@ -36,6 +36,13 @@ export async function GET(request: Request) {
     limit: MATURITY_CRON_BATCH_SIZE,
   });
 
+  const { processExpiredBoostWindows } = await import(
+    "@/services/referrals/boostLifecycle"
+  );
+  const boostExpiry = await processExpiredBoostWindows({
+    limit: MATURITY_CRON_BATCH_SIZE,
+  });
+
   return Response.json({
     ok: true,
     maturedCount: count,
@@ -51,6 +58,8 @@ export async function GET(request: Request) {
     emailsFailed: notifications.emailsFailed,
     choiceRemindersSent: choiceReminders.remindersSent,
     choiceRemindersFailed: choiceReminders.remindersFailed,
+    boostExpiredCount: boostExpiry.expired,
+    boostExpiredIds: boostExpiry.investmentIds,
     maturedIds: matured.map((row) => row.id),
     startedAt,
     finishedAt: new Date().toISOString(),

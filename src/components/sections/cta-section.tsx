@@ -8,11 +8,7 @@ import { SpinBadgeIcon } from "@/components/swipe-logo";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
-export function CtaSection({
-  requestHost,
-}: {
-  requestHost?: string | null;
-}) {
+export function CtaSection({ appUrl }: { appUrl: string }) {
   const { ctaSection } = useMarketingContent();
   return (
     <section id="cta" className="bg-muted scroll-mt-20 py-8 sm:py-16 lg:py-24">
@@ -30,7 +26,7 @@ export function CtaSection({
                 </h2>
                 <p className="text-muted-foreground mb-8 text-xl">{ctaSection.subtitle}</p>
                 <StoreDownloadBadges
-                  requestHost={requestHost}
+                  appUrl={appUrl}
                   className="gap-6 max-lg:justify-center max-md:w-full max-md:flex-col"
                   iconClassName="size-8.5"
                   appleLabel={ctaSection.appStore}

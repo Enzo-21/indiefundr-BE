@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Monitor } from "lucide-react";
 import { InstallAppModal } from "@/components/marketing/install-app-modal";
 import { StoreDownloadButton } from "@/components/marketing/store-download-button";
-import { getAppOpenUrl } from "@/lib/marketing/appUrl";
 import {
   detectMarketingPlatform,
   type MarketingPlatform,
@@ -13,7 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export function StoreDownloadBadges({
-  requestHost,
+  appUrl,
   className,
   iconClassName,
   appleLabel,
@@ -22,7 +21,8 @@ export function StoreDownloadBadges({
   orLabel = "OR",
   desktopBrowserLabel = "Run on your computer",
 }: {
-  requestHost?: string | null;
+  /** Server-resolved open URL — do not call getAppOpenUrl on the client. */
+  appUrl: string;
   className?: string;
   iconClassName?: string;
   appleLabel?: string;
@@ -45,7 +45,6 @@ export function StoreDownloadBadges({
     setOpen(true);
   };
 
-  const appUrl = getAppOpenUrl({ host: requestHost });
   const showApple = devicePlatform === "ios" || devicePlatform === "desktop";
   const showGoogle = devicePlatform === "android" || devicePlatform === "desktop";
   const showWebCta = showDesktopBrowserCta && devicePlatform === "desktop";
@@ -100,7 +99,8 @@ export function StoreDownloadBadges({
         open={open}
         onOpenChange={setOpen}
         platform={modalPlatform}
-        requestHost={requestHost}
+        appUrl={appUrl}
+        instructionsOnly={devicePlatform === "desktop"}
       />
     </>
   );

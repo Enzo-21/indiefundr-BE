@@ -20,6 +20,7 @@ const fullPowers = buildPowerInventory(4, {});
 const emptyPowers = buildPowerInventory(4, {
   referral_recovery: 15,
   term_extension: 14,
+  boost: 15,
 });
 
 const choiceDeadlineAt = new Date("2099-06-05T12:00:00.000Z");

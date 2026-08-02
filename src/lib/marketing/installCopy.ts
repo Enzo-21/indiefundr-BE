@@ -42,8 +42,12 @@ const COPY: Record<InstallModalLocale, InstallModalCopy> = {
     ios: {
       steps: [
         {
+          title: "Tap More",
+          body: "Tap the More button (⋯) in Safari.",
+        },
+        {
           title: "Tap Share",
-          body: "Tap the Share button in Safari.",
+          body: "Tap Share.",
         },
         {
           title: "Add to Home Screen",
@@ -98,8 +102,12 @@ const COPY: Record<InstallModalLocale, InstallModalCopy> = {
     ios: {
       steps: [
         {
+          title: "Tocá Más",
+          body: "Tocá el botón Más (⋯) en Safari.",
+        },
+        {
           title: "Tocá Compartir",
-          body: "Tocá el botón Compartir en Safari.",
+          body: "Tocá Compartir.",
         },
         {
           title: "Agregar a pantalla de inicio",

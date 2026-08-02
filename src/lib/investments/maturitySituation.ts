@@ -9,6 +9,11 @@ import {
   getRecoveryInviteesRequired,
   recoveryExpiresAt,
 } from "@/lib/config/referralRecovery";
+import {
+  boostExpiresAt,
+  getBoostInviteesRequired,
+  isBoostWindowActive,
+} from "@/lib/config/referralBoost";
 import { isUnpaidMaturityChoicePending } from "@/services/investments/unpaidMaturityChoice";
 
 export type MaturitySituation =
@@ -19,6 +24,7 @@ export type MaturitySituation =
   | "waiting_unlock"
   | "waiting_liquidity"
   | "recovery_in_progress"
+  | "boost_in_progress"
   | "awaiting_admin_payout"
   | "redeeming"
   | "redeemed"
@@ -27,7 +33,7 @@ export type MaturitySituation =
   | "failed"
   | "other";
 
-export type MaturityChosenPath = "term_extension" | "referral_recovery";
+export type MaturityChosenPath = "term_extension" | "referral_recovery" | "boost";
 
 export type MaturitySituationInput = Pick<
   Investment,
@@ -37,6 +43,8 @@ export type MaturitySituationInput = Pick<
   | "payoutReason"
   | "recoveryEligibleAt"
   | "referralRecoveryCompletedAt"
+  | "boostActivatedAt"
+  | "boostCompletedAt"
   | "unpaidMaturityResolution"
   | "unpaidMaturityChoiceDeadlineAt"
   | "termExtensionDays"
@@ -55,6 +63,8 @@ export type MaturitySituationContext = {
   fifoEligibleIds?: ReadonlySet<string>;
   recoveryQualifiedCount?: number | null;
   recoveryRequiredCount?: number | null;
+  boostQualifiedCount?: number | null;
+  boostRequiredCount?: number | null;
   now?: Date;
 };
 
@@ -233,6 +243,38 @@ export function resolveMaturitySituation(
   }
 
   if (status === InvestmentStatus.active) {
+    if (investment.boostCompletedAt && investment.payoutUnlockedAt) {
+      return {
+        ...base,
+        situation: "awaiting_admin_payout",
+        statusLabel: "Awaiting admin payout",
+        statusDetail:
+          "Boost complete. Your full projected payout is unlocked and waiting for transfer.",
+        chosenPath: "boost",
+      };
+    }
+
+    if (
+      investment.boostActivatedAt &&
+      !investment.boostCompletedAt &&
+      isBoostWindowActive(investment.boostActivatedAt, now)
+    ) {
+      const expires = boostExpiresAt(investment.boostActivatedAt);
+      const qualified = context.boostQualifiedCount ?? 0;
+      const required =
+        context.boostRequiredCount ??
+        getBoostInviteesRequired(investment.amountUsdt);
+      return {
+        ...base,
+        situation: "boost_in_progress",
+        statusLabel: "Boost in progress",
+        statusDetail: `Invite ${required} friends within the Boost window to unlock your full payout early. ${qualified} of ${required} have invested so far.`,
+        chosenPath: "boost",
+        nextDeadlineAt: expires.toISOString(),
+        nextDeadlineLabel: "Boost deadline",
+      };
+    }
+
     return {
       ...base,
       situation: "active",

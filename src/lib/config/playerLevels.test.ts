@@ -29,7 +29,7 @@ describe("playerLevels", () => {
     assert.deepEqual(getPlayerLevelPerks(0), {
       slotsPerFund: 1,
       maxTotalOpenInvestments: 3,
-      powerGrants: { referral_recovery: 1, term_extension: 1 },
+      powerGrants: { referral_recovery: 1, term_extension: 1, boost: 1 },
     });
     assert.equal(getPlayerLevelDefinition(0).title, "Starter");
   });
@@ -46,6 +46,7 @@ describe("playerLevels", () => {
     assert.deepEqual(getPowerGrantsForLevel(1), {
       referral_recovery: 2,
       term_extension: 1,
+      boost: 2,
     });
   });
 
@@ -53,18 +54,22 @@ describe("playerLevels", () => {
     assert.deepEqual(getCumulativePowerGrants(0), {
       referral_recovery: 1,
       term_extension: 1,
+      boost: 1,
     });
     assert.deepEqual(getCumulativePowerGrants(1), {
       referral_recovery: 3,
       term_extension: 2,
+      boost: 3,
     });
     assert.deepEqual(getCumulativePowerGrants(4), {
       referral_recovery: 15,
       term_extension: 14,
+      boost: 15,
     });
     assert.deepEqual(getCumulativePowerGrants(5), {
       referral_recovery: 22,
       term_extension: 21,
+      boost: 22,
     });
   });
 });

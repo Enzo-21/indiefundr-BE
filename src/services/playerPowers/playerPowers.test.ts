@@ -10,6 +10,7 @@ describe("playerPowers", () => {
     const inventory = buildPowerInventory(1, {
       referral_recovery: 1,
       term_extension: 0,
+      boost: 0,
     });
 
     assert.deepEqual(inventory.referral_recovery, {
@@ -22,27 +23,40 @@ describe("playerPowers", () => {
       used: 0,
       available: 2,
     });
+    assert.deepEqual(inventory.boost, {
+      granted: 3,
+      used: 0,
+      available: 3,
+    });
   });
 
   it("never returns negative availability", () => {
     const inventory = buildPowerInventory(0, {
       referral_recovery: 5,
       term_extension: 5,
+      boost: 5,
     });
 
     assert.equal(inventory.referral_recovery.available, 0);
     assert.equal(inventory.term_extension.available, 0);
+    assert.equal(inventory.boost.available, 0);
   });
 
   it("serializes power cards for API responses", () => {
     const cards = serializePowerCards(
-      buildPowerInventory(0, { referral_recovery: 0, term_extension: 0 })
+      buildPowerInventory(0, {
+        referral_recovery: 0,
+        term_extension: 0,
+        boost: 0,
+      })
     );
 
-    assert.equal(cards.length, 2);
+    assert.equal(cards.length, 3);
     assert.equal(cards[0]?.type, "referral_recovery");
     assert.equal(cards[0]?.available, 1);
     assert.equal(cards[1]?.type, "term_extension");
     assert.equal(cards[1]?.available, 1);
+    assert.equal(cards[2]?.type, "boost");
+    assert.equal(cards[2]?.available, 1);
   });
 });

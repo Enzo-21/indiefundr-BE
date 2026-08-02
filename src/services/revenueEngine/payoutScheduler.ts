@@ -379,6 +379,13 @@ export async function evaluatePayoutReadiness({
       consumedUnlockingInvestmentIds.add(unlocker.id);
     }
     updated += 1;
+
+    if (candidate.boostActivatedAt && !candidate.boostCompletedAt) {
+      const { maybeCancelOpenBoostForNormalFlow } = await import(
+        "@/services/referrals/boostLifecycle"
+      );
+      await maybeCancelOpenBoostForNormalFlow(candidate.id, "normal_unlock");
+    }
   }
 
   return { updated };

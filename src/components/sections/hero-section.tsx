@@ -5,7 +5,7 @@ import { ChartSpline, ChevronUp, Star, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Marquee } from "@/components/marquee";
 import { MotionPreset } from "@/components/motion-preset";
-import { PrimarySwipeButton, SecondarySwipeButton } from "@/components/swipe-buttons";
+import { NavGetStartedButton, SecondarySwipeButton } from "@/components/swipe-buttons";
 import { useMarketingContent } from "@/components/marketing/marketing-content-provider";
 import { heroDecorCopy } from "@/lib/content";
 import { cn } from "@/lib/utils";
@@ -40,11 +40,7 @@ function FloatingCard({
   );
 }
 
-export function HeroSection({
-  requestHost,
-}: {
-  requestHost?: string | null;
-}) {
+export function HeroSection() {
   const { heroStats, heroContent } = useMarketingContent();
   const [statIndex, setStatIndex] = useState(0);
   const reduceMotion = useReducedMotion();
@@ -94,9 +90,7 @@ export function HeroSection({
 
           <MotionPreset fade slide={{ direction: "down", offset: 50 }} delay={0.6}>
             <div className="flex flex-wrap items-center gap-4">
-              <PrimarySwipeButton requestHost={requestHost}>
-                {heroContent.primaryCta}
-              </PrimarySwipeButton>
+              <NavGetStartedButton />
               <SecondarySwipeButton href={heroContent.secondaryHref}>
                 {heroContent.secondaryCta}
               </SecondarySwipeButton>

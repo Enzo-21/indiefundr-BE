@@ -487,10 +487,15 @@ export async function claimNormalPayout(
     return { investment: current, alreadyClaimed: true };
   }
 
-  const updated = await prisma.investment.findUniqueOrThrow({
+  const { maybeCancelOpenBoostForNormalFlow } = await import(
+    "@/services/referrals/boostLifecycle"
+  );
+  await maybeCancelOpenBoostForNormalFlow(investmentId, "normal_payout");
+
+  const current = await prisma.investment.findUniqueOrThrow({
     where: { id: investment.id },
   });
-  return { investment: updated, alreadyClaimed: false };
+  return { investment: current, alreadyClaimed: false };
 }
 
 export async function prepareSurplusPayout(
@@ -534,6 +539,11 @@ export async function prepareSurplusPayout(
       } else {
         throw new Error("Could not start surplus payout");
       }
+    } else {
+      const { maybeCancelOpenBoostForNormalFlow } = await import(
+        "@/services/referrals/boostLifecycle"
+      );
+      await maybeCancelOpenBoostForNormalFlow(investmentId, "normal_payout");
     }
   }
 

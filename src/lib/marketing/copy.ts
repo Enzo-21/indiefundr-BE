@@ -10,7 +10,7 @@ export const marketingNav = [
   { label: "Features", href: "#features" },
   { label: "Benefits", href: "#benefits" },
   { label: "How it works", href: "#how-it-works" },
-  { label: "FAQ", href: "#faq" },
+  { label: "FAQ", href: "/#faq" },
 ] as const;
 
 export const heroDecorCopy = {
@@ -214,8 +214,8 @@ export function buildMarketingCopy() {
     title: "Your money isn't going to multiply itself.",
     subtitle: `$25 minimum. Five studied funds. ${investmentTermHyphenated} terms. Open the app and pick your first strategy.`,
     primary: "Start now",
-    appStore: "App Store",
-    playStore: "Google Play",
+    appStore: "iPhone & iPad",
+    playStore: "Android",
     orLabel: "OR",
     desktopBrowser: "Run on your computer",
   };
@@ -228,7 +228,7 @@ export function buildMarketingCopy() {
       { label: "Features", href: "#features" },
       { label: "Benefits", href: "#benefits" },
       { label: "How it works", href: "#how-it-works" },
-      { label: "FAQ", href: "#faq" },
+      { label: "FAQ", href: "/#faq" },
     ],
   };
 

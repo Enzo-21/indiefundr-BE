@@ -70,6 +70,16 @@ export function userRecoveryInProgressCopy(
   };
 }
 
+export function userBoostInProgressCopy(
+  qualified: number,
+  required: number
+): UserFacingMaturityCopy {
+  return {
+    statusLabel: "Boost in progress",
+    statusDetail: `Invite ${required} friends within the Boost window to unlock your full payout early. ${qualified} of ${required} have invested so far.`,
+  };
+}
+
 export function userExtendedActiveCopy(
   termExtensionDays: number | null
 ): UserFacingMaturityCopy {
@@ -207,6 +217,12 @@ export function toUserFacingMaturityCopy(
         view.statusDetail
       );
       return userRecoveryInProgressCopy(qualified, required);
+    }
+    case "boost_in_progress": {
+      const { qualified, required } = parseRecoveryProgressFromDetail(
+        view.statusDetail
+      );
+      return userBoostInProgressCopy(qualified, required);
     }
     case "extended_active":
       return userExtendedActiveCopy(view.termExtensionDays);

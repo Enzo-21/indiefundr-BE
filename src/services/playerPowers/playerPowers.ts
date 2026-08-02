@@ -42,6 +42,10 @@ export const PLAYER_POWER_CARD_COPY: Record<
     title: "Extra Time",
     description: "Wait up to half the fund term for the expected return",
   },
+  boost: {
+    title: "Boost",
+    description: "Invite friends to get paid faster on an active investment",
+  },
 };
 
 export class PlayerPowerUnavailableError extends Error {
@@ -62,9 +66,13 @@ function emptyInventoryEntry(): PowerInventoryEntry {
 }
 
 function toConfigPowerType(
-  powerType: PlayerPowerType | UnpaidMaturityResolution
+  powerType: PlayerPowerType | UnpaidMaturityResolution | "boost"
 ): ConfigPlayerPowerType {
-  if (powerType === "referral_recovery" || powerType === "term_extension") {
+  if (
+    powerType === "referral_recovery" ||
+    powerType === "term_extension" ||
+    powerType === "boost"
+  ) {
     return powerType;
   }
   throw new Error(`Unknown power type: ${powerType}`);
@@ -79,6 +87,9 @@ function toPrismaPowerType(
   if (powerType === "term_extension") {
     return PlayerPowerType.term_extension;
   }
+  if (powerType === "boost") {
+    return PlayerPowerType.boost;
+  }
   throw new Error(`Unknown power type: ${powerType}`);
 }
 
@@ -90,6 +101,7 @@ export function buildPowerInventory(
   const inventory = {
     referral_recovery: emptyInventoryEntry(),
     term_extension: emptyInventoryEntry(),
+    boost: emptyInventoryEntry(),
   } satisfies PowerInventory;
 
   for (const type of PLAYER_POWER_TYPES) {
@@ -118,6 +130,7 @@ export async function countPowerUsesByType(
   const used: Record<ConfigPlayerPowerType, number> = {
     referral_recovery: 0,
     term_extension: 0,
+    boost: 0,
   };
 
   for (const row of grouped) {
@@ -192,7 +205,7 @@ export async function backfillPlayerPowerUses(
       unpaidMaturityResolution: true,
       unpaidMaturityResolvedAt: true,
       user: { select: { level: true } },
-      playerPowerUse: { select: { id: true } },
+      playerPowerUses: { select: { id: true, powerType: true } },
     },
   });
 
@@ -200,7 +213,16 @@ export async function backfillPlayerPowerUses(
   let skipped = 0;
 
   for (const investment of investments) {
-    if (investment.playerPowerUse || !investment.unpaidMaturityResolution) {
+    if (!investment.unpaidMaturityResolution) {
+      skipped += 1;
+      continue;
+    }
+
+    const already =
+      investment.playerPowerUses?.some(
+        (use) => use.powerType === investment.unpaidMaturityResolution
+      ) ?? false;
+    if (already) {
       skipped += 1;
       continue;
     }

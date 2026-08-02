@@ -7,8 +7,11 @@ import {
   REFERRAL_INVITEE_BONUS_USDT,
   REFERRAL_INVITER_BONUS_USDT,
 } from "@/lib/config/referralRecovery";
+import { getBoostInviteesRequired } from "@/lib/config/referralBoost";
 import { prisma } from "@/lib/prisma";
 import { getRecoveryContextForInviter } from "./recoveryEligibility";
+import { getBoostContextForInviter } from "./boostEligibility";
+import { completeBoostUnlock } from "./boostLifecycle";
 import {
   hasCompletedFirstInvestment,
   isFirstCompletedInvestment,
@@ -30,6 +33,22 @@ export function shouldUseRecoverySlot(
   const slotsFull = (link?.inviteIds.length ?? 0) >= required;
   const alreadyCounted = link?.inviteIds.includes(inviteId) ?? false;
   return !recoveryComplete && !slotsFull && !alreadyCounted;
+}
+
+export function shouldUseBoostSlot(
+  link: {
+    completedAt: Date | null;
+    cancelledAt: Date | null;
+    inviteIds: string[];
+  } | null,
+  inviteId: string,
+  required: number
+): boolean {
+  if (!link) return true;
+  if (link.completedAt || link.cancelledAt) return false;
+  const slotsFull = link.inviteIds.length >= required;
+  const alreadyCounted = link.inviteIds.includes(inviteId);
+  return !slotsFull && !alreadyCounted;
 }
 
 async function trackRecoveryInvite(inviterUserId: string, inviteId: string) {
@@ -78,6 +97,74 @@ async function maybeEnqueuePrincipalRecoveryOrder(
     amountUsdt: principalUsdt,
     investmentId,
   });
+}
+
+async function trackBoostInvite(
+  inviterUserId: string,
+  inviteId: string,
+  inviteeInvestmentId: string
+) {
+  const ctx = await getBoostContextForInviter(inviterUserId);
+  if (ctx.mode !== "boost" || !ctx.boost) return null;
+
+  const investmentId = ctx.boost.investmentId;
+  let link = await prisma.referralBoostLink.findUnique({
+    where: { investmentId },
+  });
+
+  if (!link) {
+    link = await prisma.referralBoostLink.create({
+      data: {
+        investmentId,
+        inviterUserId,
+        inviteIds: [inviteId],
+        inviteeInvestmentIds: [inviteeInvestmentId],
+      },
+    });
+  } else if (!link.inviteIds.includes(inviteId)) {
+    link = await prisma.referralBoostLink.update({
+      where: { id: link.id },
+      data: {
+        inviteIds: { push: inviteId },
+        inviteeInvestmentIds: { push: inviteeInvestmentId },
+      },
+    });
+  }
+
+  return {
+    link,
+    investmentId,
+    principalUsdt: ctx.boost.principalUsdt,
+  };
+}
+
+async function maybeCompleteBoostUnlock(
+  inviterUserId: string,
+  inviteId: string,
+  inviteeInvestmentId: string
+) {
+  const tracked = await trackBoostInvite(
+    inviterUserId,
+    inviteId,
+    inviteeInvestmentId
+  );
+  if (!tracked) return;
+
+  const { link, investmentId, principalUsdt } = tracked;
+  const required = getBoostInviteesRequired(principalUsdt);
+  if (link.inviteIds.length < required) return;
+  if (link.completedAt || link.cancelledAt) return;
+
+  const inviteeInvestments = await prisma.investment.findMany({
+    where: { id: { in: link.inviteeInvestmentIds } },
+    select: { id: true, userId: true },
+  });
+
+  await completeBoostUnlock(
+    investmentId,
+    inviteeInvestments.map((row) => row.id),
+    [...new Set(inviteeInvestments.map((row) => row.userId))]
+  );
 }
 
 export async function issueReferralRewards(
@@ -131,6 +218,29 @@ export async function issueReferralRewards(
       await maybeEnqueuePrincipalRecoveryOrder(
         invite.inviterUserId,
         referralInviteId
+      );
+      scheduleUserLevelRecalculation(invite.inviterUserId);
+      return;
+    }
+  }
+
+  const boostCtx = await getBoostContextForInviter(invite.inviterUserId);
+  if (boostCtx.mode === "boost" && boostCtx.boost) {
+    const investmentIdForBoost = boostCtx.boost.investmentId;
+    const required = getBoostInviteesRequired(boostCtx.boost.principalUsdt);
+    const link = await prisma.referralBoostLink.findUnique({
+      where: { investmentId: investmentIdForBoost },
+    });
+
+    if (shouldUseBoostSlot(link, referralInviteId, required)) {
+      await prisma.investment.update({
+        where: { id: investmentId },
+        data: { excludedFromTriadUnlock: true },
+      });
+      await maybeCompleteBoostUnlock(
+        invite.inviterUserId,
+        referralInviteId,
+        investmentId
       );
       scheduleUserLevelRecalculation(invite.inviterUserId);
       return;
