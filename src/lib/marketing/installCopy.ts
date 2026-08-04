@@ -24,6 +24,8 @@ type InstallPlatformCopy = {
 type InstallModalCopy = {
   headerTitle: string;
   headerSubtitle: string;
+  androidHeaderTitle: string;
+  androidHeaderSubtitle: string;
   ios: InstallPlatformCopy;
   android: InstallPlatformCopy;
   desktop: {
@@ -39,6 +41,9 @@ const COPY: Record<InstallModalLocale, InstallModalCopy> = {
     headerTitle: "Install IndieFundr",
     headerSubtitle:
       "Add IndieFundr to your Home Screen to use it like an app. Mobile browser access is not supported.",
+    androidHeaderTitle: "Install IndieFundr beta",
+    androidHeaderSubtitle:
+      "The Play Store app is coming soon. Meanwhile, install the beta from your browser and add IndieFundr to your Home Screen. Mobile browser access is not supported.",
     ios: {
       steps: [
         {
@@ -99,6 +104,9 @@ const COPY: Record<InstallModalLocale, InstallModalCopy> = {
     headerTitle: "Instalar IndieFundr",
     headerSubtitle:
       "Agregá IndieFundr a tu pantalla de inicio para usarla como una app. El acceso desde el navegador móvil no está disponible.",
+    androidHeaderTitle: "Instalar IndieFundr beta",
+    androidHeaderSubtitle:
+      "La app de Play Store estará disponible pronto. Mientras tanto, instalá la beta desde el navegador y agregá IndieFundr a tu pantalla de inicio. El acceso desde el navegador móvil no está disponible.",
     ios: {
       steps: [
         {

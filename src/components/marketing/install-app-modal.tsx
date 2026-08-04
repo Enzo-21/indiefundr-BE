@@ -41,6 +41,10 @@ export function InstallAppModal({
       : platform === "android"
         ? copy.android
         : null;
+  const headerTitle =
+    platform === "android" ? copy.androidHeaderTitle : copy.headerTitle;
+  const headerSubtitle =
+    platform === "android" ? copy.androidHeaderSubtitle : copy.headerSubtitle;
 
   useEffect(() => {
     setLocale(getInstallModalLocale());
@@ -66,10 +70,10 @@ export function InstallAppModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base leading-snug">
-            {copy.headerTitle}
+            {headerTitle}
           </DialogTitle>
           <DialogDescription className="text-sm">
-            {copy.headerSubtitle}
+            {headerSubtitle}
           </DialogDescription>
         </DialogHeader>
 

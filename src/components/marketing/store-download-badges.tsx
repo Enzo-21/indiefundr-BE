@@ -19,7 +19,7 @@ export function StoreDownloadBadges({
   googleLabel,
   showDesktopBrowserCta = false,
   orLabel = "OR",
-  desktopBrowserLabel = "Run on your computer",
+  desktopBrowserLabel = "Web",
 }: {
   /** Server-resolved open URL — do not call getAppOpenUrl on the client. */
   appUrl: string;
