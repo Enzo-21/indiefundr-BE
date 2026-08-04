@@ -217,7 +217,7 @@ export function buildMarketingCopy() {
     appStore: "iPhone & iPad",
     playStore: "Android",
     orLabel: "OR",
-    desktopBrowser: "Run on your computer",
+    desktopBrowser: "Web",
   };
 
   const footerCopy = {

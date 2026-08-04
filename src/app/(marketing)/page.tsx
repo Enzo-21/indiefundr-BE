@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
+import { LaunchPromoModal } from "@/components/marketing/launch-promo-modal";
 import { MarketingContentProvider } from "@/components/marketing/marketing-content-provider";
 import { BenefitsSection } from "@/components/sections/benefits-section";
 import { CtaSection } from "@/components/sections/cta-section";
@@ -33,6 +34,7 @@ export default async function MarketingHomePage() {
           <CtaSection appUrl={appUrl} />
         </main>
         <Footer />
+        <LaunchPromoModal />
       </div>
     </MarketingContentProvider>
   );
