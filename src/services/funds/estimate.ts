@@ -84,20 +84,106 @@ export async function getSubscribeFeeEstimate(
       };
     }
 
-    const [estimate, availability, activeOrders, slotUsage] = await Promise.all([
-      tron.estimateUsdtTransfer({
-        fromAddress: sender.address,
-        toAddress: receiver,
-        amount: cost,
-      }),
-      getWalletUsdtAvailability(sender),
-      getActiveOrdersForUser(userId, fundId),
-      getInvestmentSlotUsage(userId, fundId, undefined, user.level),
-    ]);
+    const [estimateOutcome, availability, activeOrders, slotUsage] =
+      await Promise.all([
+        tron
+          .estimateUsdtTransfer({
+            fromAddress: sender.address,
+            toAddress: receiver,
+            amount: cost,
+          })
+          .then(
+            (estimate) => ({ ok: true as const, estimate }),
+            (error: unknown) => ({ ok: false as const, error })
+          ),
+        getWalletUsdtAvailability(sender),
+        getActiveOrdersForUser(userId, fundId),
+        getInvestmentSlotUsage(userId, fundId, undefined, user.level),
+      ]);
     const activeOrder = activeOrders[0] ?? null;
 
     const feesCoveredByApp = feeSponsorship.isEnabled();
     const hasEnoughUsdt = availability.availableUsdt >= cost;
+
+    if (!estimateOutcome.ok) {
+      // Transfer simulation often reverts when the wallet cannot cover the USDT amount.
+      // Still return balances so the UI can show a clear insufficient-funds state.
+      if (!hasEnoughUsdt) {
+        logFundsEvent("estimate", "info", "estimate skipped: insufficient usdt", {
+          ...baseFields,
+          cost,
+          onChainUsdt: availability.onChainUsdt,
+          availableUsdt: availability.availableUsdt,
+          reservedUsdt: availability.reservedUsdt,
+          hasEnoughUsdt,
+          estimateError:
+            estimateOutcome.error instanceof Error
+              ? estimateOutcome.error.message
+              : String(estimateOutcome.error),
+        });
+
+        return {
+          ok: true,
+          data: {
+            fromAddress: sender.address,
+            toAddress: receiver,
+            amountUsdt: cost,
+            estimatedTrx: 0,
+            trxBalance: 0,
+            usdtBalance: availability.onChainUsdt,
+            hasEnoughTrx: true,
+            onChainUsdt: availability.onChainUsdt,
+            reservedUsdt: availability.reservedUsdt,
+            availableUsdt: availability.availableUsdt,
+            pendingOrdersCount: availability.pendingOrdersCount,
+            hasEnoughUsdt: false,
+            canTransfer: false,
+            fundId,
+            fund: getFundById(fundId),
+            activeOrder: activeOrder ? formatOrderResponse(activeOrder) : null,
+            activeOrders: activeOrders.map((order) => formatOrderResponse(order)),
+            openCount: slotUsage.openCount,
+            maxOpenInvestments: slotUsage.maxOpenInvestments,
+            slotsAvailable: slotUsage.slotsAvailable,
+            totalOpenCount: slotUsage.totalOpenCount,
+            maxTotalOpenInvestments: slotUsage.maxTotalOpenInvestments,
+            totalSlotsAvailable: slotUsage.totalSlotsAvailable,
+            walletId: sender.id,
+            isMainWallet: sender.isMainWallet,
+            feesCoveredByApp,
+            costBreakdown: {
+              productUsdt: cost,
+              networkFeeTrxEstimate: feesCoveredByApp ? undefined : 0,
+              usdtPaidTo: "treasury",
+              trxPaidTo: feesCoveredByApp
+                ? "covered_by_indiefundr"
+                : "tron_network",
+              note: feesCoveredByApp
+                ? `You only need USDT in your main wallet. ${APP_NAME} covers Tron network fees for investments.`
+                : "USDT is the investment amount. TRX covers Tron network fees separately.",
+            },
+          },
+        };
+      }
+
+      const payload = formatTronTransferError(estimateOutcome.error, {
+        fromAddress: sender.address,
+        usdtBalance: availability.availableUsdt,
+        amountUsdt: cost,
+      });
+      logFundsRejected("estimate", "fee_estimate_failed", {
+        ...baseFields,
+        code: payload.code,
+        rawMessage: payload.rawMessage,
+        error:
+          estimateOutcome.error instanceof Error
+            ? estimateOutcome.error.message
+            : String(estimateOutcome.error),
+      });
+      return { ok: false, status: 400, body: payload };
+    }
+
+    const estimate = estimateOutcome.estimate;
 
     logFundsEvent("estimate", "info", "estimate ready", {
       ...baseFields,
@@ -150,8 +236,23 @@ export async function getSubscribeFeeEstimate(
     };
   } catch (error) {
     const sender = await getMainWallet(userId).catch(() => null);
+    let amountUsdt: number | undefined;
+    let usdtBalance: number | undefined;
+    try {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user) {
+        amountUsdt = getInvestmentAmountUsdtForLevel(user.level);
+      }
+      if (sender) {
+        usdtBalance = (await getWalletUsdtAvailability(sender)).availableUsdt;
+      }
+    } catch {
+      // Best-effort context for clearer error mapping.
+    }
     const payload = formatTronTransferError(error, {
       fromAddress: sender?.address,
+      amountUsdt,
+      usdtBalance,
     });
     logFundsRejected("estimate", "fee_estimate_failed", {
       ...baseFields,

@@ -103,6 +103,8 @@ export async function createWithdrawalOrder(
   } catch (estimateError) {
     const body = formatTronTransferError(estimateError, {
       fromAddress: wallet.address,
+      usdtBalance: availability.availableUsdt,
+      amountUsdt: amount,
     });
     return { ok: false, status: 400, body };
   }
