@@ -21,11 +21,18 @@ type InstallPlatformCopy = {
   openAppCta: string;
 };
 
+type AndroidBetaNoticeCopy = {
+  title: string;
+  body: string;
+  cta: string;
+};
+
 type InstallModalCopy = {
   headerTitle: string;
   headerSubtitle: string;
   androidHeaderTitle: string;
   androidHeaderSubtitle: string;
+  androidBetaNotice: AndroidBetaNoticeCopy;
   ios: InstallPlatformCopy;
   android: InstallPlatformCopy;
   desktop: {
@@ -44,6 +51,11 @@ const COPY: Record<InstallModalLocale, InstallModalCopy> = {
     androidHeaderTitle: "Install IndieFundr beta",
     androidHeaderSubtitle:
       "The Play Store app is coming soon. Meanwhile, install the beta from your browser and add IndieFundr to your Home Screen. Mobile browser access is not supported.",
+    androidBetaNotice: {
+      title: "Android app coming soon",
+      body: "The IndieFundr app will be available on the Play Store very soon. You can try the beta version now. For the best experience, we recommend using IndieFundr on a computer.",
+      cta: "Continue to beta",
+    },
     ios: {
       steps: [
         {
@@ -107,6 +119,11 @@ const COPY: Record<InstallModalLocale, InstallModalCopy> = {
     androidHeaderTitle: "Instalar IndieFundr beta",
     androidHeaderSubtitle:
       "La app de Play Store estará disponible pronto. Mientras tanto, instalá la beta desde el navegador y agregá IndieFundr a tu pantalla de inicio. El acceso desde el navegador móvil no está disponible.",
+    androidBetaNotice: {
+      title: "La app para Android llega pronto",
+      body: "La app de IndieFundr estará disponible en Play Store muy pronto. Mientras tanto, podés probar la versión beta. Para la mejor experiencia, te recomendamos usar IndieFundr desde una computadora.",
+      cta: "Continuar a la beta",
+    },
     ios: {
       steps: [
         {
