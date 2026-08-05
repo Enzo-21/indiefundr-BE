@@ -162,7 +162,7 @@ export function formatTronTransferError(
       code: "INSUFFICIENT_USDT",
       msg: isTestnet
         ? `Not enough test USDT. You need at least ${amountUsdt} USDT on Shasta.`
-        : `Not enough USDT. You need at least ${amountUsdt} USDT in your main wallet.`,
+        : "You do not have enough USDT available in your main wallet.",
       title: "Insufficient USDT",
       steps: isTestnet
         ? [
@@ -173,6 +173,46 @@ export function formatTronTransferError(
         : [
             "Deposit more USDT to your main wallet.",
             `You need at least ${amountUsdt} USDT for this purchase.`,
+          ],
+    };
+  }
+
+  // USDT transfer() simulation commonly reverts when the wallet cannot cover the amount.
+  if (/REVERT opcode executed/i.test(raw) && amountUsdt != null) {
+    return {
+      ...base,
+      code: "INSUFFICIENT_USDT",
+      msg: isTestnet
+        ? `Not enough test USDT. You need at least ${amountUsdt} USDT on Shasta.`
+        : "You do not have enough USDT available in your main wallet.",
+      title: "Insufficient USDT",
+      steps: isTestnet
+        ? [
+            "Open the Wallets tab and check your main wallet balance.",
+            "Request test USDT from the Shasta faucet if needed.",
+            `Ensure at least ${amountUsdt} USDT before buying.`,
+          ]
+        : [
+            "Deposit more USDT to your main wallet.",
+            `You need at least ${amountUsdt} USDT for this purchase.`,
+          ],
+    };
+  }
+
+  if (/REVERT opcode executed/i.test(raw)) {
+    return {
+      ...base,
+      code: "TRANSACTION_FAILED",
+      title: "Transaction failed",
+      msg: "The transfer could not be completed. Check that your wallet has enough USDT and try again.",
+      steps: isTestnet
+        ? [
+            "Confirm your main wallet has test TRX and test USDT on Shasta.",
+            "See the Shasta faucet and TronScan links below for help.",
+          ]
+        : [
+            "Confirm your main wallet has enough USDT.",
+            "See TronScan and Tron docs below for more detail.",
           ],
     };
   }

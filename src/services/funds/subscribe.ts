@@ -172,6 +172,8 @@ export async function subscribeToFund(
     } catch (estimateError) {
       const body = formatTronTransferError(estimateError, {
         fromAddress: sender.address,
+        usdtBalance: availability.availableUsdt,
+        amountUsdt: cost,
       });
       logFundsRejected("subscribe", "fee_estimate_failed", {
         ...baseFields,
