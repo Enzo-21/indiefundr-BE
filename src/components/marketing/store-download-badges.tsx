@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Monitor } from "lucide-react";
+import { AndroidBetaModal } from "@/components/marketing/android-beta-modal";
 import { InstallAppModal } from "@/components/marketing/install-app-modal";
 import { StoreDownloadButton } from "@/components/marketing/store-download-button";
 import {
@@ -31,7 +32,8 @@ export function StoreDownloadBadges({
   orLabel?: string;
   desktopBrowserLabel?: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const [installOpen, setInstallOpen] = useState(false);
+  const [betaOpen, setBetaOpen] = useState(false);
   const [modalPlatform, setModalPlatform] = useState<MarketingPlatform>("desktop");
   const [devicePlatform, setDevicePlatform] =
     useState<MarketingPlatform>("desktop");
@@ -40,9 +42,25 @@ export function StoreDownloadBadges({
     setDevicePlatform(detectMarketingPlatform());
   }, []);
 
-  const openModal = (next: MarketingPlatform) => {
+  const openDesktopInstallModal = (next: MarketingPlatform) => {
     setModalPlatform(next);
-    setOpen(true);
+    setInstallOpen(true);
+  };
+
+  const onAppleClick = () => {
+    if (devicePlatform === "ios") {
+      window.location.assign(appUrl);
+      return;
+    }
+    openDesktopInstallModal("ios");
+  };
+
+  const onGoogleClick = () => {
+    if (devicePlatform === "android") {
+      setBetaOpen(true);
+      return;
+    }
+    openDesktopInstallModal("android");
   };
 
   const showApple = devicePlatform === "ios" || devicePlatform === "desktop";
@@ -63,7 +81,7 @@ export function StoreDownloadBadges({
               variant="apple"
               bottomLine={appleLabel}
               iconClassName={iconClassName}
-              onClick={() => openModal("ios")}
+              onClick={onAppleClick}
             />
           ) : null}
           {showGoogle ? (
@@ -71,7 +89,7 @@ export function StoreDownloadBadges({
               variant="google"
               bottomLine={googleLabel}
               iconClassName={iconClassName}
-              onClick={() => openModal("android")}
+              onClick={onGoogleClick}
             />
           ) : null}
         </div>
@@ -96,11 +114,16 @@ export function StoreDownloadBadges({
         ) : null}
       </div>
       <InstallAppModal
-        open={open}
-        onOpenChange={setOpen}
+        open={installOpen}
+        onOpenChange={setInstallOpen}
         platform={modalPlatform}
         appUrl={appUrl}
         instructionsOnly={devicePlatform === "desktop"}
+      />
+      <AndroidBetaModal
+        open={betaOpen}
+        onOpenChange={setBetaOpen}
+        appUrl={appUrl}
       />
     </>
   );
