@@ -47,6 +47,7 @@ export default async function AdminSubscriptionsPage() {
   let pendingInvestmentCount = 0;
   let pendingWithdrawalCount = 0;
   let pendingReferralCount = 0;
+  let pendingUsdtPurchaseCount = 0;
   try {
     rows = await listAdminOrderQueue();
     pendingInvestmentCount = rows.filter(
@@ -57,6 +58,9 @@ export default async function AdminSubscriptionsPage() {
     ).length;
     pendingReferralCount = rows.filter(
       (row) => row.orderType === "referral"
+    ).length;
+    pendingUsdtPurchaseCount = rows.filter(
+      (row) => row.orderType === "usdt_purchase"
     ).length;
   } catch (error) {
     return (
@@ -75,16 +79,17 @@ export default async function AdminSubscriptionsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
         <p className="text-sm text-muted-foreground">
-          Pending investment, withdrawal, and referral payout orders. Investment
-          and withdrawal flows support TRX top-up and USDT payment. Referral
-          orders pay treasury USDT to user wallets when both parties have
-          invested (or principal recovery when two recovery slots qualify).
+          Pending investment, withdrawal, referral payout, and Mercado Pago USDT
+          purchase orders. Investment and withdrawal flows support TRX top-up and
+          USDT payment. Referral and USDT purchase orders pay treasury USDT to
+          user wallets (manual Release for purchases after payment approval).
         </p>
         <div className="mt-3">
           <SubscriptionsOrderStatusBar
             pendingInvestmentCount={pendingInvestmentCount}
             pendingWithdrawalCount={pendingWithdrawalCount}
             pendingReferralCount={pendingReferralCount}
+            pendingUsdtPurchaseCount={pendingUsdtPurchaseCount}
           />
         </div>
       </div>
@@ -133,7 +138,9 @@ export default async function AdminSubscriptionsPage() {
                       ? "Withdrawal"
                       : row.orderType === "referral"
                         ? "Referral"
-                        : "Investment"}
+                        : row.orderType === "usdt_purchase"
+                          ? "USDT purchase"
+                          : "Investment"}
                   </TableCell>
                   <TableCell className="max-w-[200px]">
                     {row.orderType === "withdraw" ? (
@@ -154,6 +161,13 @@ export default async function AdminSubscriptionsPage() {
                           </div>
                         ) : null}
                       </div>
+                    ) : row.orderType === "usdt_purchase" ? (
+                      <div className="text-sm">
+                        <div>Mercado Pago</div>
+                        <div className="text-xs text-muted-foreground">
+                          {row.totalArs.toLocaleString("es-AR")} ARS
+                        </div>
+                      </div>
                     ) : (
                       row.fundName
                     )}
@@ -165,12 +179,14 @@ export default async function AdminSubscriptionsPage() {
                     {row.walletAddress}
                   </TableCell>
                   <TableCell>
-                    {row.orderType === "referral"
+                    {row.orderType === "referral" ||
+                    row.orderType === "usdt_purchase"
                       ? "—"
                       : formatBalance(row.trxBalance)}
                   </TableCell>
                   <TableCell>
-                    {row.orderType === "referral" ? (
+                    {row.orderType === "referral" ||
+                    row.orderType === "usdt_purchase" ? (
                       "—"
                     ) : (
                       <>
@@ -189,10 +205,14 @@ export default async function AdminSubscriptionsPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {row.orderType === "referral" ? "—" : row.reservedUsdt}
+                    {row.orderType === "referral" ||
+                    row.orderType === "usdt_purchase"
+                      ? "—"
+                      : row.reservedUsdt}
                   </TableCell>
                   <TableCell className="space-y-1 text-xs">
-                    {row.orderType === "referral" ? (
+                    {row.orderType === "referral" ||
+                    row.orderType === "usdt_purchase" ? (
                       row.usdtTronscanUrl ? (
                         <Link
                           href={row.usdtTronscanUrl}

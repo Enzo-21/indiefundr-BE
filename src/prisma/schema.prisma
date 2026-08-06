@@ -131,6 +131,15 @@ enum ReferralPayoutOrderStatus {
   failed
 }
 
+enum UsdtPurchaseOrderStatus {
+  pending_payment
+  paid
+  awaiting_admin
+  completed
+  failed
+  expired
+}
+
 enum FeeSponsorshipStatus {
   topped_up
   purchase_ok
@@ -166,6 +175,7 @@ model User {
   purchaseOrders       PurchaseOrder[]
   withdrawalOrders     WithdrawalOrder[]
   referralPayoutOrders ReferralPayoutOrder[]
+  usdtPurchaseOrders   UsdtPurchaseOrder[]
   failedInvestments    FailedInvestment[]
   otpVerifications     OtpVerification[]
   refreshSessions   RefreshSession[]
@@ -241,6 +251,7 @@ model Wallet {
   purchaseOrders    PurchaseOrder[]
   withdrawalOrders     WithdrawalOrder[]
   referralPayoutOrders ReferralPayoutOrder[]
+  usdtPurchaseOrders   UsdtPurchaseOrder[]
   failedInvestments FailedInvestment[]
   feeSponsorships   FeeSponsorship[]
   walletActivities  WalletActivity[]
@@ -710,6 +721,39 @@ model ReferralPayoutOrder {
   @@index([referralInviteId, kind])
   @@index([investmentId, kind])
   @@map("referralpayoutorders")
+}
+
+model UsdtPurchaseOrder {
+  id                   String                  @id @default(auto()) @map("_id") @db.ObjectId
+  userId               String                  @map("user") @db.ObjectId
+  walletId             String                  @map("wallet") @db.ObjectId
+  amountUsdt           Float
+  arsPerUsdt           Float
+  baseArs              Float
+  hiddenMarkupPct      Float
+  mpFeePct             Float
+  priceWithMarkupArs   Float
+  mpFeeArs             Float
+  totalArs             Float
+  status               UsdtPurchaseOrderStatus @default(pending_payment)
+  mpPreferenceId       String?
+  mpPaymentId          String?
+  mpExternalReference  String                  @unique
+  adminUsdtTxId        String?
+  adminSettledBy       String?
+  adminSettledAt       DateTime?
+  adminNotes           String?
+  failureReason        String?
+  date                 DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([userId, status])
+  @@index([status, date])
+  @@index([mpPaymentId])
+  @@map("usdtpurchaseorders")
 }
 
 model ReferralRecoveryLink {

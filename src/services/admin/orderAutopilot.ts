@@ -67,6 +67,12 @@ export function buildAutopilotOrderCandidateFromRow(
     };
   }
 
+  if (row.orderType === "usdt_purchase") {
+    throw new Error(
+      "USDT purchase orders are not supported by order autopilot"
+    );
+  }
+
   return {
     ...base,
     orderType: "invest",

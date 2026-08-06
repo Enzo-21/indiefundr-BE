@@ -87,6 +87,10 @@ const rawEnvSchema = z.object({
   TRANSAK_API_KEY: z.string().default(""),
   TRANSAK_API_SECRET: z.string().default(""),
   TRANSAK_REFERRER_DOMAIN: z.string().default("indiefundr.com"),
+  MP_CLIENT_ID: z.string().default(""),
+  MP_CLIENT_SECRET: z.string().default(""),
+  MP_ACCESS_TOKEN: z.string().default(""),
+  MP_WEBHOOK_SECRET: z.string().default(""),
 });
 
 export type Env = ReturnType<typeof buildEnv>;
@@ -173,6 +177,10 @@ function buildEnv(raw: z.infer<typeof rawEnvSchema>) {
     transakApiKey: raw.TRANSAK_API_KEY.trim(),
     transakApiSecret: raw.TRANSAK_API_SECRET.trim(),
     transakReferrerDomain: raw.TRANSAK_REFERRER_DOMAIN.trim(),
+    mpClientId: raw.MP_CLIENT_ID.trim(),
+    mpClientSecret: raw.MP_CLIENT_SECRET.trim(),
+    mpAccessToken: raw.MP_ACCESS_TOKEN.trim(),
+    mpWebhookSecret: raw.MP_WEBHOOK_SECRET.trim(),
   };
 }
 

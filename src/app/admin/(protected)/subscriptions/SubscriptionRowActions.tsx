@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import type { AdminQueueRow } from "@/services/admin/purchaseOrderFulfillment";
 import { CompleteOrderDialog } from "./CompleteOrderDialog";
 import { ReferralPayoutRowActions } from "./ReferralPayoutRowActions";
+import { UsdtPurchaseRowActions } from "./UsdtPurchaseRowActions";
 import { WithdrawalRowActions } from "./WithdrawalRowActions";
 
 export function SubscriptionRowActions({ row }: { row: AdminQueueRow }) {
@@ -20,6 +21,9 @@ export function SubscriptionRowActions({ row }: { row: AdminQueueRow }) {
   }
   if (row.orderType === "withdraw") {
     return <WithdrawalRowActions row={row} />;
+  }
+  if (row.orderType === "usdt_purchase") {
+    return <UsdtPurchaseRowActions row={row} />;
   }
   const [trxTxId, setTrxTxId] = useState(row.topUpTxId ?? "");
   const [usdtTxId, setUsdtTxId] = useState(row.usdtTxId ?? "");
