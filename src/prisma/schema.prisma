@@ -156,6 +156,8 @@ model User {
   device          String?
   isPro           Boolean  @default(false)
   level           Int      @default(0)
+  /// ISO 3166-1 alpha-2 country code (e.g. "AR", "US"). Null if unknown / declined.
+  country         String?
 
   wallets           Wallet[]            @relation("UserWallets")
   profiles          Profile[]
