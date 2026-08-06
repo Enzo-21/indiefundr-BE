@@ -15,6 +15,10 @@ const sampleUser: User = {
   device: "expo-push-token",
   isPro: false,
   level: 0,
+  country: null,
+  pendingReferralCodeId: null,
+  referredByInviteId: null,
+  sympathyModalDismissedAt: null,
 };
 
 describe("serializeUser", () => {
@@ -30,6 +34,7 @@ describe("serializeUser", () => {
     assert.equal(json.device, "expo-push-token");
     assert.equal(json.isPro, false);
     assert.equal(json.level, 0);
+    assert.equal(json.country, null);
     assert.equal("password" in json, false);
   });
 });

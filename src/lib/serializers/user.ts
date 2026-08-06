@@ -11,6 +11,7 @@ export type LegacyUserJson = {
   device: string | null;
   isPro: boolean;
   level: number;
+  country: string | null;
 };
 
 export function serializeUser(user: User): LegacyUserJson {
@@ -25,6 +26,7 @@ export function serializeUser(user: User): LegacyUserJson {
     device: user.device,
     isPro: user.isPro,
     level: user.level ?? 0,
+    country: user.country ?? null,
   };
 }
 
