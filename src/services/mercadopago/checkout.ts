@@ -8,6 +8,7 @@ import {
   getMercadoPagoBackUrls,
   getMercadoPagoNotificationUrl,
   isMercadoPagoConfigured,
+  buildMercadoPagoExternalReference,
 } from "./config";
 import { createCheckoutPreference, splitPayerName } from "./client";
 
@@ -88,7 +89,7 @@ export async function createUsdtMercadoPagoCheckout(
   }
 
   const pricing = buildUsdtPurchasePricing({ arsPerUsdt: quote.arsPerUsdt });
-  const externalReference = `mp_${userId}_${Date.now()}`;
+  const externalReference = buildMercadoPagoExternalReference(userId);
 
   const [priorPurchaseCount, lastPurchase] = await Promise.all([
     prisma.usdtPurchaseOrder.count({

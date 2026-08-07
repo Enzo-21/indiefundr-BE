@@ -27,6 +27,48 @@ function isLocalOrPrivateHost(host: string): boolean {
   return false;
 }
 
+/** Same production detection used for MP public origins / external_reference tags. */
+export function isMercadoPagoProductionEnv(
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
+  const dbUrl = env.DATABASE_URL ?? "";
+  const vercelEnv = env.VERCEL_ENV?.trim().toLowerCase() ?? "";
+  return (
+    vercelEnv === "production" ||
+    /\/production(\?|$)/.test(dbUrl) ||
+    (env.NODE_ENV === "production" &&
+      !/\/staging(\?|$)/.test(dbUrl) &&
+      vercelEnv !== "preview")
+  );
+}
+
+export type MercadoPagoEnvTag = "stg" | "prod";
+
+export function getMercadoPagoEnvTag(
+  env: NodeJS.ProcessEnv = process.env
+): MercadoPagoEnvTag {
+  return isMercadoPagoProductionEnv(env) ? "prod" : "stg";
+}
+
+export function buildMercadoPagoExternalReference(
+  userId: string,
+  env: NodeJS.ProcessEnv = process.env,
+  nowMs: number = Date.now()
+): string {
+  return `mp_${getMercadoPagoEnvTag(env)}_${userId}_${nowMs}`;
+}
+
+/** Staging-tagged refs should be forwarded when a forward URL is configured (prod). */
+export function shouldForwardMercadoPagoWebhook(input: {
+  externalReference: string | null | undefined;
+  forwardUrl?: string | null;
+}): boolean {
+  const ref = input.externalReference?.trim() ?? "";
+  const forwardUrl = input.forwardUrl?.trim() ?? "";
+  if (!forwardUrl) return false;
+  return ref.startsWith("mp_stg_");
+}
+
 /**
  * Mercado Pago requires public HTTPS back_urls / notification_url.
  * Local MARKETING_DOMAIN (localhost) falls back to staging or production hosts.
@@ -43,16 +85,7 @@ export function resolveMercadoPagoPublicOrigin(
     return `https://${host}`;
   }
 
-  const dbUrl = env.DATABASE_URL ?? "";
-  const vercelEnv = env.VERCEL_ENV?.trim().toLowerCase() ?? "";
-  const isProd =
-    vercelEnv === "production" ||
-    /\/production(\?|$)/.test(dbUrl) ||
-    (env.NODE_ENV === "production" &&
-      !/\/staging(\?|$)/.test(dbUrl) &&
-      vercelEnv !== "preview");
-
-  return isProd
+  return isMercadoPagoProductionEnv(env)
     ? "https://indiefundr.com"
     : "https://staging.indiefundr.com";
 }

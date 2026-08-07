@@ -91,6 +91,8 @@ const rawEnvSchema = z.object({
   MP_CLIENT_SECRET: z.string().default(""),
   MP_ACCESS_TOKEN: z.string().default(""),
   MP_WEBHOOK_SECRET: z.string().default(""),
+  /** Prod-only: forward staging-tagged MP webhooks to this staging webhook URL. */
+  MP_WEBHOOK_FORWARD_URL: z.string().default(""),
 });
 
 export type Env = ReturnType<typeof buildEnv>;
@@ -181,6 +183,7 @@ function buildEnv(raw: z.infer<typeof rawEnvSchema>) {
     mpClientSecret: raw.MP_CLIENT_SECRET.trim(),
     mpAccessToken: raw.MP_ACCESS_TOKEN.trim(),
     mpWebhookSecret: raw.MP_WEBHOOK_SECRET.trim(),
+    mpWebhookForwardUrl: raw.MP_WEBHOOK_FORWARD_URL.trim(),
   };
 }
 
