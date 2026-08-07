@@ -77,7 +77,7 @@ export async function createUsdtMercadoPagoCheckout(
   }
 
   const pricing = buildUsdtPurchasePricing({ arsPerUsdt: quote.arsPerUsdt });
-  const externalReference = `usdt_${userId}_${Date.now()}`;
+  const externalReference = `mp_${userId}_${Date.now()}`;
 
   const order = await prisma.usdtPurchaseOrder.create({
     data: {
@@ -98,7 +98,7 @@ export async function createUsdtMercadoPagoCheckout(
 
   try {
     const preference = await createCheckoutPreference({
-      title: `${pricing.amountUsdt} USDT — IndieFundr`,
+      title: "IndieFundr",
       quantity: 1,
       unitPriceArs: pricing.totalArs,
       externalReference,
