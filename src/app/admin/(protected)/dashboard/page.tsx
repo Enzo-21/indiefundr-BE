@@ -15,6 +15,7 @@ import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
 import { buildTreasuryLedgerHints } from "@/services/revenueEngine/ledgerDisplay";
 import { EvaluateButton } from "./EvaluateButton";
 import { DashboardWalletSection } from "./DashboardWalletSection";
+import { DashboardQuoteRatesCard } from "./DashboardQuoteRatesCard";
 import {
   adminErrorDescription,
   adminErrorTitle,
@@ -80,6 +81,10 @@ export default async function AdminDashboardPage() {
           </p>
         </div>
         <EvaluateButton action={triggerEvaluate} />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <DashboardQuoteRatesCard />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
