@@ -6,6 +6,43 @@ import {
   fetchMercadoPagoPayment,
   verifyMercadoPagoWebhookSignature,
 } from "./client";
+import { shouldForwardMercadoPagoWebhook } from "./config";
+
+async function forwardMercadoPagoWebhookToStaging(input: {
+  forwardUrl: string;
+  rawBody: string;
+  xSignature: string | null;
+  xRequestId: string | null;
+  queryDataId: string | null;
+  queryType: string | null;
+}): Promise<void> {
+  const target = new URL(input.forwardUrl);
+  if (input.queryDataId) {
+    target.searchParams.set("data.id", input.queryDataId);
+  }
+  if (input.queryType) {
+    target.searchParams.set("type", input.queryType);
+  }
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (input.xSignature) headers["x-signature"] = input.xSignature;
+  if (input.xRequestId) headers["x-request-id"] = input.xRequestId;
+
+  const res = await fetch(target.toString(), {
+    method: "POST",
+    headers,
+    body: input.rawBody || "{}",
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(
+      `Staging forward failed (${res.status})${text ? `: ${text.slice(0, 200)}` : ""}`
+    );
+  }
+}
 
 export async function handleMercadoPagoWebhook(input: {
   rawBody: string;
@@ -72,6 +109,37 @@ export async function handleMercadoPagoWebhook(input: {
   }
 
   if (!payment.externalReference) {
+    return { ok: true };
+  }
+
+  const forwardUrl = getEnv().mpWebhookForwardUrl;
+  if (
+    shouldForwardMercadoPagoWebhook({
+      externalReference: payment.externalReference,
+      forwardUrl,
+    })
+  ) {
+    try {
+      await forwardMercadoPagoWebhookToStaging({
+        forwardUrl,
+        rawBody: input.rawBody,
+        xSignature: input.xSignature,
+        xRequestId: input.xRequestId,
+        queryDataId: input.queryDataId ?? dataId,
+        queryType: input.queryType ?? type,
+      });
+      console.log("[mercadopago:webhook] forwarded staging payment", {
+        externalReference: payment.externalReference,
+        paymentId: payment.id,
+      });
+    } catch (error) {
+      console.error(
+        "[mercadopago:webhook] staging forward failed",
+        error instanceof Error ? error.message : error,
+        { externalReference: payment.externalReference, paymentId: payment.id }
+      );
+    }
+    // Always ack MP; do not process staging orders on prod.
     return { ok: true };
   }
 
