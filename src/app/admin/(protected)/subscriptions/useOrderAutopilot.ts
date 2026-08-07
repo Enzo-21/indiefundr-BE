@@ -16,7 +16,16 @@ import {
   isAutopilotNonTerminalFailure,
 } from "@/lib/admin/autopilotBatch";
 import type { AutopilotCountdownTone } from "@/lib/admin/autopilotCountdownTone";
-import { AUTOPILOT_INTER_PAYOUT_DELAY_SEC } from "@/lib/config/adminAutopilot";
+import {
+  clearOrderAutopilotStorage,
+  readOrderAutopilotStorage,
+  writeOrderAutopilotStorage,
+  type OrderAutopilotModes,
+} from "@/lib/admin/orderAutopilotStorage";
+import {
+  AUTOPILOT_INTER_PAYOUT_DELAY_SEC,
+  AUTOPILOT_LOOP_DELAY_SEC,
+} from "@/lib/config/adminAutopilot";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
 
 export type { AutopilotOrderCandidate };
@@ -25,6 +34,8 @@ export type OrderAutopilotPhase =
   | "configure"
   | "running"
   | "countdown"
+  | "loop_pause"
+  | "resume_grace"
   | "summary";
 
 function manualCheckDetail(candidate: AutopilotOrderCandidate): string {
@@ -47,6 +58,7 @@ function manualCheckDetail(candidate: AutopilotOrderCandidate): string {
 export function useOrderAutopilot() {
   const router = useRouter();
   const [phase, setPhase] = useState<OrderAutopilotPhase>("configure");
+  const [continuousEnabled, setContinuousEnabled] = useState(false);
   const [includeInvestment, setIncludeInvestment] = useState(true);
   const [includeWithdrawal, setIncludeWithdrawal] = useState(true);
   const [includeReferral, setIncludeReferral] = useState(true);
@@ -63,9 +75,11 @@ export function useOrderAutopilot() {
   const [pendingCandidate, setPendingCandidate] =
     useState<AutopilotOrderCandidate | null>(null);
   const [countdownSecondsLeft, setCountdownSecondsLeft] = useState(0);
+  const [loopSecondsLeft, setLoopSecondsLeft] = useState(0);
   const [interItemOutcome, setInterItemOutcome] =
     useState<AutopilotCountdownTone | null>(null);
   const [configureError, setConfigureError] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const modesRef = useRef({
     includeInvestment: true,
     includeWithdrawal: true,
@@ -73,11 +87,15 @@ export function useOrderAutopilot() {
     includeUsdtPurchase: true,
   });
   const abortRef = useRef(false);
+  const continuousRef = useRef(false);
   const pendingCandidateRef = useRef<AutopilotOrderCandidate | null>(null);
   const manualCheckItemsRef = useRef<AutopilotManualCheckItem[]>([]);
   const completedCountRef = useRef(0);
   const queueIndexRef = useRef(0);
   const batchQueueRef = useRef<AutopilotOrderCandidate[]>([]);
+  const startBatchRef = useRef<
+    (() => Promise<{ ok: true } | { ok: false; error: string }>) | null
+  >(null);
 
   modesRef.current = {
     includeInvestment,
@@ -85,15 +103,25 @@ export function useOrderAutopilot() {
     includeReferral,
     includeUsdtPurchase,
   };
+  continuousRef.current = continuousEnabled;
   pendingCandidateRef.current = pendingCandidate;
   manualCheckItemsRef.current = manualCheckItems;
   completedCountRef.current = completedCount;
   queueIndexRef.current = queueIndex;
   batchQueueRef.current = batchQueue;
 
+  const applyModes = useCallback((modes: OrderAutopilotModes) => {
+    setIncludeInvestment(modes.includeInvestment);
+    setIncludeWithdrawal(modes.includeWithdrawal);
+    setIncludeReferral(modes.includeReferral);
+    setIncludeUsdtPurchase(modes.includeUsdtPurchase);
+    modesRef.current = modes;
+  }, []);
+
   const clearCountdown = useCallback(() => {
     abortRef.current = true;
     setCountdownSecondsLeft(0);
+    setLoopSecondsLeft(0);
     setPendingCandidate(null);
   }, []);
 
@@ -127,6 +155,13 @@ export function useOrderAutopilot() {
     return { completedCount: stoppedAfter, manualCheckCount };
   }, [clearCountdown]);
 
+  const stopContinuous = useCallback(() => {
+    clearOrderAutopilotStorage();
+    setContinuousEnabled(false);
+    continuousRef.current = false;
+    return stopAutopilot();
+  }, [stopAutopilot]);
+
   const fetchCandidates = useCallback(async () => {
     const modes = modesRef.current;
     const result = await adminGetAutopilotOrderCandidates(modes);
@@ -136,18 +171,35 @@ export function useOrderAutopilot() {
     return result.data;
   }, []);
 
+  const beginLoopPause = useCallback(() => {
+    abortRef.current = false;
+    setCurrentCandidate(null);
+    setPendingCandidate(null);
+    setInterItemOutcome(null);
+    setLoopSecondsLeft(AUTOPILOT_LOOP_DELAY_SEC);
+    setPhase("loop_pause");
+  }, []);
+
   const finishBatch = useCallback(
     (completed: number, manualChecks: AutopilotManualCheckItem[]) => {
-      setPhase("summary");
       setCurrentCandidate(null);
       setPendingCandidate(null);
+      if (continuousRef.current) {
+        beginLoopPause();
+        return {
+          done: true as const,
+          completedCount: completed,
+          manualCheckItems: manualChecks,
+        };
+      }
+      setPhase("summary");
       return {
         done: true as const,
         completedCount: completed,
         manualCheckItems: manualChecks,
       };
     },
-    []
+    [beginLoopPause]
   );
 
   const advanceQueue = useCallback(
@@ -182,11 +234,16 @@ export function useOrderAutopilot() {
     setManualCheckItems([]);
     setPendingCandidate(null);
     setCountdownSecondsLeft(0);
+    setLoopSecondsLeft(0);
     setQueueIndex(0);
 
     try {
       const candidates = await fetchCandidates();
       if (candidates.length === 0) {
+        if (continuousRef.current) {
+          beginLoopPause();
+          return { ok: true };
+        }
         const message = "No pending orders in the selected queues.";
         setConfigureError(message);
         return { ok: false, error: message };
@@ -198,10 +255,24 @@ export function useOrderAutopilot() {
       return { ok: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      if (continuousRef.current) {
+        beginLoopPause();
+        return { ok: true };
+      }
       setConfigureError(message);
       return { ok: false, error: message };
     }
-  }, [fetchCandidates]);
+  }, [beginLoopPause, fetchCandidates]);
+
+  startBatchRef.current = startBatch;
+
+  const enableContinuousAndStart = useCallback(async () => {
+    const modes = modesRef.current;
+    writeOrderAutopilotStorage(modes);
+    setContinuousEnabled(true);
+    continuousRef.current = true;
+    return startBatch();
+  }, [startBatch]);
 
   const advanceAfterSuccess = useCallback(async () => {
     const nextCompleted = completedCountRef.current + 1;
@@ -270,6 +341,23 @@ export function useOrderAutopilot() {
     []
   );
 
+  // Hydrate continuous mode from localStorage once on mount.
+  useEffect(() => {
+    const stored = readOrderAutopilotStorage();
+    if (!stored) {
+      setHydrated(true);
+      return;
+    }
+    applyModes(stored.modes);
+    setContinuousEnabled(true);
+    continuousRef.current = true;
+    abortRef.current = false;
+    setLoopSecondsLeft(AUTOPILOT_LOOP_DELAY_SEC);
+    setPhase("resume_grace");
+    setHydrated(true);
+  }, [applyModes]);
+
+  // Inter-item countdown.
   useEffect(() => {
     if (phase !== "countdown" || !pendingCandidate) {
       return;
@@ -297,8 +385,38 @@ export function useOrderAutopilot() {
     return () => clearTimeout(timer);
   }, [phase, pendingCandidate, countdownSecondsLeft]);
 
+  // Loop pause → reload; resume grace → start next batch.
+  useEffect(() => {
+    if (phase !== "loop_pause" && phase !== "resume_grace") {
+      return;
+    }
+
+    if (loopSecondsLeft <= 0) {
+      if (abortRef.current) {
+        return;
+      }
+      if (phase === "loop_pause") {
+        window.location.reload();
+        return;
+      }
+      void startBatchRef.current?.();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (abortRef.current) {
+        return;
+      }
+      setLoopSecondsLeft((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [phase, loopSecondsLeft]);
+
   return {
     phase,
+    continuousEnabled,
+    hydrated,
     includeInvestment,
     includeWithdrawal,
     includeReferral,
@@ -313,13 +431,16 @@ export function useOrderAutopilot() {
     currentCandidate,
     pendingCandidate,
     countdownSecondsLeft,
+    loopSecondsLeft,
     interItemOutcome,
     configureError,
     startBatch,
+    enableContinuousAndStart,
     advanceAfterSuccess,
     advanceAfterFailure,
     beginCountdown,
     stopAutopilot,
+    stopContinuous,
     resetToConfigure,
   };
 }

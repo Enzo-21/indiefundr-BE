@@ -20,18 +20,18 @@ describe("buildUsdtPurchasePricing", () => {
     assert.equal(p.arsChargeScale, 1);
   });
 
-  it("scales ARS to 20% on staging while keeping 25 USDT", () => {
+  it("scales ARS to 35% on staging while keeping 25 USDT", () => {
     const p = buildUsdtPurchasePricing({
       arsPerUsdt: 1500,
-      arsChargeScale: 0.2,
+      arsChargeScale: 0.35,
     });
     assert.equal(p.amountUsdt, 25);
-    assert.equal(p.arsPerUsdt, 300);
-    assert.equal(p.baseArs, 7500);
-    assert.equal(p.priceWithMarkupArs, 7950);
-    assert.equal(p.mpFeeArs, 477);
-    assert.equal(p.totalArs, 8427);
-    assert.equal(p.arsChargeScale, 0.2);
+    assert.equal(p.arsPerUsdt, 525);
+    assert.equal(p.baseArs, 13_125);
+    assert.equal(p.priceWithMarkupArs, 13_912.5);
+    assert.equal(p.mpFeeArs, 834.75);
+    assert.equal(p.totalArs, 14_747.25);
+    assert.equal(p.arsChargeScale, 0.35);
   });
 
   it("rejects non-positive arsPerUsdt", () => {
@@ -59,13 +59,13 @@ describe("getUsdtPurchaseArsChargeScale", () => {
     );
   });
 
-  it("returns 0.2 for testnet staging", () => {
+  it("returns 0.35 for testnet staging", () => {
     assert.equal(
       getUsdtPurchaseArsChargeScale({
         BLOCKCHAIN_NETWORK: "testnet",
         DATABASE_URL: "mongodb://x/staging",
       }),
-      0.2
+      0.35
     );
   });
 });

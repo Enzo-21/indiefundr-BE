@@ -1,7 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { buildAutopilotStopToastMessage } from "@/lib/admin/autopilotBatch";
 import { OrderAutopilotDialog } from "./OrderAutopilotDialog";
 import { SubscriptionsRefreshButton } from "./SubscriptionsRefreshButton";
+import { useOrderAutopilot } from "./useOrderAutopilot";
 
 export function SubscriptionsOrderStatusBar({
   pendingInvestmentCount,
@@ -14,11 +19,25 @@ export function SubscriptionsOrderStatusBar({
   pendingReferralCount?: number;
   pendingUsdtPurchaseCount?: number;
 }) {
+  const router = useRouter();
+  const autopilot = useOrderAutopilot();
   const pendingOrderCount =
     pendingInvestmentCount +
     pendingWithdrawalCount +
     pendingReferralCount +
     pendingUsdtPurchaseCount;
+
+  const handleStopContinuous = () => {
+    const { completedCount, manualCheckCount } = autopilot.stopContinuous();
+    router.refresh();
+    toast.message(
+      buildAutopilotStopToastMessage({
+        itemLabel: "order",
+        completedCount,
+        manualCheckCount,
+      })
+    );
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-md border bg-muted/30 px-4 py-3 text-sm">
@@ -56,11 +75,22 @@ export function SubscriptionsOrderStatusBar({
       </div>
       <div className="ml-auto flex flex-wrap items-center gap-2">
         <SubscriptionsRefreshButton />
+        {autopilot.continuousEnabled ? (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleStopContinuous}
+          >
+            Stop Autopilot
+          </Button>
+        ) : null}
         <OrderAutopilotDialog
           pendingInvestmentCount={pendingInvestmentCount}
           pendingWithdrawalCount={pendingWithdrawalCount}
           pendingReferralCount={pendingReferralCount}
           pendingUsdtPurchaseCount={pendingUsdtPurchaseCount}
+          autopilot={autopilot}
+          hideTrigger={autopilot.continuousEnabled}
         />
       </div>
     </div>
