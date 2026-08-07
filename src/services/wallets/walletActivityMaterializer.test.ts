@@ -215,6 +215,46 @@ describe("walletActivityRecordToTx", () => {
     assert.equal(confirmed.source, "app");
     assert.equal(confirmed.txId, "tx-release");
   });
+
+  it("overrides pending redemption to confirmed when insights show redeemed", () => {
+    const tx = walletActivityRecordToTx(
+      {
+        id: "row-redemption",
+        kind: "redemption",
+        entityId: "inv-1",
+        txId: "tx-payout",
+        type: "in",
+        amountUsdt: 110,
+        status: "pending",
+        label: "Earnings credited",
+        detail: null,
+        occurredAt: new Date("2026-01-06T00:00:00.000Z"),
+        tronscanUrl: null,
+        pendingTapInfo: null,
+      },
+      {
+        kind: "redemption",
+        fundId: "growth",
+        fundName: "Growth Fund",
+        principalUsdt: 100,
+        projectedPayoutUsdt: 110,
+        targetReturnPercent: 10,
+        expectedEarningsUsdt: 10,
+        maxTermDays: 90,
+        typicalPayoutDays: 90,
+        subscribedAt: "2026-01-01T00:00:00.000Z",
+        maturesAt: "2026-04-01T00:00:00.000Z",
+        redeemedAt: "2026-04-02T00:00:00.000Z",
+        payoutDaysElapsed: null,
+        creditedUsdt: 110,
+        investmentId: "inv-1",
+        purchaseOrderId: null,
+        investmentStatus: "redeemed",
+      }
+    );
+
+    assert.equal(tx.status, "confirmed");
+  });
 });
 
 describe("appendUsdtPurchaseActivityRow", () => {

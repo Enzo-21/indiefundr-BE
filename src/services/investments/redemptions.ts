@@ -4,12 +4,14 @@ import {
   type Investment,
 } from "@prisma/client";
 import { getFundById } from "@/lib/config/investmentFunds";
+import { getMainWallet } from "@/lib/wallets/helpers";
 import { creditSurplus } from "@/services/revenueEngine/ledger";
 import { onRedeemCompleted } from "@/services/revenueEngine/onRedeemCompleted";
 import { releasePayoutLock } from "@/services/revenueEngine/payoutLock";
 import { isSurplusPayoutTrigger } from "@/services/revenueEngine/payoutScheduler";
 import * as tron from "@/services/tron/client";
 import { prisma } from "@/lib/prisma";
+import { rebuildWalletActivity } from "@/services/wallets/walletActivityMaterializer";
 
 export type RedemptionConfirmOutcome =
   | "confirmed"
@@ -104,6 +106,21 @@ async function processRedemptionForInvestment(
     const message =
       notifyErr instanceof Error ? notifyErr.message : String(notifyErr);
     console.error("[mail] notifyUserPayment failed:", message, {
+      investmentId: investment.id,
+    });
+  }
+
+  try {
+    const mainWallet = await getMainWallet(investment.userId);
+    await rebuildWalletActivity(
+      investment.userId,
+      investment.walletId,
+      mainWallet?.id
+    );
+  } catch (activityErr) {
+    const message =
+      activityErr instanceof Error ? activityErr.message : String(activityErr);
+    console.error("[redemption] rebuildWalletActivity failed:", message, {
       investmentId: investment.id,
     });
   }
