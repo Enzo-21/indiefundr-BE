@@ -271,16 +271,20 @@ describe("appendUsdtPurchaseActivityRow", () => {
     assert.ok(rows[0]?.tronscanUrl);
   });
 
-  it("materializes failed as failed usdt_purchase_order", () => {
+  it("materializes failed as failed usdt_purchase_order with user-facing detail", () => {
     const rows: Parameters<typeof appendUsdtPurchaseActivityRow>[0] = [];
     appendUsdtPurchaseActivityRow(rows, {
       ...base,
       status: UsdtPurchaseOrderStatus.failed,
-      failureReason: "Declined",
+      failureReason: "auto_return invalid. back_url.success must be defined",
     });
     assert.equal(rows.length, 1);
     assert.equal(rows[0]?.kind, "usdt_purchase_order");
     assert.equal(rows[0]?.status, "failed");
-    assert.equal(rows[0]?.detail, "Declined");
+    assert.equal(rows[0]?.detail, "Purchase could not be completed.");
+    assert.notEqual(
+      rows[0]?.detail,
+      "auto_return invalid. back_url.success must be defined"
+    );
   });
 });

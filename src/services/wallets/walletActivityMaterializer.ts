@@ -225,7 +225,8 @@ export function appendUsdtPurchaseActivityRow(
       amountUsdt: order.amountUsdt,
       status: "failed",
       label: "USDT purchase",
-      detail: order.failureReason ?? detail,
+      // Never surface raw provider/admin errors (e.g. Mercado Pago API messages).
+      detail: "Purchase could not be completed.",
       occurredAt: order.updatedAt || order.date,
       tronscanUrl,
       chainFinal: true,
