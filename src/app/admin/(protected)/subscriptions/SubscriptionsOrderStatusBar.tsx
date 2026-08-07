@@ -7,13 +7,18 @@ export function SubscriptionsOrderStatusBar({
   pendingInvestmentCount,
   pendingWithdrawalCount,
   pendingReferralCount = 0,
+  pendingUsdtPurchaseCount = 0,
 }: {
   pendingInvestmentCount: number;
   pendingWithdrawalCount: number;
   pendingReferralCount?: number;
+  pendingUsdtPurchaseCount?: number;
 }) {
   const pendingOrderCount =
-    pendingInvestmentCount + pendingWithdrawalCount + pendingReferralCount;
+    pendingInvestmentCount +
+    pendingWithdrawalCount +
+    pendingReferralCount +
+    pendingUsdtPurchaseCount;
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-md border bg-muted/30 px-4 py-3 text-sm">
@@ -25,7 +30,8 @@ export function SubscriptionsOrderStatusBar({
         </span>
         {pendingInvestmentCount > 0 ||
         pendingWithdrawalCount > 0 ||
-        pendingReferralCount > 0 ? (
+        pendingReferralCount > 0 ||
+        pendingUsdtPurchaseCount > 0 ? (
           <span className="text-muted-foreground">
             {" "}
             ({[
@@ -37,6 +43,9 @@ export function SubscriptionsOrderStatusBar({
                 : null,
               pendingReferralCount > 0
                 ? `${pendingReferralCount} referral`
+                : null,
+              pendingUsdtPurchaseCount > 0
+                ? `${pendingUsdtPurchaseCount} USDT purchase`
                 : null,
             ]
               .filter(Boolean)
