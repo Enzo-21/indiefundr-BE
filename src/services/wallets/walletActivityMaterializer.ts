@@ -252,7 +252,8 @@ export function appendUsdtPurchaseActivityRow(
       message:
         "Your Mercado Pago payment was received. " +
         `${APP_NAME} will send USDT to this wallet after review. ` +
-        "Open this activity again once the transfer is on TronScan.",
+        "You will be able to see the details once the transfer is on TronScan.\n\n" +
+        "Note: This process can take up to 48 business hours, depending on demand.",
     },
   });
 }
