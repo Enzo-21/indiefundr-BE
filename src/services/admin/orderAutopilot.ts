@@ -2,10 +2,11 @@ import type { AdminQueueRow } from "@/services/admin/purchaseOrderFulfillment";
 import { listAdminSubscriptionQueue } from "@/services/admin/purchaseOrderFulfillment";
 import type { AdminReferralPayoutRow } from "@/services/admin/referralPayoutOrderFulfillment";
 import { listAdminReferralPayoutQueue } from "@/services/admin/referralPayoutOrderFulfillment";
+import { listAdminUsdtPurchaseQueue } from "@/services/admin/usdtPurchaseOrderFulfillment";
 import { listAdminWithdrawalQueue } from "@/services/admin/withdrawalOrderFulfillment";
 
 export type AutopilotOrderCandidate = {
-  orderType: "invest" | "withdraw" | "referral";
+  orderType: "invest" | "withdraw" | "referral" | "usdt_purchase";
   orderId: string;
   userEmail: string;
   userName: string;
@@ -24,6 +25,7 @@ export type ListAutopilotOrderCandidatesOptions = {
   includeInvestment?: boolean;
   includeWithdrawal?: boolean;
   includeReferral?: boolean;
+  includeUsdtPurchase?: boolean;
 };
 
 function truncateDestinationAddress(address: string): string {
@@ -68,9 +70,12 @@ export function buildAutopilotOrderCandidateFromRow(
   }
 
   if (row.orderType === "usdt_purchase") {
-    throw new Error(
-      "USDT purchase orders are not supported by order autopilot"
-    );
+    return {
+      ...base,
+      orderType: "usdt_purchase",
+      fundName: "USDT purchase",
+      destinationLabel: `${row.totalArs.toLocaleString("es-AR")} ARS`,
+    };
   }
 
   return {
@@ -110,16 +115,20 @@ export async function listAutopilotOrderCandidates(
   const includeInvestment = options.includeInvestment !== false;
   const includeWithdrawal = options.includeWithdrawal !== false;
   const includeReferral = options.includeReferral !== false;
+  const includeUsdtPurchase = options.includeUsdtPurchase !== false;
 
-  const [subscriptions, withdrawals, referrals] = await Promise.all([
-    includeInvestment ? listAdminSubscriptionQueue() : Promise.resolve([]),
-    includeWithdrawal ? listAdminWithdrawalQueue() : Promise.resolve([]),
-    includeReferral ? listAdminReferralPayoutQueue() : Promise.resolve([]),
-  ]);
+  const [subscriptions, withdrawals, referrals, usdtPurchases] =
+    await Promise.all([
+      includeInvestment ? listAdminSubscriptionQueue() : Promise.resolve([]),
+      includeWithdrawal ? listAdminWithdrawalQueue() : Promise.resolve([]),
+      includeReferral ? listAdminReferralPayoutQueue() : Promise.resolve([]),
+      includeUsdtPurchase ? listAdminUsdtPurchaseQueue() : Promise.resolve([]),
+    ]);
 
   return mergeAutopilotOrderCandidates(
     buildAutopilotOrderCandidatesFromRows(subscriptions),
     buildAutopilotOrderCandidatesFromRows(withdrawals),
-    buildAutopilotOrderCandidatesFromReferralRows(referrals)
+    buildAutopilotOrderCandidatesFromReferralRows(referrals),
+    buildAutopilotOrderCandidatesFromRows(usdtPurchases)
   );
 }

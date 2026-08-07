@@ -1,4 +1,9 @@
-import type { Investment, ReferralPayoutOrder, WithdrawalOrder } from "@prisma/client";
+import type {
+  Investment,
+  ReferralPayoutOrder,
+  UsdtPurchaseOrder,
+  WithdrawalOrder,
+} from "@prisma/client";
 import { ReferralPayoutOrderKind } from "@prisma/client";
 import type { InvestmentFund } from "@/lib/config/investmentFunds";
 import { APP_NAME } from "@/lib/constants/appBranding";
@@ -13,11 +18,12 @@ export type UserPaymentKind =
   | "referral_invitee_bonus"
   | "referral_inviter_bonus"
   | "principal_recovery"
-  | "withdrawal";
+  | "withdrawal"
+  | "usdt_purchase";
 
 export function referralOrderKindToUserPaymentKind(
   kind: ReferralPayoutOrderKind
-): Exclude<UserPaymentKind, "investment_payout" | "withdrawal"> {
+): Exclude<UserPaymentKind, "investment_payout" | "withdrawal" | "usdt_purchase"> {
   switch (kind) {
     case ReferralPayoutOrderKind.invitee_bonus:
       return "referral_invitee_bonus";
@@ -40,6 +46,8 @@ export function userPaymentKindLabel(kind: UserPaymentKind): string {
       return "Principal recovery";
     case "withdrawal":
       return "Wallet withdrawal";
+    case "usdt_purchase":
+      return "USDT purchase";
   }
 }
 
@@ -145,7 +153,10 @@ export function buildInvestmentPayoutReceiptDocument(params: {
 }
 
 export function buildReferralPayoutReceiptDocument(params: {
-  kind: Exclude<UserPaymentKind, "investment_payout" | "withdrawal">;
+  kind: Exclude<
+    UserPaymentKind,
+    "investment_payout" | "withdrawal" | "usdt_purchase"
+  >;
   order: Pick<
     ReferralPayoutOrder,
     "id" | "amountUsdt" | "date" | "investmentId" | "referralInviteId"
@@ -232,6 +243,49 @@ export function buildWithdrawalReceiptDocument(params: {
   });
 }
 
+export function buildUsdtPurchaseReceiptDocument(params: {
+  order: Pick<
+    UsdtPurchaseOrder,
+    "id" | "amountUsdt" | "totalArs" | "date" | "adminSettledAt"
+  >;
+  txId: string;
+  paidAt?: Date;
+  appName?: string;
+}): ReceiptDocument {
+  const { order, txId } = params;
+  const appName = params.appName ?? APP_NAME;
+  const paidAt = params.paidAt ?? order.adminSettledAt ?? new Date();
+  const label = userPaymentKindLabel("usdt_purchase");
+  const arsLabel = `${order.totalArs.toLocaleString("es-AR")} ARS`;
+
+  const transactionLines: ReceiptDocumentLine[] = [
+    { label: "Status", value: "Paid" },
+    { label: "Paid on", value: formatReceiptDate(paidAt) },
+    { label: "Amount", value: `${formatUsdtNumber(order.amountUsdt)} USDT` },
+    { label: "Transaction ID", value: txId },
+    { label: "Order ID", value: order.id },
+  ];
+
+  const detailLines: ReceiptDocumentLine[] = [
+    { label: "Payment type", value: label },
+    {
+      label: "Amount credited",
+      value: `${formatUsdtNumber(order.amountUsdt)} USDT`,
+    },
+    { label: "Paid with", value: `Mercado Pago · ${arsLabel}` },
+    { label: "Order created", value: formatReceiptDate(order.date) },
+  ];
+
+  return baseReceipt({
+    appName,
+    heading: "USDT purchase receipt",
+    amount: `+${formatUsdtNumber(order.amountUsdt)} USDT`,
+    description: label,
+    transactionLines,
+    detailLines,
+  });
+}
+
 export type BuildUserPaymentReceiptDocumentParams =
   | {
       kind: "investment_payout";
@@ -240,7 +294,10 @@ export type BuildUserPaymentReceiptDocumentParams =
       txId: string;
     }
   | {
-      kind: Exclude<UserPaymentKind, "investment_payout" | "withdrawal">;
+      kind: Exclude<
+        UserPaymentKind,
+        "investment_payout" | "withdrawal" | "usdt_purchase"
+      >;
       order: Pick<
         ReferralPayoutOrder,
         "id" | "amountUsdt" | "date" | "investmentId" | "referralInviteId"
@@ -253,6 +310,15 @@ export type BuildUserPaymentReceiptDocumentParams =
       order: Pick<
         WithdrawalOrder,
         "id" | "amountUsdt" | "date" | "destinationAddress"
+      >;
+      txId: string;
+      paidAt?: Date;
+    }
+  | {
+      kind: "usdt_purchase";
+      order: Pick<
+        UsdtPurchaseOrder,
+        "id" | "amountUsdt" | "totalArs" | "date" | "adminSettledAt"
       >;
       txId: string;
       paidAt?: Date;
@@ -271,6 +337,13 @@ export function buildUserPaymentReceiptDocument(
       });
     case "withdrawal":
       return buildWithdrawalReceiptDocument({
+        order: params.order,
+        txId: params.txId,
+        paidAt: params.paidAt,
+        appName: params.appName,
+      });
+    case "usdt_purchase":
+      return buildUsdtPurchaseReceiptDocument({
         order: params.order,
         txId: params.txId,
         paidAt: params.paidAt,

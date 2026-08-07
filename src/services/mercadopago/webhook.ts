@@ -1,6 +1,7 @@
 import { UsdtPurchaseOrderStatus } from "@prisma/client";
 import { getEnv } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
+import { rebuildWalletActivity } from "@/services/wallets/walletActivityMaterializer";
 import {
   fetchMercadoPagoPayment,
   verifyMercadoPagoWebhookSignature,
@@ -108,6 +109,14 @@ export async function handleMercadoPagoWebhook(input: {
         mpPaymentId: payment.id,
       },
     });
+    try {
+      await rebuildWalletActivity(order.userId, order.walletId, order.walletId);
+    } catch (error) {
+      console.error(
+        "[mercadopago:webhook] rebuildWalletActivity failed",
+        error instanceof Error ? error.message : error
+      );
+    }
     return { ok: true };
   }
 
@@ -125,6 +134,18 @@ export async function handleMercadoPagoWebhook(input: {
           failureReason: `MP payment ${payment.status}`,
         },
       });
+      try {
+        await rebuildWalletActivity(
+          order.userId,
+          order.walletId,
+          order.walletId
+        );
+      } catch (error) {
+        console.error(
+          "[mercadopago:webhook] rebuildWalletActivity failed",
+          error instanceof Error ? error.message : error
+        );
+      }
     }
   }
 

@@ -14,6 +14,7 @@ import { prisma } from "@/lib/prisma";
 import type { AdminFulfillmentEstimate } from "@/services/admin/purchaseOrderFulfillment";
 import { refreshWalletActivityForOrder } from "@/services/wallets/walletActivityRefresh";
 import * as tron from "@/services/tron/client";
+import { inspectUsdtPaymentTx } from "@/services/tron/usdtPaymentChainTruth";
 
 const OPEN_STATUSES: UsdtPurchaseOrderStatus[] = [
   UsdtPurchaseOrderStatus.awaiting_admin,
@@ -283,55 +284,71 @@ export async function completeUsdtPurchaseOrder(
     throw new Error("USDT transaction id is required to complete purchase");
   }
 
-  const transferOk = await tron.isUsdtTransferSuccessful(txId);
-  if (!transferOk) {
-    const failure = await tron.getTransactionFailureReason(txId);
-    throw new Error(
-      failure.message || "USDT transfer did not succeed on-chain"
-    );
+  const deadline = Date.now() + 90_000;
+  let lastMessage = "USDT transfer did not succeed on-chain";
+  let confirmed = false;
+  while (Date.now() < deadline) {
+    const inspection = await inspectUsdtPaymentTx(txId, { retries: 2 });
+    if (inspection.usdtTransferSuccessful) {
+      confirmed = true;
+      break;
+    }
+    if (inspection.status === "failed" && !inspection.lookupFailed) {
+      const failure = await tron.getTransactionFailureReason(txId);
+      throw new Error(
+        failure.message || "USDT transfer did not succeed on-chain"
+      );
+    }
+    lastMessage = inspection.lookupFailed
+      ? "Transaction not found yet on-chain"
+      : inspection.status === "pending"
+        ? "USDT transfer still pending on-chain"
+        : lastMessage;
+    await new Promise((resolve) => setTimeout(resolve, 2_000));
+  }
+  if (!confirmed) {
+    throw new Error(lastMessage);
   }
 
-  const entityId = `usdt_purchase:${order.id}`;
-  await prisma.$transaction(async (tx) => {
-    await tx.usdtPurchaseOrder.update({
-      where: { id: orderId },
-      data: {
-        adminUsdtTxId: txId,
-        status: UsdtPurchaseOrderStatus.completed,
-        adminSettledBy: adminEmail,
-        adminSettledAt: new Date(),
-        failureReason: null,
-      },
-    });
-
-    const existing = await tx.walletActivity.findFirst({
-      where: { walletId: order.walletId, entityId },
-    });
-    if (!existing) {
-      await tx.walletActivity.create({
-        data: {
-          userId: order.userId,
-          walletId: order.walletId,
-          kind: "usdt_purchase",
-          entityId,
-          txId,
-          type: "credit",
-          amountUsdt: order.amountUsdt,
-          status: "confirmed",
-          label: "USDT purchase",
-          detail: "Mercado Pago",
-          occurredAt: new Date(),
-          tronscanUrl: getTronscanTxUrl(txId),
-          chainFinal: true,
-        },
-      });
-    }
+  await prisma.usdtPurchaseOrder.update({
+    where: { id: orderId },
+    data: {
+      adminUsdtTxId: txId,
+      status: UsdtPurchaseOrderStatus.completed,
+      adminSettledBy: adminEmail,
+      adminSettledAt: new Date(),
+      failureReason: null,
+    },
   });
 
   await refreshWalletActivityForOrder({
     userId: order.userId,
     walletId: order.walletId,
   });
+
+  const completed = await prisma.usdtPurchaseOrder.findUnique({
+    where: { id: orderId },
+  });
+  if (!completed) {
+    return;
+  }
+
+  try {
+    const { notifyUserPayment } = await import(
+      "@/services/mailing/notifyUserPayment"
+    );
+    await notifyUserPayment({
+      kind: "usdt_purchase",
+      order: completed,
+      txId,
+    });
+  } catch (notifyErr) {
+    const message =
+      notifyErr instanceof Error ? notifyErr.message : String(notifyErr);
+    console.error("[mail] notifyUserPayment failed:", message, {
+      orderId: completed.id,
+    });
+  }
 }
 
 export async function markUsdtPurchaseOrderFailed(
@@ -339,11 +356,39 @@ export async function markUsdtPurchaseOrderFailed(
   reason: string,
   adminEmail: string
 ): Promise<void> {
+  const order = await prisma.usdtPurchaseOrder.findUnique({
+    where: { id: orderId },
+  });
+  if (!order) {
+    throw new Error("USDT purchase order not found");
+  }
   await prisma.usdtPurchaseOrder.update({
     where: { id: orderId },
     data: {
       status: UsdtPurchaseOrderStatus.failed,
       failureReason: reason.trim() || "Declined by admin",
+      adminSettledBy: adminEmail,
+    },
+  });
+  await refreshWalletActivityForOrder({
+    userId: order.userId,
+    walletId: order.walletId,
+  });
+}
+
+export async function appendAdminUsdtPurchaseAutopilotManualCheckNote(
+  orderId: string,
+  error: string,
+  adminEmail: string
+): Promise<void> {
+  const order = await loadOpenOrder(orderId);
+  const line = formatOrderAutopilotManualCheckNote(error);
+  const notes = appendAutopilotNote(order.adminNotes ?? order.failureReason, line);
+  await prisma.usdtPurchaseOrder.update({
+    where: { id: orderId },
+    data: {
+      adminNotes: notes,
+      failureReason: notes,
       adminSettledBy: adminEmail,
     },
   });

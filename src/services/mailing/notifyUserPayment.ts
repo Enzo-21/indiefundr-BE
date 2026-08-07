@@ -1,4 +1,9 @@
-import type { Investment, ReferralPayoutOrder, WithdrawalOrder } from "@prisma/client";
+import type {
+  Investment,
+  ReferralPayoutOrder,
+  UsdtPurchaseOrder,
+  WithdrawalOrder,
+} from "@prisma/client";
 import type { InvestmentFund } from "@/lib/config/investmentFunds";
 import { getFundById } from "@/lib/config/investmentFunds";
 import { prisma } from "@/lib/prisma";
@@ -18,13 +23,21 @@ export type NotifyUserPaymentParams =
       fund?: InvestmentFund | null;
     }
   | {
-      kind: Exclude<UserPaymentKind, "investment_payout" | "withdrawal">;
+      kind: Exclude<
+        UserPaymentKind,
+        "investment_payout" | "withdrawal" | "usdt_purchase"
+      >;
       order: ReferralPayoutOrder;
       txId: string;
     }
   | {
       kind: "withdrawal";
       order: WithdrawalOrder;
+      txId: string;
+    }
+  | {
+      kind: "usdt_purchase";
+      order: UsdtPurchaseOrder;
       txId: string;
     };
 
@@ -68,6 +81,15 @@ function buildPushContent(params: NotifyUserPaymentParams): {
       return {
         title: "Withdrawal sent",
         body: `Your withdrawal of ${formatUsdt(params.order.amountUsdt)} USDT has been sent to your wallet.`,
+        data: {
+          ...baseData,
+          orderId: params.order.id,
+        },
+      };
+    case "usdt_purchase":
+      return {
+        title: "USDT purchase completed",
+        body: `${formatUsdt(params.order.amountUsdt)} USDT from your Mercado Pago purchase has been sent to your wallet.`,
         data: {
           ...baseData,
           orderId: params.order.id,
@@ -148,6 +170,14 @@ function buildEmailParams(
           destinationAddress: params.order.destinationAddress,
         },
       };
+    case "usdt_purchase":
+      return {
+        kind: params.kind,
+        order: params.order,
+        txId: params.txId,
+        paidAt: params.order.adminSettledAt ?? new Date(),
+        user,
+      };
     default:
       return {
         kind: params.kind,
@@ -163,8 +193,6 @@ function logContext(params: NotifyUserPaymentParams): Record<string, string> {
   switch (params.kind) {
     case "investment_payout":
       return { investmentId: params.investment.id, kind: params.kind };
-    case "withdrawal":
-      return { orderId: params.order.id, kind: params.kind };
     default:
       return { orderId: params.order.id, kind: params.kind };
   }

@@ -6,8 +6,10 @@ import {
   buildInvestmentPayoutReceiptDocument,
   buildReferralPayoutReceiptDocument,
   buildUserPaymentReceiptDocument,
+  buildUsdtPurchaseReceiptDocument,
   buildWithdrawalReceiptDocument,
   referralOrderKindToUserPaymentKind,
+  userPaymentKindLabel,
   userPaymentReceiptFilename,
 } from "./userPaymentReceiptDocument";
 
@@ -143,6 +145,42 @@ describe("userPaymentReceiptDocument", () => {
           line.label === "Destination" && line.value === "TXyz123withdraw"
       )
     );
+  });
+
+  it("builds USDT purchase receipt with Mercado Pago ARS detail", () => {
+    assert.equal(userPaymentKindLabel("usdt_purchase"), "USDT purchase");
+    const document = buildUsdtPurchaseReceiptDocument({
+      order: {
+        id: "mp-order-1",
+        amountUsdt: 100,
+        totalArs: 125000.5,
+        date: new Date("2026-06-01T12:00:00.000Z"),
+        adminSettledAt: new Date("2026-06-02T12:00:00.000Z"),
+      },
+      txId: "mp-tx-abc",
+    });
+
+    assert.equal(document.heading, "USDT purchase receipt");
+    assert.match(document.amount, /^\+100\.00 USDT$/);
+    const detailLines = document.sections[1]?.lines ?? [];
+    assert.ok(
+      detailLines.some(
+        (line) => line.label === "Paid with" && line.value.includes("Mercado Pago")
+      )
+    );
+
+    const routed = buildUserPaymentReceiptDocument({
+      kind: "usdt_purchase",
+      order: {
+        id: "mp-order-2",
+        amountUsdt: 10,
+        totalArs: 12000,
+        date: new Date("2026-06-01T12:00:00.000Z"),
+        adminSettledAt: null,
+      },
+      txId: "mp-tx-2",
+    });
+    assert.equal(routed.heading, "USDT purchase receipt");
   });
 
   it("routes buildUserPaymentReceiptDocument by kind", () => {

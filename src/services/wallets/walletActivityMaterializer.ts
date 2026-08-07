@@ -1,9 +1,10 @@
 import type {
   FailedInvestment,
   PurchaseOrder,
+  UsdtPurchaseOrder,
   WithdrawalOrder,
 } from "@prisma/client";
-import { WithdrawalOrderStatus } from "@prisma/client";
+import { UsdtPurchaseOrderStatus, WithdrawalOrderStatus } from "@prisma/client";
 import { buildWithdrawalOrderSettlementView } from "@/services/orders/withdrawalOrderSettlementView";
 import { Prisma } from "@prisma/client";
 import { getFundById } from "@/lib/config/investmentFunds";
@@ -166,6 +167,95 @@ function appendWithdrawalActivityRow(
   });
 }
 
+function formatUsdtPurchaseArsDetail(totalArs: number): string {
+  return `Mercado Pago · ${totalArs.toLocaleString("es-AR")} ARS`;
+}
+
+/** Mercado Pago USDT buy: pending after payment, confirmed after admin release. */
+export function appendUsdtPurchaseActivityRow(
+  rows: MaterializedRow[],
+  order: Pick<
+    UsdtPurchaseOrder,
+    | "id"
+    | "status"
+    | "amountUsdt"
+    | "totalArs"
+    | "adminUsdtTxId"
+    | "failureReason"
+    | "date"
+    | "updatedAt"
+    | "adminSettledAt"
+  >
+) {
+  // Skip unpaid / abandoned checkouts and expired prefs.
+  if (
+    order.status === UsdtPurchaseOrderStatus.pending_payment ||
+    order.status === UsdtPurchaseOrderStatus.expired
+  ) {
+    return;
+  }
+
+  const txId = order.adminUsdtTxId;
+  const tronscanUrl = txId ? getTronscanTxUrl(txId) : null;
+  const detail = formatUsdtPurchaseArsDetail(order.totalArs);
+
+  if (order.status === UsdtPurchaseOrderStatus.completed) {
+    rows.push({
+      kind: "usdt_purchase",
+      entityId: order.id,
+      txId,
+      type: "in",
+      amountUsdt: order.amountUsdt,
+      status: "confirmed",
+      label: "USDT purchase",
+      detail,
+      occurredAt: order.adminSettledAt ?? order.updatedAt ?? order.date,
+      tronscanUrl,
+      chainFinal: true,
+    });
+    return;
+  }
+
+  if (order.status === UsdtPurchaseOrderStatus.failed) {
+    rows.push({
+      kind: "usdt_purchase_order",
+      entityId: order.id,
+      txId,
+      type: "in",
+      amountUsdt: order.amountUsdt,
+      status: "failed",
+      label: "USDT purchase",
+      detail: order.failureReason ?? detail,
+      occurredAt: order.updatedAt || order.date,
+      tronscanUrl,
+      chainFinal: true,
+    });
+    return;
+  }
+
+  // awaiting_admin | paid — waiting for treasury USDT release
+  rows.push({
+    kind: "usdt_purchase_order",
+    entityId: order.id,
+    txId,
+    type: "in",
+    amountUsdt: order.amountUsdt,
+    status: "pending",
+    label: "USDT purchase",
+    detail,
+    occurredAt: order.updatedAt || order.date,
+    tronscanUrl,
+    chainFinal: false,
+    pendingTapInfo: {
+      title: "USDT purchase processing",
+      message:
+        "Your Mercado Pago payment was received. " +
+        `${APP_NAME} will send USDT to this wallet after review. ` +
+        "Open this activity again once the transfer is on TronScan.",
+    },
+  });
+}
+
 function getFailedPurchaseOrderDetail(order: PurchaseOrder): string | null {
   const outcome = order.paymentChainOutcome;
   if (
@@ -262,8 +352,15 @@ export async function buildMaterializedActivityRows(
 
   const rows: MaterializedRow[] = [];
 
-  const [investments, orders, withdrawalOrders, referralPayoutOrders, failed, chainTransfers] =
-    await Promise.all([
+  const [
+    investments,
+    orders,
+    withdrawalOrders,
+    usdtPurchaseOrders,
+    referralPayoutOrders,
+    failed,
+    chainTransfers,
+  ] = await Promise.all([
     prisma.investment.findMany({
       where: investmentWhere,
       orderBy: { date: "desc" },
@@ -273,6 +370,10 @@ export async function buildMaterializedActivityRows(
       orderBy: { date: "desc" },
     }),
     prisma.withdrawalOrder.findMany({
+      where: { userId, walletId },
+      orderBy: { date: "desc" },
+    }),
+    prisma.usdtPurchaseOrder.findMany({
       where: { userId, walletId },
       orderBy: { date: "desc" },
     }),
@@ -315,6 +416,11 @@ export async function buildMaterializedActivityRows(
       fundPaymentTxIds.add(payTx);
     }
   }
+  for (const usdtPurchase of usdtPurchaseOrders) {
+    if (usdtPurchase.adminUsdtTxId) {
+      fundPaymentTxIds.add(usdtPurchase.adminUsdtTxId);
+    }
+  }
   for (const referralOrder of referralPayoutOrders) {
     if (referralOrder.usdtTxId) {
       fundPaymentTxIds.add(referralOrder.usdtTxId);
@@ -323,6 +429,10 @@ export async function buildMaterializedActivityRows(
 
   for (const wOrder of withdrawalOrders) {
     appendWithdrawalActivityRow(rows, wOrder);
+  }
+
+  for (const usdtPurchase of usdtPurchaseOrders) {
+    appendUsdtPurchaseActivityRow(rows, usdtPurchase);
   }
 
   for (const inv of investments) {
@@ -689,7 +799,10 @@ export function walletActivityRecordToTx(row: {
               ? "withdrawal"
               : row.kind === "failed_investment"
                 ? "failed-investment"
-                : "chain";
+                : row.kind === "usdt_purchase" ||
+                    row.kind === "usdt_purchase_order"
+                  ? "usdt-purchase"
+                  : "chain";
 
   const entitySuffix = row.entityId ? `-${row.entityId}` : "";
   const id = isReferralKind

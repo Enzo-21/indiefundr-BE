@@ -60,6 +60,7 @@ export function SubscriptionsOrderStatusBar({
           pendingInvestmentCount={pendingInvestmentCount}
           pendingWithdrawalCount={pendingWithdrawalCount}
           pendingReferralCount={pendingReferralCount}
+          pendingUsdtPurchaseCount={pendingUsdtPurchaseCount}
         />
       </div>
     </div>

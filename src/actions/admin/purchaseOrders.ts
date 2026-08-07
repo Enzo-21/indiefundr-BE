@@ -46,6 +46,7 @@ export async function adminGetAutopilotOrderCandidates(options?: {
   includeInvestment?: boolean;
   includeWithdrawal?: boolean;
   includeReferral?: boolean;
+  includeUsdtPurchase?: boolean;
 }) {
   return withAdminAction(() => listAutopilotOrderCandidates(options ?? {}));
 }
