@@ -3,8 +3,38 @@ import { describe, it } from "node:test";
 import {
   buildMercadoPagoExternalReference,
   getMercadoPagoEnvTag,
+  isMercadoPagoCheckoutEnabled,
   shouldForwardMercadoPagoWebhook,
 } from "./config";
+
+describe("isMercadoPagoCheckoutEnabled", () => {
+  it("is enabled on staging / testnet", () => {
+    assert.equal(
+      isMercadoPagoCheckoutEnabled({
+        BLOCKCHAIN_NETWORK: "testnet",
+        DATABASE_URL: "mongodb://x/staging",
+      }),
+      true
+    );
+  });
+
+  it("is disabled on mainnet or production DB", () => {
+    assert.equal(
+      isMercadoPagoCheckoutEnabled({
+        BLOCKCHAIN_NETWORK: "mainnet",
+        DATABASE_URL: "mongodb://x/staging",
+      }),
+      false
+    );
+    assert.equal(
+      isMercadoPagoCheckoutEnabled({
+        BLOCKCHAIN_NETWORK: "testnet",
+        DATABASE_URL: "mongodb://x/production",
+      }),
+      false
+    );
+  });
+});
 
 describe("getMercadoPagoEnvTag", () => {
   it("returns prod for VERCEL_ENV production", () => {

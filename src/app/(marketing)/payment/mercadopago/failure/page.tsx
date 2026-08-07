@@ -1,14 +1,32 @@
 import type { Metadata } from "next";
 import { MercadoPagoResultPage } from "@/components/marketing/mercadopago-result-page";
 import { createSiteMetadata } from "@/lib/marketing/metadata";
+import { resolveMercadoPagoFailureReturn } from "@/lib/mercadopago/returnKind";
 
 export const metadata: Metadata = createSiteMetadata({
-  title: "Payment failed",
-  description: "Your Mercado Pago payment could not be completed.",
+  title: "Payment return",
+  description: "Mercado Pago payment return.",
   alternates: { canonical: "/payment/mercadopago/failure" },
 });
 
-export default function MercadoPagoFailurePage() {
+type PageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function MercadoPagoFailurePage({ searchParams }: PageProps) {
+  const params = (await searchParams) ?? {};
+  const kind = resolveMercadoPagoFailureReturn(params);
+
+  if (kind === "dismiss") {
+    return (
+      <MercadoPagoResultPage
+        title="IndieFundr"
+        body="You can return to the app. This window will close automatically."
+        autoCloseSeconds={2}
+      />
+    );
+  }
+
   return (
     <MercadoPagoResultPage
       title="Payment could not be completed"

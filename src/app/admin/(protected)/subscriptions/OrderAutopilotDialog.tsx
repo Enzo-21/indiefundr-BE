@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Check, Loader2 } from "lucide-react";
 import { AutopilotBatchSummaryPanel } from "@/app/admin/_components/AutopilotBatchSummaryPanel";
@@ -81,16 +81,23 @@ type AdvanceOutcome = {
   nextCandidate?: AutopilotOrderCandidate;
 };
 
+export type OrderAutopilotController = ReturnType<typeof useOrderAutopilot>;
+
 export function OrderAutopilotDialog({
   pendingInvestmentCount,
   pendingWithdrawalCount,
   pendingReferralCount,
   pendingUsdtPurchaseCount,
+  autopilot,
+  hideTrigger = false,
 }: {
   pendingInvestmentCount: number;
   pendingWithdrawalCount: number;
   pendingReferralCount: number;
   pendingUsdtPurchaseCount: number;
+  autopilot: OrderAutopilotController;
+  /** When continuous mode shows Stop on the bar, hide the Autopilot trigger. */
+  hideTrigger?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -105,6 +112,7 @@ export function OrderAutopilotDialog({
   );
   const {
     phase,
+    continuousEnabled,
     includeInvestment,
     includeWithdrawal,
     includeReferral,
@@ -119,15 +127,33 @@ export function OrderAutopilotDialog({
     currentCandidate,
     pendingCandidate,
     countdownSecondsLeft,
+    loopSecondsLeft,
     interItemOutcome,
     configureError,
-    startBatch,
+    enableContinuousAndStart,
     advanceAfterSuccess,
     advanceAfterFailure,
     beginCountdown,
-    stopAutopilot,
+    stopContinuous,
     resetToConfigure,
-  } = useOrderAutopilot();
+  } = autopilot;
+
+  // Keep dialog open while a continuous batch / pause is in progress.
+  useEffect(() => {
+    if (
+      phase === "running" ||
+      phase === "countdown" ||
+      phase === "loop_pause" ||
+      phase === "resume_grace" ||
+      phase === "summary"
+    ) {
+      setOpen(true);
+      return;
+    }
+    if (phase === "configure" && !continuousEnabled) {
+      setOpen(false);
+    }
+  }, [phase, continuousEnabled]);
 
   const selectedInvestmentCount = includeInvestment ? pendingInvestmentCount : 0;
   const selectedWithdrawalCount = includeWithdrawal ? pendingWithdrawalCount : 0;
@@ -180,7 +206,7 @@ export function OrderAutopilotDialog({
     if (parts.length === 0) {
       return "Select at least one queue with pending orders.";
     }
-    const base = `Will run up to ${parts.join(" and ")} (${selectedTotal} total) in queue order (oldest first). Investment orders use the four-step Complete order workflow; withdrawals use TRX top-up, USDT to destination, and mark-success; referral bonuses and USDT purchases use treasury USDT payment, on-chain confirmation, and settlement. Items that fail after retries are skipped and flagged for manual check; autopilot continues with the rest.`;
+    const base = `Will run continuously until stopped: up to ${parts.join(" and ")} (${selectedTotal} total) in queue order (oldest first), then pause 30s, refresh, and repeat. Investment orders use the four-step Complete order workflow; withdrawals use TRX top-up, USDT to destination, and mark-success; referral bonuses and USDT purchases use treasury USDT payment, on-chain confirmation, and settlement. Items that fail after retries are skipped and flagged for manual check; autopilot continues with the rest.`;
     if (selectedTotal > 1) {
       return `${base} There is a 10 second pause between each order.`;
     }
@@ -225,7 +251,8 @@ export function OrderAutopilotDialog({
 
   const handleStopAutopilot = () => {
     cancelActiveWorkflowRef.current?.();
-    const { completedCount: stoppedCompleted, manualCheckCount } = stopAutopilot();
+    const { completedCount: stoppedCompleted, manualCheckCount } =
+      stopContinuous();
     setOpen(false);
     router.refresh();
     toast.message(
@@ -248,7 +275,11 @@ export function OrderAutopilotDialog({
       if (phase === "running") {
         return;
       }
-      if (phase === "countdown") {
+      if (
+        phase === "countdown" ||
+        phase === "loop_pause" ||
+        phase === "resume_grace"
+      ) {
         handleStopAutopilot();
         return;
       }
@@ -263,7 +294,7 @@ export function OrderAutopilotDialog({
 
   const handleStart = async () => {
     setStarting(true);
-    const result = await startBatch();
+    const result = await enableContinuousAndStart();
     setStarting(false);
     if (!result.ok) {
       toast.error(result.error);
@@ -295,31 +326,32 @@ export function OrderAutopilotDialog({
   };
 
   const handleCancelAutopilot = () => {
-    cancelActiveWorkflowRef.current?.();
-    const { completedCount: stoppedCompleted, manualCheckCount } = stopAutopilot();
-    setOpen(false);
-    router.refresh();
-    toast.message(
-      buildAutopilotStopToastMessage({
-        itemLabel: "order",
-        completedCount: stoppedCompleted,
-        manualCheckCount,
-      })
-    );
+    handleStopAutopilot();
   };
+
+  const loopPauseCopy =
+    phase === "resume_grace"
+      ? `Resuming autopilot in ${loopSecondsLeft}s…`
+      : `Batch done. Refreshing in ${loopSecondsLeft}s…`;
 
   return (
     <Dialog
       open={open}
       onOpenChange={handleOpenChange}
-      disablePointerDismissal={phase === "running"}
+      disablePointerDismissal={
+        phase === "running" ||
+        phase === "loop_pause" ||
+        phase === "resume_grace"
+      }
     >
-      <DialogTrigger
-        disabled={pendingOrderCount === 0}
-        className={buttonVariants({ variant: "default", size: "sm" })}
-      >
-        Autopilot
-      </DialogTrigger>
+      {!hideTrigger && !continuousEnabled ? (
+        <DialogTrigger
+          disabled={pendingOrderCount === 0}
+          className={buttonVariants({ variant: "default", size: "sm" })}
+        >
+          Autopilot
+        </DialogTrigger>
+      ) : null}
       <DialogContent
         showCloseButton={phase === "configure" || phase === "summary"}
         className="gap-0 overflow-hidden p-0 sm:max-w-3xl lg:max-w-4xl"
@@ -331,7 +363,8 @@ export function OrderAutopilotDialog({
                 <DialogTitle className="text-xl">Order autopilot</DialogTitle>
                 <DialogDescription className="text-base leading-relaxed">
                   Run admin automation for pending investment, withdrawal,
-                  referral, and USDT purchase orders in the queue.
+                  referral, and USDT purchase orders in the queue. Keeps looping
+                  until you stop it.
                 </DialogDescription>
               </DialogHeader>
 
@@ -421,6 +454,28 @@ export function OrderAutopilotDialog({
             tone={interItemOutcome ?? "success"}
             onStop={handleStopAutopilot}
           />
+        ) : phase === "loop_pause" || phase === "resume_grace" ? (
+          <div className="space-y-6 p-6">
+            <DialogHeader className="gap-2 text-left">
+              <DialogTitle className="text-xl">
+                {phase === "resume_grace"
+                  ? "Resuming order autopilot"
+                  : "Order autopilot looping"}
+              </DialogTitle>
+              <DialogDescription className="text-base leading-relaxed">
+                {loopPauseCopy} Use Stop Autopilot on the status bar (or below)
+                to cancel.
+              </DialogDescription>
+            </DialogHeader>
+            <p className="text-4xl font-semibold tabular-nums tracking-tight">
+              {loopSecondsLeft}s
+            </p>
+            <DialogFooter className="mx-0 mb-0 sm:justify-end">
+              <Button variant="destructive" onClick={handleStopAutopilot}>
+                Stop Autopilot
+              </Button>
+            </DialogFooter>
+          </div>
         ) : phase === "summary" ? (
           <AutopilotBatchSummaryPanel
             title="Order autopilot finished"

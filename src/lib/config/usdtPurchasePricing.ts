@@ -6,10 +6,10 @@ export const USDT_PURCHASE_HIDDEN_MARKUP_PCT = 6;
 /** Mercado Pago processing fee shown to the user. */
 export const USDT_PURCHASE_MP_FEE_PCT = 6;
 /**
- * Staging / Shasta: charge 1% of production ARS so MP test payments stay cheap.
+ * Staging / Shasta: charge 35% of production ARS so MP test payments stay cheap.
  * USDT credited remains USDT_PURCHASE_AMOUNT.
  */
-export const USDT_PURCHASE_STAGING_ARS_SCALE = 0.01;
+export const USDT_PURCHASE_STAGING_ARS_SCALE = 0.35;
 
 export type UsdtPurchasePricing = {
   amountUsdt: number;
@@ -20,7 +20,7 @@ export type UsdtPurchasePricing = {
   priceWithMarkupArs: number;
   mpFeeArs: number;
   totalArs: number;
-  /** 1 in production; 0.01 on staging/testnet. */
+  /** 1 in production; 0.35 on staging/testnet. */
   arsChargeScale: number;
 };
 
@@ -28,7 +28,7 @@ function roundArs(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-/** Full ARS charges only on mainnet/production DB; otherwise 1% for cheap MP tests. */
+/** Full ARS charges only on mainnet/production DB; otherwise 35% for cheaper MP tests. */
 export function getUsdtPurchaseArsChargeScale(
   env: NodeJS.ProcessEnv = process.env
 ): number {
