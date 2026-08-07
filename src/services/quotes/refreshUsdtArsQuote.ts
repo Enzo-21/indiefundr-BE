@@ -1,4 +1,4 @@
-import {
+import type {
   UsdtArsQuoteSource,
   UsdtArsQuoteStatus,
 } from "@prisma/client";
@@ -9,6 +9,12 @@ import { fetchCriptoYaUsdtArsMaxAsk } from "./fetchCriptoYaUsdtArs";
 export const USDT_ARS_QUOTE_SNAPSHOT_ID = "current";
 /** Treat quote as stale after 3 missed 5-minute crons. */
 export const USDT_ARS_QUOTE_MAX_AGE_MS = 15 * 60 * 1000;
+
+/** String literals — Prisma enum runtime exports can be undefined under Next bundling. */
+const QUOTE_AVAILABLE = "available" satisfies UsdtArsQuoteStatus;
+const QUOTE_UNAVAILABLE = "unavailable" satisfies UsdtArsQuoteStatus;
+const SOURCE_CRIPTOYA = "criptoya" satisfies UsdtArsQuoteSource;
+const SOURCE_DOLARAPI = "dolarapi" satisfies UsdtArsQuoteSource;
 
 export type RefreshUsdtArsQuoteResult =
   | {
@@ -31,8 +37,8 @@ export async function refreshUsdtArsQuote(): Promise<RefreshUsdtArsQuoteResult> 
     const fetchedAt = new Date();
     await upsertQuote({
       arsPerUsdt: cy.arsPerUsdt,
-      status: UsdtArsQuoteStatus.available,
-      source: UsdtArsQuoteSource.criptoya,
+      status: QUOTE_AVAILABLE,
+      source: SOURCE_CRIPTOYA,
       sourceDetail: cy.exchangeKey,
       fetchedAt,
       lastError: null,
@@ -40,7 +46,7 @@ export async function refreshUsdtArsQuote(): Promise<RefreshUsdtArsQuoteResult> 
     return {
       ok: true,
       arsPerUsdt: cy.arsPerUsdt,
-      source: UsdtArsQuoteSource.criptoya,
+      source: SOURCE_CRIPTOYA,
       sourceDetail: cy.exchangeKey,
       fetchedAt: fetchedAt.toISOString(),
     };
@@ -55,8 +61,8 @@ export async function refreshUsdtArsQuote(): Promise<RefreshUsdtArsQuoteResult> 
     const fetchedAt = new Date();
     await upsertQuote({
       arsPerUsdt: da.arsPerUsdt,
-      status: UsdtArsQuoteStatus.available,
-      source: UsdtArsQuoteSource.dolarapi,
+      status: QUOTE_AVAILABLE,
+      source: SOURCE_DOLARAPI,
       sourceDetail: "cripto.venta",
       fetchedAt,
       lastError: null,
@@ -64,7 +70,7 @@ export async function refreshUsdtArsQuote(): Promise<RefreshUsdtArsQuoteResult> 
     return {
       ok: true,
       arsPerUsdt: da.arsPerUsdt,
-      source: UsdtArsQuoteSource.dolarapi,
+      source: SOURCE_DOLARAPI,
       sourceDetail: "cripto.venta",
       fetchedAt: fetchedAt.toISOString(),
     };
@@ -77,7 +83,7 @@ export async function refreshUsdtArsQuote(): Promise<RefreshUsdtArsQuoteResult> 
   const lastError = errors.join(" | ");
   await upsertQuote({
     arsPerUsdt: null,
-    status: UsdtArsQuoteStatus.unavailable,
+    status: QUOTE_UNAVAILABLE,
     source: null,
     sourceDetail: null,
     fetchedAt: new Date(),
@@ -131,7 +137,7 @@ export async function getUsdtArsQuoteForPurchase(
   if (!snap) {
     return { ok: false, reason: "missing" };
   }
-  if (snap.status !== UsdtArsQuoteStatus.available) {
+  if (snap.status !== QUOTE_AVAILABLE) {
     return { ok: false, reason: "unavailable" };
   }
   if (

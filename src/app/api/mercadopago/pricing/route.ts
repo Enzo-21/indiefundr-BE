@@ -3,8 +3,7 @@ import { jsonError } from "@/lib/http/route";
 import { buildUsdtPurchasePricing } from "@/lib/config/usdtPurchasePricing";
 import { getUsdtArsQuoteForPurchase } from "@/services/quotes/refreshUsdtArsQuote";
 
-const QUOTE_UNAVAILABLE_MSG =
-  "USDT pricing is temporarily unavailable. Please try again in a few minutes.";
+const QUOTE_UNAVAILABLE_MSG = "Please try again in a few minutes.";
 
 /** Authenticated quote for the fixed AR Mercado Pago USDT pack. */
 export async function GET(request: Request) {
