@@ -173,7 +173,7 @@ Replace placeholders with the same values as step 1.3.
 
 ## 6. Client token registration (web only)
 
-> **Repo status:** Implemented in [`frontend/lib/firebase/webPush.ts`](../../../frontend/lib/firebase/webPush.ts) and [`frontend/hooks/useWebPushRegistration.ts`](../../../frontend/hooks/useWebPushRegistration.ts). Registration runs on desktop web after login.
+> **Repo status:** Implemented in [`frontend/lib/firebase/webPush.ts`](../../../frontend/lib/firebase/webPush.ts) and [`frontend/hooks/useWebPushRegistration.ts`](../../../frontend/hooks/useWebPushRegistration.ts). Registration runs on desktop web and installed standalone PWAs (iOS 16.4+ Home Screen) after login.
 
 ### Step 6.1 — Install Firebase JS SDK (implementation)
 

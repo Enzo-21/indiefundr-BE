@@ -252,7 +252,8 @@ export function appendUsdtPurchaseActivityRow(
       message:
         "Your Mercado Pago payment was received. " +
         `${APP_NAME} will send USDT to this wallet after review. ` +
-        "Open this activity again once the transfer is on TronScan.",
+        "You will be able to see the details once the transfer is on TronScan.\n\n" +
+        "Note: This process can take up to 48 business hours, depending on demand.",
     },
   });
 }
@@ -812,12 +813,21 @@ export function walletActivityRecordToTx(row: {
       ? `chain-${row.txId ?? row.id}`
       : `${idPrefix}${entitySuffix}`;
 
+  // Live investment may already be redeemed while WalletActivity.status is still pending.
+  const status =
+    row.kind === "redemption" &&
+    row.status !== "failed" &&
+    insights &&
+    (insights.investmentStatus === "redeemed" || Boolean(insights.redeemedAt))
+      ? "confirmed"
+      : row.status;
+
   return {
     id,
     type: row.type,
     source: row.kind === "usdt_transfer" ? "chain" : "app",
     amount: row.amountUsdt,
-    status: row.status,
+    status,
     label: row.label,
     date: row.occurredAt,
     txId: onChain?.txId ?? row.txId,

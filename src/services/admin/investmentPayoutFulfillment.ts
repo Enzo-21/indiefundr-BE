@@ -32,6 +32,7 @@ import {
 import type { AdminFulfillmentEstimate } from "@/services/admin/purchaseOrderFulfillment";
 import { formatTronTransferError } from "@/lib/utils/tronErrors";
 import * as tron from "@/services/tron/client";
+import { rebuildWalletActivity } from "@/services/wallets/walletActivityMaterializer";
 
 export type InvestmentPayoutMode = "normal" | "surplus";
 
@@ -661,6 +662,23 @@ export async function broadcastInvestmentPayoutUsdt(
         payoutFailureReason: null,
       },
     });
+
+    try {
+      const mainWallet = await getMainWallet(investment.userId);
+      await rebuildWalletActivity(
+        investment.userId,
+        investment.walletId,
+        mainWallet?.id
+      );
+    } catch (activityErr) {
+      const activityMessage =
+        activityErr instanceof Error ? activityErr.message : String(activityErr);
+      console.error(
+        "[payout:broadcast] rebuildWalletActivity failed:",
+        activityMessage,
+        { investmentId: investment.id }
+      );
+    }
 
     return {
       investment: updated,

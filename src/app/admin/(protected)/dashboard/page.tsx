@@ -20,6 +20,7 @@ import {
   adminErrorDescription,
   adminErrorTitle,
 } from "./dashboardAdminErrors";
+import { getAdminQuoteRate } from "@/services/quotes/adminQuoteRates";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,10 @@ function StatCard({
 }
 
 export default async function AdminDashboardPage() {
-  const overviewResult = await fetchAdminOverviewFast();
+  const [overviewResult, initialQuote] = await Promise.all([
+    fetchAdminOverviewFast(),
+    getAdminQuoteRate("usdt-ars").catch(() => null),
+  ]);
 
   if (!overviewResult.ok) {
     return (
@@ -84,7 +88,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <DashboardQuoteRatesCard />
+        <DashboardQuoteRatesCard initialQuote={initialQuote} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
