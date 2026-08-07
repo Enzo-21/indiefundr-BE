@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { MercadoPagoResultPage } from "@/components/marketing/mercadopago-result-page";
-import { getAppOpenUrl } from "@/lib/marketing/appUrl";
 import { createSiteMetadata } from "@/lib/marketing/metadata";
 
 export const metadata: Metadata = createSiteMetadata({
@@ -13,8 +12,7 @@ export default function MercadoPagoSuccessPage() {
   return (
     <MercadoPagoResultPage
       title="Payment successful"
-      body="The payment was successful. You can return to the app, or close this window if it opened separately."
-      appUrl={getAppOpenUrl()}
+      body="The payment was successful. You can close this window."
       autoCloseSeconds={5}
     />
   );

@@ -2,15 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { FooterTextHoverEffect } from "@/components/footer-text-hover-effect";
-import { buttonVariants } from "@/components/ui/button";
 import { MARKETING_BRAND } from "@/lib/marketing/copy";
-import { cn } from "@/lib/utils";
 
 type Props = {
   title: string;
   body: string;
-  /** Server-resolved app URL — do not call getAppOpenUrl on the client. */
-  appUrl: string;
   /** When set, countdown then attempt to close the window. */
   autoCloseSeconds?: number;
 };
@@ -18,7 +14,6 @@ type Props = {
 export function MercadoPagoResultPage({
   title,
   body,
-  appUrl,
   autoCloseSeconds,
 }: Props) {
   const [secondsLeft, setSecondsLeft] = useState(autoCloseSeconds ?? null);
@@ -57,10 +52,6 @@ export function MercadoPagoResultPage({
         </h1>
         <p className="text-muted-foreground text-lg leading-relaxed">{body}</p>
 
-        <a href={appUrl} className={cn(buttonVariants(), "mt-1 min-w-48")}>
-          Open app
-        </a>
-
         {showCountdown ? (
           <div className="mt-2 flex w-full max-w-sm flex-col items-center gap-3">
             <div
@@ -82,7 +73,7 @@ export function MercadoPagoResultPage({
             </div>
             <p className="text-muted-foreground text-sm">
               {closeAttempted
-                ? "You can close this window or return to the app."
+                ? "You can close this window now."
                 : `This page will close automatically in ${secondsLeft ?? autoCloseSeconds}s`}
             </p>
           </div>
