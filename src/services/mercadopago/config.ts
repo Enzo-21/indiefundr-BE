@@ -20,7 +20,44 @@ export function getMercadoPagoAccessToken(
   return token;
 }
 
-/** Public origin for marketing back_urls (landing host). */
+function isLocalOrPrivateHost(host: string): boolean {
+  const h = host.toLowerCase().split(":")[0] ?? host;
+  if (h === "localhost" || h === "127.0.0.1" || h === "0.0.0.0") return true;
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(h)) return true;
+  return false;
+}
+
+/**
+ * Mercado Pago requires public HTTPS back_urls / notification_url.
+ * Local MARKETING_DOMAIN (localhost) falls back to staging or production hosts.
+ */
+export function resolveMercadoPagoPublicOrigin(
+  env: NodeJS.ProcessEnv = process.env
+): string {
+  const configured = env.MARKETING_DOMAIN?.trim() ?? "";
+  const host = normalizeMarketingDomain(
+    configured || getMarketingDomainFromEnv(env)
+  );
+
+  if (!isLocalOrPrivateHost(host)) {
+    return `https://${host}`;
+  }
+
+  const dbUrl = env.DATABASE_URL ?? "";
+  const vercelEnv = env.VERCEL_ENV?.trim().toLowerCase() ?? "";
+  const isProd =
+    vercelEnv === "production" ||
+    /\/production(\?|$)/.test(dbUrl) ||
+    (env.NODE_ENV === "production" &&
+      !/\/staging(\?|$)/.test(dbUrl) &&
+      vercelEnv !== "preview");
+
+  return isProd
+    ? "https://indiefundr.com"
+    : "https://staging.indiefundr.com";
+}
+
+/** Local/marketing origin (may be http://localhost). Prefer resolveMercadoPagoPublicOrigin for MP. */
 export function getMarketingPublicOrigin(
   env: NodeJS.ProcessEnv = process.env
 ): string {
@@ -37,23 +74,21 @@ export function getMarketingPublicOrigin(
 }
 
 /**
- * API public origin for webhooks. Prefer request host when available;
- * otherwise marketing domain (Next.js hosts both marketing + API).
+ * API public origin for webhooks. Prefer request host when public;
+ * otherwise Mercado Pago public origin (never localhost for MP).
  */
 export function getApiPublicOrigin(
   request?: Request,
   env: NodeJS.ProcessEnv = process.env
 ): string {
   const proto = request?.headers.get("x-forwarded-proto");
-  const host = request?.headers.get("x-forwarded-host") ?? request?.headers.get("host");
-  if (host) {
+  const host =
+    request?.headers.get("x-forwarded-host") ?? request?.headers.get("host");
+  if (host && !isLocalOrPrivateHost(host)) {
     const scheme = proto === "http" ? "http" : "https";
-    if (host.includes("localhost") || /^\d+\.\d+\.\d+\.\d+/.test(host)) {
-      return `http://${host}`;
-    }
     return `${scheme}://${host}`;
   }
-  return getMarketingPublicOrigin(env);
+  return resolveMercadoPagoPublicOrigin(env);
 }
 
 export function getMercadoPagoBackUrls(env: NodeJS.ProcessEnv = process.env): {
@@ -61,7 +96,7 @@ export function getMercadoPagoBackUrls(env: NodeJS.ProcessEnv = process.env): {
   failure: string;
   pending: string;
 } {
-  const origin = getMarketingPublicOrigin(env);
+  const origin = resolveMercadoPagoPublicOrigin(env);
   return {
     success: `${origin}/payment/mercadopago/success`,
     failure: `${origin}/payment/mercadopago/failure`,

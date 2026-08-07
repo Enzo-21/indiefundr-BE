@@ -56,7 +56,7 @@ export async function createCheckoutPreference(input: {
     throw new Error(message);
   }
 
-  const id = typeof json.id === "string" ? json.id : "";
+  const id = typeof json.id === "string" ? json.id : String(json.id ?? "");
   const initPoint =
     typeof json.init_point === "string" ? json.init_point : "";
   const sandboxInitPoint =

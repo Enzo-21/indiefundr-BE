@@ -3,12 +3,16 @@ import { buildUsdtPurchasePricing } from "@/lib/config/usdtPurchasePricing";
 import { prisma } from "@/lib/prisma";
 import { getMainWallet } from "@/lib/wallets/helpers";
 import { ensureUserHasWallet } from "@/services/wallets/ensureDefaultWallet";
+import { getUsdtArsQuoteForPurchase } from "@/services/quotes/refreshUsdtArsQuote";
 import {
   getMercadoPagoBackUrls,
   getMercadoPagoNotificationUrl,
   isMercadoPagoConfigured,
 } from "./config";
 import { createCheckoutPreference } from "./client";
+
+const QUOTE_UNAVAILABLE_MSG =
+  "USDT pricing is temporarily unavailable. Please try again in a few minutes.";
 
 export type CreateUsdtCheckoutResult =
   | {
@@ -48,6 +52,19 @@ export async function createUsdtMercadoPagoCheckout(
     };
   }
 
+  const quote = await getUsdtArsQuoteForPurchase();
+  if (!quote.ok) {
+    return {
+      ok: false,
+      status: 503,
+      body: {
+        code: "quote_unavailable",
+        msg: QUOTE_UNAVAILABLE_MSG,
+        reason: quote.reason,
+      },
+    };
+  }
+
   await ensureUserHasWallet(userId);
   const wallet = await getMainWallet(userId);
   if (!wallet) {
@@ -60,7 +77,7 @@ export async function createUsdtMercadoPagoCheckout(
     };
   }
 
-  const pricing = buildUsdtPurchasePricing();
+  const pricing = buildUsdtPurchasePricing({ arsPerUsdt: quote.arsPerUsdt });
   const externalReference = `usdt_${userId}_${Date.now()}`;
 
   const order = await prisma.usdtPurchaseOrder.create({
