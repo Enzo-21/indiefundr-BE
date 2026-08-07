@@ -3,13 +3,13 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
-  adminBroadcastUsdtPurchase,
   adminCompleteUsdtPurchase,
   adminMarkUsdtPurchaseFailed,
 } from "@/actions/admin/usdtPurchaseOrders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AdminUsdtPurchaseRow } from "@/services/admin/usdtPurchaseOrderFulfillment";
+import { CompleteUsdtPurchaseDialog } from "./CompleteUsdtPurchaseDialog";
 
 export function UsdtPurchaseRowActions({ row }: { row: AdminUsdtPurchaseRow }) {
   const [failReason, setFailReason] = useState("");
@@ -29,21 +29,8 @@ export function UsdtPurchaseRowActions({ row }: { row: AdminUsdtPurchaseRow }) {
 
   return (
     <div className="flex min-w-[280px] flex-col gap-2">
-      <Button
-        size="sm"
-        disabled={pending}
-        onClick={() =>
-          run(async () => {
-            const broadcast = await adminBroadcastUsdtPurchase(row.orderId);
-            if (!broadcast.ok) return broadcast;
-            const txId = broadcast.data.txId;
-            if (txId) setUsdtTxId(txId);
-            return adminCompleteUsdtPurchase(row.orderId, txId);
-          })
-        }
-      >
-        Release USDT
-      </Button>
+      <CompleteUsdtPurchaseDialog row={row} />
+
       <div className="flex flex-wrap gap-1">
         <Input
           className="h-8 flex-1 min-w-[120px] text-xs"

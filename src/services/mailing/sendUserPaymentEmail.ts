@@ -39,6 +39,8 @@ function buildSubject(params: SendUserPaymentEmailParams): string {
       return `You earned ${formatUsdt(params.emailProps?.earningsUsdt ?? 0)} USDT from ${params.emailProps?.fundName ?? "your investment"}`;
     case "withdrawal":
       return `Your withdrawal of ${amount} USDT is on the way`;
+    case "usdt_purchase":
+      return `Your USDT purchase of ${amount} USDT is complete`;
     case "principal_recovery":
       return `Your principal of ${amount} USDT has been recovered`;
     case "referral_invitee_bonus":
@@ -79,6 +81,9 @@ function buildPlainText(params: SendUserPaymentEmailParams): string {
       break;
     case "withdrawal":
       body = `Your withdrawal of ${amount} USDT has been sent to your wallet.`;
+      break;
+    case "usdt_purchase":
+      body = `Your Mercado Pago purchase of ${amount} USDT has been sent to your wallet.`;
       break;
   }
 

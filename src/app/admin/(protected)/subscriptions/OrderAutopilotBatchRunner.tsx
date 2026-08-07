@@ -22,6 +22,10 @@ import {
   type CompleteReferralPayoutStepId,
   useCompleteReferralPayoutWorkflow,
 } from "./useCompleteReferralPayoutWorkflow";
+import {
+  type CompleteUsdtPurchaseStepId,
+  useCompleteUsdtPurchaseWorkflow,
+} from "./useCompleteUsdtPurchaseWorkflow";
 
 const INVEST_STEP_ORDER: CompleteOrderStepId[] = [
   "trx",
@@ -31,6 +35,11 @@ const INVEST_STEP_ORDER: CompleteOrderStepId[] = [
 ];
 const WITHDRAW_STEP_ORDER: CompleteWithdrawalStepId[] = ["trx", "usdt", "complete"];
 const REFERRAL_STEP_ORDER: CompleteReferralPayoutStepId[] = [
+  "broadcast",
+  "confirm",
+  "complete",
+];
+const USDT_PURCHASE_STEP_ORDER: CompleteUsdtPurchaseStepId[] = [
   "broadcast",
   "confirm",
   "complete",
@@ -153,6 +162,48 @@ function ReferralOrderAutopilotRunner({
       initialTotal={initialTotal}
       stepOrder={REFERRAL_STEP_ORDER}
       workflowDescription="Running treasury USDT payment, on-chain confirmation, and referral payout settlement. Failed orders are skipped and flagged for manual check."
+      onSuccess={onSuccess}
+      onFailure={onFailure}
+      onCancel={onCancel}
+      onRegisterCancel={onRegisterCancel}
+      workflow={workflow}
+    />
+  );
+}
+
+function UsdtPurchaseOrderAutopilotRunner({
+  candidate,
+  orderIndex,
+  initialTotal,
+  onSuccess,
+  onFailure,
+  onCancel,
+  onRegisterCancel,
+}: {
+  candidate: AutopilotOrderCandidate;
+  orderIndex: number;
+  initialTotal: number;
+  onSuccess: () => Promise<void>;
+  onFailure: (payload: { error: string }) => Promise<void>;
+  onCancel: () => void;
+  onRegisterCancel?: (cancelActiveWorkflow: (() => void) | null) => void;
+}) {
+  const workflow = useCompleteUsdtPurchaseWorkflow(
+    candidate.orderId,
+    candidate.costUsdt,
+    {
+      usdtTxId: candidate.usdtTxId,
+      usdtTronscanUrl: candidate.usdtTronscanUrl,
+    }
+  );
+
+  return (
+    <OrderAutopilotWorkflowShell
+      candidate={candidate}
+      orderIndex={orderIndex}
+      initialTotal={initialTotal}
+      stepOrder={USDT_PURCHASE_STEP_ORDER}
+      workflowDescription="Running treasury USDT payment, on-chain confirmation, and USDT purchase completion. Failed orders are skipped and flagged for manual check."
       onSuccess={onSuccess}
       onFailure={onFailure}
       onCancel={onCancel}
@@ -358,7 +409,9 @@ function OrderAutopilotWorkflowShell({
                 ? "Withdrawal"
                 : candidate.orderType === "referral"
                   ? candidate.kindLabel ?? "Referral payout"
-                  : candidate.fundName}
+                  : candidate.orderType === "usdt_purchase"
+                    ? "USDT purchase"
+                    : candidate.fundName}
             </span>
             {candidate.destinationLabel ? (
               <span
@@ -420,6 +473,20 @@ export function OrderAutopilotBatchRunner({
   if (candidate.orderType === "referral") {
     return (
       <ReferralOrderAutopilotRunner
+        candidate={candidate}
+        orderIndex={orderIndex}
+        initialTotal={initialTotal}
+        onSuccess={onSuccess}
+        onFailure={onFailure}
+        onCancel={onCancel}
+        onRegisterCancel={onRegisterCancel}
+      />
+    );
+  }
+
+  if (candidate.orderType === "usdt_purchase") {
+    return (
+      <UsdtPurchaseOrderAutopilotRunner
         candidate={candidate}
         orderIndex={orderIndex}
         initialTotal={initialTotal}

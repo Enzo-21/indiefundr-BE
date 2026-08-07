@@ -85,10 +85,12 @@ export function OrderAutopilotDialog({
   pendingInvestmentCount,
   pendingWithdrawalCount,
   pendingReferralCount,
+  pendingUsdtPurchaseCount,
 }: {
   pendingInvestmentCount: number;
   pendingWithdrawalCount: number;
   pendingReferralCount: number;
+  pendingUsdtPurchaseCount: number;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -106,9 +108,11 @@ export function OrderAutopilotDialog({
     includeInvestment,
     includeWithdrawal,
     includeReferral,
+    includeUsdtPurchase,
     setIncludeInvestment,
     setIncludeWithdrawal,
     setIncludeReferral,
+    setIncludeUsdtPurchase,
     initialTotal,
     completedCount,
     manualCheckItems,
@@ -128,13 +132,25 @@ export function OrderAutopilotDialog({
   const selectedInvestmentCount = includeInvestment ? pendingInvestmentCount : 0;
   const selectedWithdrawalCount = includeWithdrawal ? pendingWithdrawalCount : 0;
   const selectedReferralCount = includeReferral ? pendingReferralCount : 0;
+  const selectedUsdtPurchaseCount = includeUsdtPurchase
+    ? pendingUsdtPurchaseCount
+    : 0;
   const selectedTotal =
-    selectedInvestmentCount + selectedWithdrawalCount + selectedReferralCount;
+    selectedInvestmentCount +
+    selectedWithdrawalCount +
+    selectedReferralCount +
+    selectedUsdtPurchaseCount;
   const canStart =
     selectedTotal > 0 &&
-    (includeInvestment || includeWithdrawal || includeReferral);
+    (includeInvestment ||
+      includeWithdrawal ||
+      includeReferral ||
+      includeUsdtPurchase);
   const pendingOrderCount =
-    pendingInvestmentCount + pendingWithdrawalCount + pendingReferralCount;
+    pendingInvestmentCount +
+    pendingWithdrawalCount +
+    pendingReferralCount +
+    pendingUsdtPurchaseCount;
   const processedCount = completedCount + manualCheckItems.length;
   const currentItemIndex = processedCount + 1;
   const nextItemIndex = processedCount + 1;
@@ -156,10 +172,15 @@ export function OrderAutopilotDialog({
         `${pendingReferralCount} referral bonus${pendingReferralCount === 1 ? "" : "es"}`
       );
     }
+    if (includeUsdtPurchase && pendingUsdtPurchaseCount > 0) {
+      parts.push(
+        `${pendingUsdtPurchaseCount} USDT purchase${pendingUsdtPurchaseCount === 1 ? "" : "s"}`
+      );
+    }
     if (parts.length === 0) {
       return "Select at least one queue with pending orders.";
     }
-    const base = `Will run up to ${parts.join(" and ")} (${selectedTotal} total) in queue order (oldest first). Investment orders use the four-step Complete order workflow; withdrawals use TRX top-up, USDT to destination, and mark-success; referral bonuses use treasury USDT payment, on-chain confirmation, and ledger settlement. Items that fail after retries are skipped and flagged for manual check; autopilot continues with the rest.`;
+    const base = `Will run up to ${parts.join(" and ")} (${selectedTotal} total) in queue order (oldest first). Investment orders use the four-step Complete order workflow; withdrawals use TRX top-up, USDT to destination, and mark-success; referral bonuses and USDT purchases use treasury USDT payment, on-chain confirmation, and settlement. Items that fail after retries are skipped and flagged for manual check; autopilot continues with the rest.`;
     if (selectedTotal > 1) {
       return `${base} There is a 10 second pause between each order.`;
     }
@@ -168,9 +189,11 @@ export function OrderAutopilotDialog({
     includeInvestment,
     includeWithdrawal,
     includeReferral,
+    includeUsdtPurchase,
     pendingInvestmentCount,
     pendingWithdrawalCount,
     pendingReferralCount,
+    pendingUsdtPurchaseCount,
     selectedTotal,
   ]);
 
@@ -307,12 +330,12 @@ export function OrderAutopilotDialog({
               <DialogHeader className="gap-3 text-left">
                 <DialogTitle className="text-xl">Order autopilot</DialogTitle>
                 <DialogDescription className="text-base leading-relaxed">
-                  Run admin automation for pending investment, withdrawal, and
-                  referral orders in the queue.
+                  Run admin automation for pending investment, withdrawal,
+                  referral, and USDT purchase orders in the queue.
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="flex flex-col gap-3 sm:grid sm:grid-cols-3">
+              <div className="flex flex-col gap-3 sm:grid sm:grid-cols-2">
                 <ModeCard
                   title="Investment orders"
                   description="Manual subscription orders: TRX top-up, USDT to treasury, recover sponsored TRX, mark successful."
@@ -342,6 +365,16 @@ export function OrderAutopilotDialog({
                   }
                   selected={includeReferral}
                   onToggle={() => setIncludeReferral((value) => !value)}
+                />
+                <ModeCard
+                  title="USDT purchases"
+                  description="Mercado Pago buys: treasury USDT to the user’s wallet, on-chain confirmation, mark completed."
+                  count={pendingUsdtPurchaseCount}
+                  countLabel={
+                    pendingUsdtPurchaseCount === 1 ? "purchase" : "purchases"
+                  }
+                  selected={includeUsdtPurchase}
+                  onToggle={() => setIncludeUsdtPurchase((value) => !value)}
                 />
               </div>
 

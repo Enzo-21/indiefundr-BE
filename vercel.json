@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/wallet-sync",
       "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/cron/usdt-ars-quote",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

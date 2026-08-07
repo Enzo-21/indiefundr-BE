@@ -37,6 +37,8 @@ function buildPreview(props: UserPaymentEmailProps): string {
       return `You earned ${formatUsdt(props.earningsUsdt ?? 0)} USDT from ${props.fundName ?? "your investment"}`;
     case "withdrawal":
       return `Your withdrawal of ${amount} USDT has been sent`;
+    case "usdt_purchase":
+      return `Your USDT purchase of ${amount} USDT is complete`;
     case "principal_recovery":
       return `Your principal of ${amount} USDT has been recovered`;
     default:
@@ -50,6 +52,8 @@ function buildHeading(kind: UserPaymentKind): string {
       return "Congratulations — you earned!";
     case "withdrawal":
       return "Withdrawal sent";
+    case "usdt_purchase":
+      return "USDT purchase completed";
     case "principal_recovery":
       return "Principal recovered";
     case "referral_invitee_bonus":
@@ -82,6 +86,8 @@ function buildBodyCopy(props: UserPaymentEmailProps): string {
       return `Your withdrawal of ${amount} USDT has been sent to your wallet${
         props.destinationAddress ? ` (${props.destinationAddress})` : ""
       }.`;
+    case "usdt_purchase":
+      return `Your Mercado Pago purchase of ${amount} USDT has been sent to your wallet.`;
   }
 }
 
@@ -91,6 +97,8 @@ function buildFooterReason(kind: UserPaymentKind): string {
       return "You are receiving this email because your investment payout was completed on IndieFundr.";
     case "withdrawal":
       return "You are receiving this email because your withdrawal was completed on IndieFundr.";
+    case "usdt_purchase":
+      return "You are receiving this email because your USDT purchase was completed on IndieFundr.";
     default:
       return "You are receiving this email because a payment was completed on your IndieFundr account.";
   }

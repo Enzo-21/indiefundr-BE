@@ -9,6 +9,7 @@ import {
   getUsdtPurchaseFulfillmentEstimate,
   markUsdtPurchaseOrderFailed,
   resetUsdtPurchaseUsdtForRetry,
+  appendAdminUsdtPurchaseAutopilotManualCheckNote,
 } from "@/services/admin/usdtPurchaseOrderFulfillment";
 
 function revalidateOrderViews() {
@@ -65,6 +66,24 @@ export async function adminGetUsdtPurchaseEstimate(orderId: string) {
 export async function adminResetUsdtPurchaseUsdt(orderId: string) {
   const result = await withAdminAction(() =>
     resetUsdtPurchaseUsdtForRetry(orderId)
+  );
+  if (result.ok) {
+    revalidateOrderViews();
+  }
+  return result;
+}
+
+export async function adminMarkUsdtPurchaseAutopilotManualCheck(
+  orderId: string,
+  error: string
+) {
+  const session = await verifyAdminSession();
+  const result = await withAdminAction(() =>
+    appendAdminUsdtPurchaseAutopilotManualCheckNote(
+      orderId,
+      error,
+      session.email
+    )
   );
   if (result.ok) {
     revalidateOrderViews();

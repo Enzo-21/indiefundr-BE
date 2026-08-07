@@ -13,6 +13,7 @@ export default function MercadoPagoSuccessPage() {
     <MercadoPagoResultPage
       title="Payment successful"
       body="The payment was successful. You can close this window."
+      autoCloseSeconds={5}
     />
   );
 }

@@ -5,11 +5,13 @@ import {
   PurchaseOrderStep,
   ReferralPayoutOrderKind,
   ReferralPayoutOrderStatus,
+  UsdtPurchaseOrderStatus,
   WithdrawalOrderStatus,
   WithdrawalOrderStep,
 } from "@prisma/client";
 import type { AdminOrderRow } from "@/services/admin/purchaseOrderFulfillment";
 import type { AdminReferralPayoutRow } from "@/services/admin/referralPayoutOrderFulfillment";
+import type { AdminUsdtPurchaseRow } from "@/services/admin/usdtPurchaseOrderFulfillment";
 import type { AdminWithdrawalRow } from "@/services/admin/withdrawalOrderFulfillment";
 import {
   buildAutopilotOrderCandidateFromRow,
@@ -107,6 +109,37 @@ const mockReferralRow: AdminReferralPayoutRow = {
   updatedAt: "2026-01-03T00:00:00.000Z",
 };
 
+const mockUsdtPurchaseRow: AdminUsdtPurchaseRow = {
+  orderType: "usdt_purchase",
+  orderId: "usdt-purchase-1",
+  userId: "user-4",
+  userEmail: "fourth@example.com",
+  userName: "Fourth User",
+  costUsdt: 100,
+  reservedUsdt: 0,
+  totalArs: 125000.5,
+  status: UsdtPurchaseOrderStatus.awaiting_admin,
+  walletAddress: "TWallet4",
+  trxBalance: null,
+  usdtBalance: null,
+  balanceReadStatus: "ok",
+  estimatedTrx: null,
+  topUpTxId: null,
+  usdtTxId: null,
+  adminTrxTopUpTxId: null,
+  adminUsdtTxId: null,
+  adminNotes: null,
+  topUpTronscanUrl: null,
+  usdtTronscanUrl: null,
+  mpPaymentId: "mp-1",
+  normalizedDateIso: "2026-01-04T00:00:00.000Z",
+  date: "2026-01-04T00:00:00.000Z",
+  updatedAt: "2026-01-04T00:00:00.000Z",
+  step: "awaiting_admin",
+  fundId: null,
+  destinationAddress: null,
+};
+
 describe("buildAutopilotOrderCandidatesFromRows", () => {
   it("maps investment queue rows", () => {
     const candidates = buildAutopilotOrderCandidatesFromRows([mockInvestmentRow]);
@@ -163,6 +196,20 @@ describe("buildAutopilotOrderCandidatesFromReferralRows", () => {
   });
 });
 
+describe("buildAutopilotOrderCandidateFromRow usdt_purchase", () => {
+  it("maps USDT purchase rows with ARS destination label", () => {
+    const candidate = buildAutopilotOrderCandidateFromRow(mockUsdtPurchaseRow);
+    assert.equal(candidate.orderType, "usdt_purchase");
+    assert.equal(candidate.fundName, "USDT purchase");
+    assert.equal(
+      candidate.destinationLabel,
+      `${mockUsdtPurchaseRow.totalArs.toLocaleString("es-AR")} ARS`
+    );
+    assert.equal(candidate.costUsdt, 100);
+    assert.equal(candidate.orderId, "usdt-purchase-1");
+  });
+});
+
 describe("mergeAutopilotOrderCandidates", () => {
   it("sorts investment and withdrawal candidates oldest first", () => {
     const investment = buildAutopilotOrderCandidatesFromRows([mockInvestmentRow]);
@@ -190,5 +237,28 @@ describe("mergeAutopilotOrderCandidates", () => {
     assert.equal(merged[2]?.orderId, "referral-1");
     assert.equal(merged[2]?.orderType, "referral");
     assert.equal(merged[2]?.kindLabel, "Invitee bonus");
+  });
+
+  it("sorts USDT purchase with other order types oldest first", () => {
+    const investment = buildAutopilotOrderCandidatesFromRows([mockInvestmentRow]);
+    const withdrawal = buildAutopilotOrderCandidatesFromRows([mockWithdrawalRow]);
+    const referral = buildAutopilotOrderCandidatesFromReferralRows([
+      mockReferralRow,
+    ]);
+    const usdtPurchase = buildAutopilotOrderCandidatesFromRows([
+      mockUsdtPurchaseRow,
+    ]);
+    const merged = mergeAutopilotOrderCandidates(
+      investment,
+      withdrawal,
+      referral,
+      usdtPurchase
+    );
+    assert.equal(merged.length, 4);
+    assert.equal(merged[0]?.orderId, "withdraw-1");
+    assert.equal(merged[1]?.orderId, "order-1");
+    assert.equal(merged[2]?.orderId, "referral-1");
+    assert.equal(merged[3]?.orderId, "usdt-purchase-1");
+    assert.equal(merged[3]?.orderType, "usdt_purchase");
   });
 });

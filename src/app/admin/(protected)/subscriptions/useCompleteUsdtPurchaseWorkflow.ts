@@ -1,0 +1,478 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  adminBroadcastUsdtPurchase,
+  adminCompleteUsdtPurchase,
+  adminResetUsdtPurchaseUsdt,
+} from "@/actions/admin/usdtPurchaseOrders";
+import { adminGetTransactionStatus } from "@/actions/admin/purchaseOrders";
+import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
+import type {
+  AdminWorkflowStepSnapshot,
+  AdminWorkflowStepState,
+} from "@/lib/admin/workflowStepUi";
+import { resolveBroadcastTxId } from "@/lib/admin/referralPayoutWorkflow";
+import {
+  COMPLETE_ORDER_CHAIN_TIMEOUT_MS,
+  COMPLETE_ORDER_POLL_MS,
+  type CompleteOrderRunResult,
+  type CompleteOrderSeed,
+} from "./useCompleteOrderWorkflow";
+
+export type CompleteUsdtPurchaseStepId = "broadcast" | "confirm" | "complete";
+
+const STEP_LABELS: Record<CompleteUsdtPurchaseStepId, string> = {
+  broadcast: "USDT payment",
+  confirm: "On-chain confirmation",
+  complete: "Complete purchase",
+};
+
+const MANUAL_SKIP_DETAIL =
+  "Marked complete manually — will skip during automation";
+
+function initialSteps(): AdminWorkflowStepSnapshot[] {
+  return (["broadcast", "confirm", "complete"] as const).map((id) => ({
+    id,
+    label: STEP_LABELS[id],
+    state: "idle" as AdminWorkflowStepState,
+    detail: "",
+  }));
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getTronscanTxUrl(txId: string): string {
+  const network = process.env.NEXT_PUBLIC_BLOCKCHAIN_NETWORK ?? "testnet";
+  const base =
+    network === "mainnet"
+      ? "https://tronscan.org"
+      : "https://shasta.tronscan.org";
+  return `${base}/#/transaction/${txId}`;
+}
+
+function logUsdtPurchaseWorkflow(
+  orderId: string,
+  stepId: CompleteUsdtPurchaseStepId,
+  event: string,
+  payload: Record<string, unknown> = {}
+): void {
+  console.log("[admin-complete-usdt-purchase]", {
+    orderId,
+    step: stepId,
+    event,
+    ...payload,
+  });
+}
+
+function buildManualSkippedStep(
+  step: AdminWorkflowStepSnapshot,
+  seed?: CompleteOrderSeed
+): AdminWorkflowStepSnapshot {
+  if (step.id === "broadcast" && seed?.usdtTxId) {
+    return {
+      ...step,
+      state: "skipped",
+      manualSkip: true,
+      detail: MANUAL_SKIP_DETAIL,
+      txId: seed.usdtTxId,
+      tronscanUrl: seed.usdtTronscanUrl ?? getTronscanTxUrl(seed.usdtTxId),
+    };
+  }
+  return {
+    ...step,
+    state: "skipped",
+    manualSkip: true,
+    detail: MANUAL_SKIP_DETAIL,
+    txId: null,
+    tronscanUrl: null,
+  };
+}
+
+export function useCompleteUsdtPurchaseWorkflow(
+  orderId: string,
+  costUsdt: number,
+  seed?: CompleteOrderSeed
+) {
+  const [steps, setSteps] = useState<AdminWorkflowStepSnapshot[]>(initialSteps);
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef(false);
+  const stepsRef = useRef(steps);
+  const seedRef = useRef(seed);
+
+  seedRef.current = seed;
+
+  useEffect(() => {
+    stepsRef.current = steps;
+  }, [steps]);
+
+  const patchStep = useCallback(
+    (
+      id: CompleteUsdtPurchaseStepId,
+      patch: Partial<Omit<AdminWorkflowStepSnapshot, "id" | "label">>
+    ) => {
+      setSteps((prev) => {
+        const next = prev.map((step) =>
+          step.id === id ? { ...step, ...patch } : step
+        );
+        stepsRef.current = next;
+        return next;
+      });
+    },
+    []
+  );
+
+  const isStepManuallySkipped = useCallback(
+    (stepId: CompleteUsdtPurchaseStepId) => {
+      return (
+        stepsRef.current.find((step) => step.id === stepId)?.manualSkip === true
+      );
+    },
+    []
+  );
+
+  const resetSteps = useCallback(() => {
+    setSteps(initialSteps());
+    setError(null);
+  }, []);
+
+  const applySeedFromOrder = useCallback(() => {
+    const currentSeed = seedRef.current;
+    if (!currentSeed) {
+      return;
+    }
+
+    setSteps((prev) =>
+      prev.map((step) => {
+        if (step.id === "broadcast" && currentSeed.usdtTxId) {
+          return buildManualSkippedStep(step, currentSeed);
+        }
+        return step;
+      })
+    );
+  }, []);
+
+  const toggleManualStep = useCallback(
+    (stepId: CompleteUsdtPurchaseStepId): string[] => {
+      if (running) {
+        return [];
+      }
+
+      const current = stepsRef.current.find((step) => step.id === stepId);
+      if (!current) {
+        return [];
+      }
+
+      const nextManual = !current.manualSkip;
+      const warnings: string[] = [];
+
+      if (nextManual) {
+        if (stepId === "broadcast" && !seedRef.current?.usdtTxId) {
+          warnings.push(
+            "No USDT tx recorded on this order — complete step may fail later."
+          );
+        }
+        if (stepId === "complete") {
+          warnings.push(
+            "Skipping complete will not settle the USDT purchase in the database."
+          );
+        }
+      }
+
+      setSteps((prev) =>
+        prev.map((step) => {
+          if (step.id !== stepId) {
+            return step;
+          }
+          if (nextManual) {
+            return buildManualSkippedStep(step, seedRef.current);
+          }
+          return {
+            ...step,
+            state: "idle",
+            manualSkip: false,
+            detail: "",
+            txId: null,
+            tronscanUrl: null,
+          };
+        })
+      );
+
+      logUsdtPurchaseWorkflow(orderId, stepId, "manual_step_toggle", {
+        manualSkip: nextManual,
+      });
+
+      return warnings;
+    },
+    [orderId, running]
+  );
+
+  const prepareRunBeforeStart = useCallback(() => {
+    setError(null);
+    setSteps((prev) =>
+      prev.map((step) => {
+        if (step.manualSkip) {
+          return step;
+        }
+        if (step.state === "idle") {
+          return step;
+        }
+        return {
+          ...step,
+          state: "idle" as const,
+          detail: "",
+          txId: null,
+          tronscanUrl: null,
+          manualSkip: false,
+        };
+      })
+    );
+  }, []);
+
+  const getBroadcastTxId = useCallback(
+    (txIdOverride?: string | null): string | null => {
+      const broadcastStep = stepsRef.current.find(
+        (step) => step.id === "broadcast"
+      );
+      return resolveBroadcastTxId(
+        broadcastStep,
+        seedRef.current?.usdtTxId,
+        txIdOverride
+      );
+    },
+    []
+  );
+
+  const pollTransaction = useCallback(
+    async (txId: string): Promise<void> => {
+      const deadline = Date.now() + COMPLETE_ORDER_CHAIN_TIMEOUT_MS;
+      while (Date.now() < deadline) {
+        if (abortRef.current) {
+          throw new Error("Cancelled");
+        }
+        const result = await adminGetTransactionStatus(txId, true);
+        if (!result.ok) {
+          throw new Error(result.error.msg);
+        }
+        if (result.data.status === "success") {
+          logUsdtPurchaseWorkflow(orderId, "confirm", "poll_success", { txId });
+          return;
+        }
+        if (result.data.status === "failed") {
+          const message =
+            result.data.message ?? "Transaction failed on-chain";
+          if (!result.data.retryable) {
+            const resetResult = await adminResetUsdtPurchaseUsdt(orderId);
+            if (!resetResult.ok) {
+              console.warn(
+                "[admin-complete-usdt-purchase] reset after failed tx:",
+                resetResult.error.msg
+              );
+            }
+          }
+          patchStep("confirm", {
+            state: "failed",
+            detail: message,
+            txId,
+            tronscanUrl: getTronscanTxUrl(txId),
+          });
+          throw new Error(message);
+        }
+        await sleep(COMPLETE_ORDER_POLL_MS);
+      }
+      logUsdtPurchaseWorkflow(orderId, "confirm", "poll_timeout", { txId });
+      throw new Error("Timed out waiting for on-chain confirmation");
+    },
+    [orderId, patchStep]
+  );
+
+  const runBroadcastStep = useCallback(async (): Promise<string | null> => {
+    if (isStepManuallySkipped("broadcast")) {
+      logUsdtPurchaseWorkflow(orderId, "broadcast", "step_manually_skipped");
+      return getBroadcastTxId();
+    }
+
+    logUsdtPurchaseWorkflow(orderId, "broadcast", "step_start");
+    patchStep("broadcast", {
+      state: "running",
+      detail: `Sending ${formatUsdtDisplay(costUsdt)} USDT from treasury…`,
+      txId: null,
+      tronscanUrl: null,
+    });
+
+    const broadcastResult = await adminBroadcastUsdtPurchase(orderId);
+    if (!broadcastResult.ok) {
+      const message = broadcastResult.error.msg;
+      patchStep("broadcast", {
+        state: "failed",
+        detail: message,
+      });
+      throw new Error(message);
+    }
+
+    const txId = broadcastResult.data?.txId;
+    if (!txId) {
+      const message = "Broadcast succeeded but no transaction id returned";
+      patchStep("broadcast", {
+        state: "failed",
+        detail: message,
+      });
+      throw new Error(message);
+    }
+
+    const tronscanUrl = getTronscanTxUrl(txId);
+    patchStep("broadcast", {
+      state: "success",
+      detail: "USDT payment broadcast",
+      txId,
+      tronscanUrl,
+    });
+    logUsdtPurchaseWorkflow(orderId, "broadcast", "step_success", { txId });
+    return txId;
+  }, [costUsdt, getBroadcastTxId, isStepManuallySkipped, orderId, patchStep]);
+
+  const runConfirmStep = useCallback(
+    async (txIdOverride?: string | null) => {
+      if (isStepManuallySkipped("confirm")) {
+        logUsdtPurchaseWorkflow(orderId, "confirm", "step_manually_skipped");
+        return;
+      }
+
+      const txId = getBroadcastTxId(txIdOverride);
+      if (!txId) {
+        throw new Error("No USDT transaction to confirm");
+      }
+
+      logUsdtPurchaseWorkflow(orderId, "confirm", "step_start", { txId });
+      patchStep("confirm", {
+        state: "waiting_chain",
+        detail: "Waiting for USDT confirmation on-chain…",
+        txId,
+        tronscanUrl: getTronscanTxUrl(txId),
+      });
+
+      await pollTransaction(txId);
+
+      patchStep("confirm", {
+        state: "success",
+        detail: "USDT confirmed on-chain",
+        txId,
+        tronscanUrl: getTronscanTxUrl(txId),
+      });
+      logUsdtPurchaseWorkflow(orderId, "confirm", "step_success", { txId });
+    },
+    [getBroadcastTxId, isStepManuallySkipped, orderId, patchStep, pollTransaction]
+  );
+
+  const runCompleteStep = useCallback(
+    async (txIdOverride?: string | null) => {
+      if (isStepManuallySkipped("complete")) {
+        logUsdtPurchaseWorkflow(orderId, "complete", "step_manually_skipped");
+        return;
+      }
+
+      const txId = getBroadcastTxId(txIdOverride);
+      logUsdtPurchaseWorkflow(orderId, "complete", "step_start");
+      patchStep("complete", {
+        state: "running",
+        detail: "Completing USDT purchase…",
+      });
+
+      const result = await adminCompleteUsdtPurchase(
+        orderId,
+        txId ?? undefined
+      );
+      if (!result.ok) {
+        throw new Error(result.error.msg);
+      }
+
+      patchStep("complete", {
+        state: "success",
+        detail: "USDT purchase completed",
+      });
+      logUsdtPurchaseWorkflow(orderId, "complete", "step_success");
+    },
+    [getBroadcastTxId, isStepManuallySkipped, orderId, patchStep]
+  );
+
+  const run = useCallback(async (): Promise<CompleteOrderRunResult> => {
+    abortRef.current = false;
+    setRunning(true);
+    prepareRunBeforeStart();
+    logUsdtPurchaseWorkflow(orderId, "broadcast", "workflow_start", {
+      costUsdt,
+    });
+
+    try {
+      const allManual = stepsRef.current.every((step) => step.manualSkip);
+      if (allManual) {
+        logUsdtPurchaseWorkflow(orderId, "complete", "workflow_all_manual");
+        return { success: true, allManual: true };
+      }
+
+      const broadcastTxId = await runBroadcastStep();
+      await runConfirmStep(broadcastTxId);
+      await runCompleteStep(broadcastTxId);
+      logUsdtPurchaseWorkflow(orderId, "complete", "workflow_success");
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const hasFailedStep = stepsRef.current.some(
+        (step) => step.state === "failed"
+      );
+      const hasInFlightStep = stepsRef.current.some(
+        (step) =>
+          step.state === "waiting_chain" ||
+          step.state === "running" ||
+          step.state === "retry_wait"
+      );
+      const interrupted =
+        message === "Cancelled" ||
+        (hasInFlightStep &&
+          !hasFailedStep &&
+          message !== "Timed out waiting for on-chain confirmation");
+      if (message !== "Cancelled") {
+        setError(message);
+        logUsdtPurchaseWorkflow(orderId, "complete", "workflow_failed", {
+          error: message,
+        });
+      }
+      return {
+        success: false,
+        error: message,
+        interrupted,
+      };
+    } finally {
+      setRunning(false);
+    }
+  }, [
+    costUsdt,
+    orderId,
+    prepareRunBeforeStart,
+    runBroadcastStep,
+    runConfirmStep,
+    runCompleteStep,
+  ]);
+
+  const cancel = useCallback(() => {
+    abortRef.current = true;
+  }, []);
+
+  const manualSkipCount = steps.filter((step) => step.manualSkip).length;
+
+  return {
+    steps,
+    running,
+    error,
+    retryCountdownUntil: null as Date | null,
+    manualSkipCount,
+    run,
+    cancel,
+    resetSteps,
+    applySeedFromOrder,
+    toggleManualStep,
+  };
+}

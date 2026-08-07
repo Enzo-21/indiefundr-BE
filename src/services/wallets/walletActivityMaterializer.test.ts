@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   dedupeFundActivityRows,
+  appendUsdtPurchaseActivityRow,
   orphanWalletActivityDeleteWhere,
   shouldShowPurchaseOrderAsFailed,
   walletActivityRecordToTx,
 } from "./walletActivityMaterializer";
 import { REFERRAL_WALLET_ACTIVITY_KINDS } from "@/services/referrals/referralWalletActivity";
-import { PurchaseOrderStatus } from "@prisma/client";
+import { PurchaseOrderStatus, UsdtPurchaseOrderStatus } from "@prisma/client";
 
 describe("dedupeFundActivityRows", () => {
   it("keeps investment row over completed purchase_order for same txId", () => {
@@ -177,5 +178,113 @@ describe("walletActivityRecordToTx", () => {
 
     assert.equal(tx.id, "chain-chaintx");
     assert.equal(tx.source, "chain");
+  });
+
+  it("maps usdt_purchase_order and usdt_purchase to stable usdt-purchase ids", () => {
+    const pending = walletActivityRecordToTx({
+      id: "row1",
+      kind: "usdt_purchase_order",
+      entityId: "order-mp-1",
+      txId: null,
+      type: "in",
+      amountUsdt: 50,
+      status: "pending",
+      label: "USDT purchase",
+      detail: "Mercado Pago",
+      occurredAt: new Date("2026-01-04T00:00:00.000Z"),
+      tronscanUrl: null,
+      pendingTapInfo: null,
+    });
+    const confirmed = walletActivityRecordToTx({
+      id: "row2",
+      kind: "usdt_purchase",
+      entityId: "order-mp-1",
+      txId: "tx-release",
+      type: "in",
+      amountUsdt: 50,
+      status: "confirmed",
+      label: "USDT purchase",
+      detail: "Mercado Pago",
+      occurredAt: new Date("2026-01-05T00:00:00.000Z"),
+      tronscanUrl: "https://example.com/tx-release",
+      pendingTapInfo: null,
+    });
+
+    assert.equal(pending.id, "usdt-purchase-order-mp-1");
+    assert.equal(confirmed.id, "usdt-purchase-order-mp-1");
+    assert.equal(confirmed.source, "app");
+    assert.equal(confirmed.txId, "tx-release");
+  });
+});
+
+describe("appendUsdtPurchaseActivityRow", () => {
+  const base = {
+    id: "usdt-ord-1",
+    amountUsdt: 100,
+    totalArs: 125000,
+    adminUsdtTxId: null as string | null,
+    failureReason: null as string | null,
+    date: new Date("2026-01-04T00:00:00.000Z"),
+    updatedAt: new Date("2026-01-04T01:00:00.000Z"),
+    adminSettledAt: null as Date | null,
+  };
+
+  it("skips pending_payment and expired", () => {
+    const rows: Parameters<typeof appendUsdtPurchaseActivityRow>[0] = [];
+    appendUsdtPurchaseActivityRow(rows, {
+      ...base,
+      status: UsdtPurchaseOrderStatus.pending_payment,
+    });
+    appendUsdtPurchaseActivityRow(rows, {
+      ...base,
+      status: UsdtPurchaseOrderStatus.expired,
+    });
+    assert.equal(rows.length, 0);
+  });
+
+  it("materializes awaiting_admin as pending usdt_purchase_order", () => {
+    const rows: Parameters<typeof appendUsdtPurchaseActivityRow>[0] = [];
+    appendUsdtPurchaseActivityRow(rows, {
+      ...base,
+      status: UsdtPurchaseOrderStatus.awaiting_admin,
+    });
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.kind, "usdt_purchase_order");
+    assert.equal(rows[0]?.status, "pending");
+    assert.equal(rows[0]?.type, "in");
+    assert.equal(rows[0]?.entityId, "usdt-ord-1");
+    assert.ok(rows[0]?.pendingTapInfo);
+  });
+
+  it("materializes completed as confirmed usdt_purchase with txId", () => {
+    const rows: Parameters<typeof appendUsdtPurchaseActivityRow>[0] = [];
+    appendUsdtPurchaseActivityRow(rows, {
+      ...base,
+      status: UsdtPurchaseOrderStatus.completed,
+      adminUsdtTxId: "tx-abc",
+      adminSettledAt: new Date("2026-01-05T00:00:00.000Z"),
+    });
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.kind, "usdt_purchase");
+    assert.equal(rows[0]?.status, "confirmed");
+    assert.equal(rows[0]?.txId, "tx-abc");
+    assert.ok(rows[0]?.tronscanUrl);
+  });
+
+  it("materializes failed as failed usdt_purchase_order with user-facing detail", () => {
+    const rows: Parameters<typeof appendUsdtPurchaseActivityRow>[0] = [];
+    appendUsdtPurchaseActivityRow(rows, {
+      ...base,
+      status: UsdtPurchaseOrderStatus.failed,
+      failureReason: "auto_return invalid. back_url.success must be defined",
+    });
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.kind, "usdt_purchase_order");
+    assert.equal(rows[0]?.status, "failed");
+    assert.equal(rows[0]?.detail, "Purchase could not be completed.");
+    assert.notEqual(
+      rows[0]?.detail,
+      "auto_return invalid. back_url.success must be defined"
+    );
   });
 });

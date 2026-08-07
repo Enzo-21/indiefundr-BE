@@ -7,6 +7,7 @@ import {
   adminMarkOrderAutopilotManualCheck,
 } from "@/actions/admin/purchaseOrders";
 import { adminMarkReferralAutopilotManualCheck } from "@/actions/admin/referralPayoutOrders";
+import { adminMarkUsdtPurchaseAutopilotManualCheck } from "@/actions/admin/usdtPurchaseOrders";
 import { adminMarkWithdrawalAutopilotManualCheck } from "@/actions/admin/withdrawals";
 import type { AutopilotOrderCandidate } from "@/services/admin/orderAutopilot";
 import {
@@ -36,6 +37,10 @@ function manualCheckDetail(candidate: AutopilotOrderCandidate): string {
     const kind = candidate.kindLabel ?? "Referral payout";
     return `Referral · ${kind} · ${amount}`;
   }
+  if (candidate.orderType === "usdt_purchase") {
+    const ars = candidate.destinationLabel ?? "Mercado Pago";
+    return `USDT purchase · ${ars} · ${amount}`;
+  }
   return `Investment · ${candidate.fundName} · ${amount}`;
 }
 
@@ -45,6 +50,7 @@ export function useOrderAutopilot() {
   const [includeInvestment, setIncludeInvestment] = useState(true);
   const [includeWithdrawal, setIncludeWithdrawal] = useState(true);
   const [includeReferral, setIncludeReferral] = useState(true);
+  const [includeUsdtPurchase, setIncludeUsdtPurchase] = useState(true);
   const [batchQueue, setBatchQueue] = useState<AutopilotOrderCandidate[]>([]);
   const [queueIndex, setQueueIndex] = useState(0);
   const [initialTotal, setInitialTotal] = useState(0);
@@ -64,6 +70,7 @@ export function useOrderAutopilot() {
     includeInvestment: true,
     includeWithdrawal: true,
     includeReferral: true,
+    includeUsdtPurchase: true,
   });
   const abortRef = useRef(false);
   const pendingCandidateRef = useRef<AutopilotOrderCandidate | null>(null);
@@ -72,7 +79,12 @@ export function useOrderAutopilot() {
   const queueIndexRef = useRef(0);
   const batchQueueRef = useRef<AutopilotOrderCandidate[]>([]);
 
-  modesRef.current = { includeInvestment, includeWithdrawal, includeReferral };
+  modesRef.current = {
+    includeInvestment,
+    includeWithdrawal,
+    includeReferral,
+    includeUsdtPurchase,
+  };
   pendingCandidateRef.current = pendingCandidate;
   manualCheckItemsRef.current = manualCheckItems;
   completedCountRef.current = completedCount;
@@ -220,7 +232,15 @@ export function useOrderAutopilot() {
                 candidate.orderId,
                 error
               )
-            : await adminMarkOrderAutopilotManualCheck(candidate.orderId, error);
+            : candidate.orderType === "usdt_purchase"
+              ? await adminMarkUsdtPurchaseAutopilotManualCheck(
+                  candidate.orderId,
+                  error
+                )
+              : await adminMarkOrderAutopilotManualCheck(
+                  candidate.orderId,
+                  error
+                );
       if (!markResult.ok) {
         throw new Error(markResult.error.msg);
       }
@@ -282,9 +302,11 @@ export function useOrderAutopilot() {
     includeInvestment,
     includeWithdrawal,
     includeReferral,
+    includeUsdtPurchase,
     setIncludeInvestment,
     setIncludeWithdrawal,
     setIncludeReferral,
+    setIncludeUsdtPurchase,
     initialTotal,
     completedCount,
     manualCheckItems,

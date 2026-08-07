@@ -140,6 +140,16 @@ enum UsdtPurchaseOrderStatus {
   expired
 }
 
+enum UsdtArsQuoteStatus {
+  available
+  unavailable
+}
+
+enum UsdtArsQuoteSource {
+  criptoya
+  dolarapi
+}
+
 enum FeeSponsorshipStatus {
   topped_up
   purchase_ok
@@ -754,6 +764,20 @@ model UsdtPurchaseOrder {
   @@index([status, date])
   @@index([mpPaymentId])
   @@map("usdtpurchaseorders")
+}
+
+/// Singleton live USDT/ARS quote for Mercado Pago purchases (id = "current").
+model UsdtArsQuoteSnapshot {
+  id           String             @id @map("_id")
+  arsPerUsdt   Float?
+  status       UsdtArsQuoteStatus @default(unavailable)
+  source       UsdtArsQuoteSource?
+  sourceDetail String?
+  fetchedAt    DateTime?
+  lastError    String?
+  updatedAt    DateTime           @updatedAt
+
+  @@map("usdtarsquotesnapshots")
 }
 
 model ReferralRecoveryLink {
