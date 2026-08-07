@@ -23,7 +23,7 @@ export async function createCheckoutPreference(input: {
   const body = {
     items: [
       {
-        id: "usdt-25",
+        id: "indie-25",
         title: input.title,
         quantity: input.quantity,
         currency_id: "ARS",
