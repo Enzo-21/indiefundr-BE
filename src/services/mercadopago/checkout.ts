@@ -7,6 +7,7 @@ import { getUsdtArsQuoteForPurchase } from "@/services/quotes/refreshUsdtArsQuot
 import {
   getMercadoPagoBackUrls,
   getMercadoPagoNotificationUrl,
+  isMercadoPagoCheckoutEnabled,
   isMercadoPagoConfigured,
   buildMercadoPagoExternalReference,
 } from "./config";
@@ -39,6 +40,17 @@ export async function createUsdtMercadoPagoCheckout(
   request?: Request,
   options: CreateUsdtCheckoutOptions = {}
 ): Promise<CreateUsdtCheckoutResult> {
+  if (!isMercadoPagoCheckoutEnabled()) {
+    return {
+      ok: false,
+      status: 403,
+      body: {
+        code: "coming_soon",
+        msg: "Mercado Pago checkout is not available in this environment.",
+      },
+    };
+  }
+
   if (!isMercadoPagoConfigured()) {
     return {
       ok: false,

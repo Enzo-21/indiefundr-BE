@@ -10,6 +10,21 @@ export function isMercadoPagoConfigured(
   return Boolean(env.mpAccessToken);
 }
 
+/**
+ * User-facing MP checkout is staging/testnet only.
+ * Production (mainnet or production DB) shows Coming soon in the app.
+ */
+export function isMercadoPagoCheckoutEnabled(
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
+  const network = env.BLOCKCHAIN_NETWORK?.trim().toLowerCase();
+  const dbUrl = env.DATABASE_URL ?? "";
+  if (network === "mainnet" || /\/production(\?|$)/.test(dbUrl)) {
+    return false;
+  }
+  return true;
+}
+
 export function getMercadoPagoAccessToken(
   env: ReturnType<typeof getEnv> = getEnv()
 ): string {
