@@ -1,4 +1,4 @@
-import { UsdtPurchaseOrderStatus } from "@prisma/client";
+import { Prisma, UsdtPurchaseOrderStatus } from "@prisma/client";
 import { getEnv } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { rebuildWalletActivity } from "@/services/wallets/walletActivityMaterializer";
@@ -86,18 +86,21 @@ export async function handleMercadoPagoWebhook(input: {
     return { ok: true };
   }
 
+  const details = payment.raw as Prisma.InputJsonValue;
+
   // Idempotent: already past payment
   if (
     order.status === UsdtPurchaseOrderStatus.awaiting_admin ||
     order.status === UsdtPurchaseOrderStatus.completed ||
     order.status === UsdtPurchaseOrderStatus.paid
   ) {
-    if (!order.mpPaymentId) {
-      await prisma.usdtPurchaseOrder.update({
-        where: { id: order.id },
-        data: { mpPaymentId: payment.id },
-      });
-    }
+    await prisma.usdtPurchaseOrder.update({
+      where: { id: order.id },
+      data: {
+        details,
+        ...(!order.mpPaymentId ? { mpPaymentId: payment.id } : {}),
+      },
+    });
     return { ok: true };
   }
 
@@ -107,6 +110,7 @@ export async function handleMercadoPagoWebhook(input: {
       data: {
         status: UsdtPurchaseOrderStatus.awaiting_admin,
         mpPaymentId: payment.id,
+        details,
       },
     });
     try {
@@ -132,6 +136,7 @@ export async function handleMercadoPagoWebhook(input: {
           status: UsdtPurchaseOrderStatus.failed,
           mpPaymentId: payment.id,
           failureReason: `MP payment ${payment.status}`,
+          details,
         },
       });
       try {
@@ -146,8 +151,23 @@ export async function handleMercadoPagoWebhook(input: {
           error instanceof Error ? error.message : error
         );
       }
+    } else {
+      await prisma.usdtPurchaseOrder.update({
+        where: { id: order.id },
+        data: { details },
+      });
     }
+    return { ok: true };
   }
+
+  // pending / in_process / other — keep latest MP body for debugging
+  await prisma.usdtPurchaseOrder.update({
+    where: { id: order.id },
+    data: {
+      details,
+      ...(payment.id ? { mpPaymentId: payment.id } : {}),
+    },
+  });
 
   return { ok: true };
 }
