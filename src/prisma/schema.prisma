@@ -749,6 +749,8 @@ model UsdtPurchaseOrder {
   mpPreferenceId       String?
   mpPaymentId          String?
   mpExternalReference  String                  @unique
+  /// Full Mercado Pago payment API body (debug only; not shown in UI).
+  details              Json?
   adminUsdtTxId        String?
   adminSettledBy       String?
   adminSettledAt       DateTime?

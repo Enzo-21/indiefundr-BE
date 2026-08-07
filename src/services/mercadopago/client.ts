@@ -74,6 +74,8 @@ export type MpPayment = {
   status: string;
   externalReference: string | null;
   transactionAmount: number | null;
+  /** Full Mercado Pago `/v1/payments/{id}` JSON body. */
+  raw: Record<string, unknown>;
 };
 
 export async function fetchMercadoPagoPayment(
@@ -103,6 +105,7 @@ export async function fetchMercadoPagoPayment(
       typeof json.transaction_amount === "number"
         ? json.transaction_amount
         : null,
+    raw: json,
   };
 }
 
