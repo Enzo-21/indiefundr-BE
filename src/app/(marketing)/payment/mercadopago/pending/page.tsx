@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { MercadoPagoResultPage } from "@/components/marketing/mercadopago-result-page";
+import { getAppOpenUrl } from "@/lib/marketing/appUrl";
 import { createSiteMetadata } from "@/lib/marketing/metadata";
 
 export const metadata: Metadata = createSiteMetadata({
@@ -12,7 +13,8 @@ export default function MercadoPagoPendingPage() {
   return (
     <MercadoPagoResultPage
       title="Payment pending"
-      body="Your payment is still pending. You can close this window — we will update your order when Mercado Pago confirms it."
+      body="Your payment is still pending. Return to the app — we will update your order when Mercado Pago confirms it."
+      appUrl={getAppOpenUrl()}
     />
   );
 }

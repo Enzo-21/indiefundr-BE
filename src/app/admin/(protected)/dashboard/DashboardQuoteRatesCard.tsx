@@ -1,10 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { adminGetQuoteRate } from "@/actions/admin/quoteRates";
-import { adminRefreshQuoteRate } from "@/actions/admin/quoteRatesRefresh";
 import {
   ADMIN_QUOTE_PAIRS,
   DEFAULT_ADMIN_QUOTE_PAIR_ID,
@@ -21,6 +19,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+
+type QuoteApiResult =
+  | { ok: true; data: AdminQuoteRateDto }
+  | { ok: false; error: { msg: string; code?: string } };
 
 function formatRate(rate: number | null, quote: string): string {
   if (rate == null || !Number.isFinite(rate)) {
@@ -42,19 +44,64 @@ function formatFetchedAt(iso: string | null): string {
   });
 }
 
-export function DashboardQuoteRatesCard() {
+async function fetchQuoteApi(
+  path: string,
+  init?: RequestInit
+): Promise<QuoteApiResult> {
+  const response = await fetch(path, {
+    credentials: "include",
+    ...init,
+  });
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    return {
+      ok: false,
+      error: { msg: `Request failed (${response.status})` },
+    };
+  }
+  if (
+    body &&
+    typeof body === "object" &&
+    "ok" in body &&
+    typeof (body as QuoteApiResult).ok === "boolean"
+  ) {
+    return body as QuoteApiResult;
+  }
+  if (!response.ok) {
+    const msg =
+      body &&
+      typeof body === "object" &&
+      "msg" in body &&
+      typeof (body as { msg: unknown }).msg === "string"
+        ? (body as { msg: string }).msg
+        : `Request failed (${response.status})`;
+    return { ok: false, error: { msg } };
+  }
+  return { ok: false, error: { msg: "Unexpected response" } };
+}
+
+export function DashboardQuoteRatesCard({
+  initialQuote,
+}: {
+  initialQuote?: AdminQuoteRateDto | null;
+}) {
   const [pairId, setPairId] = useState<AdminQuotePairId>(
-    DEFAULT_ADMIN_QUOTE_PAIR_ID
+    initialQuote?.pairId ?? DEFAULT_ADMIN_QUOTE_PAIR_ID
   );
-  const [quote, setQuote] = useState<AdminQuoteRateDto | null>(null);
+  const [quote, setQuote] = useState<AdminQuoteRateDto | null>(
+    initialQuote ?? null
+  );
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialQuote);
   const [refreshing, setRefreshing] = useState(false);
+  const skipInitialFetchRef = useRef(Boolean(initialQuote));
 
   const loadPair = useCallback(async (nextPairId: AdminQuotePairId) => {
     setLoading(true);
     try {
-      const result = await adminGetQuoteRate(nextPairId);
+      const result = await fetchQuoteApi(`/api/admin/quotes/${nextPairId}`);
       if (result.ok) {
         setQuote(result.data);
         setLoadError(null);
@@ -68,8 +115,16 @@ export function DashboardQuoteRatesCard() {
   }, []);
 
   useEffect(() => {
+    if (
+      skipInitialFetchRef.current &&
+      initialQuote &&
+      pairId === initialQuote.pairId
+    ) {
+      skipInitialFetchRef.current = false;
+      return;
+    }
     void loadPair(pairId);
-  }, [pairId, loadPair]);
+  }, [pairId, loadPair, initialQuote]);
 
   const selectedMeta =
     ADMIN_QUOTE_PAIRS.find((pair) => pair.id === pairId) ?? ADMIN_QUOTE_PAIRS[0];
@@ -78,7 +133,10 @@ export function DashboardQuoteRatesCard() {
     if (refreshing) return;
     setRefreshing(true);
     try {
-      const result = await adminRefreshQuoteRate(pairId);
+      const result = await fetchQuoteApi(
+        `/api/admin/quotes/${pairId}/refresh`,
+        { method: "POST" }
+      );
       if (result.ok) {
         setQuote(result.data);
         setLoadError(null);
