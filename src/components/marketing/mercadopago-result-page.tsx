@@ -13,6 +13,17 @@ type Props = {
 
 const CLOSE_FALLBACK_MS = 2000;
 
+/** Chrome often ignores window.close() after cross-site payment redirects. */
+function closePaymentWindow(): void {
+  window.close();
+  try {
+    window.open("", "_self");
+    window.close();
+  } catch {
+    // ignore
+  }
+}
+
 export function MercadoPagoResultPage({
   title,
   body,
@@ -40,10 +51,9 @@ export function MercadoPagoResultPage({
 
       window.clearInterval(tick);
       setClosing(true);
-      window.close();
+      closePaymentWindow();
 
-      // window.close() only works for script-opened tabs. If we're still here,
-      // wait briefly then tell the user to close manually.
+      // If close worked, this page unloads. If not, wait briefly then hint.
       fallbackTimer = window.setTimeout(() => {
         if (!window.closed) {
           setShowManualCloseHint(true);
