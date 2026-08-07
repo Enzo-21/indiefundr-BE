@@ -5,7 +5,19 @@ import { createUsdtMercadoPagoCheckout } from "@/services/mercadopago/checkout";
 export async function POST(request: Request) {
   return withAuth(request, async (authUser) => {
     try {
-      const result = await createUsdtMercadoPagoCheckout(authUser.id, request);
+      let deviceId: string | null = null;
+      try {
+        const body = (await request.json()) as { deviceId?: unknown };
+        if (typeof body?.deviceId === "string" && body.deviceId.trim()) {
+          deviceId = body.deviceId.trim();
+        }
+      } catch {
+        // Empty body is fine — Device ID is optional.
+      }
+
+      const result = await createUsdtMercadoPagoCheckout(authUser.id, request, {
+        deviceId,
+      });
       if (!result.ok) {
         return jsonError(result.status, result.body);
       }

@@ -9,9 +9,15 @@ import {
   getMercadoPagoNotificationUrl,
   isMercadoPagoConfigured,
 } from "./config";
-import { createCheckoutPreference } from "./client";
+import { createCheckoutPreference, splitPayerName } from "./client";
 
 const QUOTE_UNAVAILABLE_MSG = "Please try again in a few minutes.";
+
+const PRIOR_PURCHASE_STATUSES: UsdtPurchaseOrderStatus[] = [
+  UsdtPurchaseOrderStatus.awaiting_admin,
+  UsdtPurchaseOrderStatus.paid,
+  UsdtPurchaseOrderStatus.completed,
+];
 
 export type CreateUsdtCheckoutResult =
   | {
@@ -23,9 +29,14 @@ export type CreateUsdtCheckoutResult =
     }
   | { ok: false; status: number; body: Record<string, unknown> };
 
+export type CreateUsdtCheckoutOptions = {
+  deviceId?: string | null;
+};
+
 export async function createUsdtMercadoPagoCheckout(
   userId: string,
-  request?: Request
+  request?: Request,
+  options: CreateUsdtCheckoutOptions = {}
 ): Promise<CreateUsdtCheckoutResult> {
   if (!isMercadoPagoConfigured()) {
     return {
@@ -79,6 +90,25 @@ export async function createUsdtMercadoPagoCheckout(
   const pricing = buildUsdtPurchasePricing({ arsPerUsdt: quote.arsPerUsdt });
   const externalReference = `mp_${userId}_${Date.now()}`;
 
+  const [priorPurchaseCount, lastPurchase] = await Promise.all([
+    prisma.usdtPurchaseOrder.count({
+      where: {
+        userId,
+        status: { in: PRIOR_PURCHASE_STATUSES },
+      },
+    }),
+    prisma.usdtPurchaseOrder.findFirst({
+      where: {
+        userId,
+        status: { in: PRIOR_PURCHASE_STATUSES },
+      },
+      orderBy: { date: "desc" },
+      select: { date: true },
+    }),
+  ]);
+
+  const { name, surname } = splitPayerName(user.name);
+
   const order = await prisma.usdtPurchaseOrder.create({
     data: {
       userId,
@@ -99,10 +129,22 @@ export async function createUsdtMercadoPagoCheckout(
   try {
     const preference = await createCheckoutPreference({
       title: "IndieFundr",
+      description: "IndieFundr credit",
+      categoryId: "services",
       quantity: 1,
       unitPriceArs: pricing.totalArs,
       externalReference,
-      payerEmail: user.email,
+      deviceId: options.deviceId,
+      payer: {
+        email: user.email,
+        name,
+        surname,
+        registrationDate: user.date.toISOString(),
+        authenticationType: "Web Nativa",
+        isPrimeUser: Boolean(user.isPro),
+        isFirstPurchaseOnline: priorPurchaseCount === 0,
+        lastPurchase: lastPurchase?.date.toISOString() ?? null,
+      },
       backUrls: getMercadoPagoBackUrls(),
       notificationUrl: getMercadoPagoNotificationUrl(request),
     });
