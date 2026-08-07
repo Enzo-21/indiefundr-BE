@@ -5,8 +5,8 @@ import {
   isAdminQuotePairId,
   ADMIN_QUOTE_PAIRS,
 } from "./adminQuotePairRegistry";
+import { USDT_ARS_QUOTE_MAX_AGE_MS } from "./usdtArsQuoteSnapshot";
 import { mapUsdtArsSnapshotToAdminQuoteRate } from "./adminQuoteRates";
-import { USDT_ARS_QUOTE_MAX_AGE_MS } from "./refreshUsdtArsQuote";
 
 describe("adminQuotePairRegistry", () => {
   it("lists usdt-ars as the default pair", () => {

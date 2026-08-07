@@ -5,10 +5,16 @@ import type {
 import { prisma } from "@/lib/prisma";
 import { fetchDolarApiCriptoVenta } from "./dolarApiCripto";
 import { fetchCriptoYaUsdtArsMaxAsk } from "./fetchCriptoYaUsdtArs";
+import {
+  isUsdtArsQuoteFresh,
+  USDT_ARS_QUOTE_SNAPSHOT_ID,
+} from "./usdtArsQuoteSnapshot";
 
-export const USDT_ARS_QUOTE_SNAPSHOT_ID = "current";
-/** Treat quote as stale after 3 missed 5-minute crons. */
-export const USDT_ARS_QUOTE_MAX_AGE_MS = 15 * 60 * 1000;
+export {
+  isUsdtArsQuoteFresh,
+  USDT_ARS_QUOTE_MAX_AGE_MS,
+  USDT_ARS_QUOTE_SNAPSHOT_ID,
+} from "./usdtArsQuoteSnapshot";
 
 /** String literals — Prisma enum runtime exports can be undefined under Next bundling. */
 const QUOTE_AVAILABLE = "available" satisfies UsdtArsQuoteStatus;
@@ -117,15 +123,6 @@ export type UsdtArsQuoteForPurchase =
       fetchedAt: Date;
     }
   | { ok: false; reason: "missing" | "unavailable" | "stale" | "invalid" };
-
-export function isUsdtArsQuoteFresh(
-  fetchedAt: Date | null | undefined,
-  now: Date = new Date(),
-  maxAgeMs: number = USDT_ARS_QUOTE_MAX_AGE_MS
-): boolean {
-  if (!fetchedAt) return false;
-  return now.getTime() - fetchedAt.getTime() <= maxAgeMs;
-}
 
 export async function getUsdtArsQuoteForPurchase(
   now: Date = new Date()

@@ -5,9 +5,8 @@ import {
 } from "@/services/quotes/adminQuotePairRegistry";
 import {
   isUsdtArsQuoteFresh,
-  refreshUsdtArsQuote,
   USDT_ARS_QUOTE_SNAPSHOT_ID,
-} from "@/services/quotes/refreshUsdtArsQuote";
+} from "@/services/quotes/usdtArsQuoteSnapshot";
 import { prisma } from "@/lib/prisma";
 
 export {
@@ -84,24 +83,6 @@ export async function getAdminQuoteRate(
       where: { id: USDT_ARS_QUOTE_SNAPSHOT_ID },
     });
     return mapUsdtArsSnapshotToAdminQuoteRate(snap, now);
-  }
-
-  throw new Error(`Quote pair not implemented: ${meta.id}`);
-}
-
-export async function refreshAdminQuoteRate(
-  pairId: string,
-  now: Date = new Date()
-): Promise<AdminQuoteRateDto> {
-  const meta = getAdminQuotePairMeta(pairId);
-
-  if (meta.id === "usdt-ars") {
-    const result = await refreshUsdtArsQuote();
-    const dto = await getAdminQuoteRate(meta.id, now);
-    if (!result.ok) {
-      throw new Error(result.lastError || "USDT/ARS quote refresh failed");
-    }
-    return dto;
   }
 
   throw new Error(`Quote pair not implemented: ${meta.id}`);

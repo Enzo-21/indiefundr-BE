@@ -1,12 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import {
-  adminGetQuoteRate,
-  adminRefreshQuoteRate,
-} from "@/actions/admin/quoteRates";
+import { adminGetQuoteRate } from "@/actions/admin/quoteRates";
+import { adminRefreshQuoteRate } from "@/actions/admin/quoteRatesRefresh";
 import {
   ADMIN_QUOTE_PAIRS,
   DEFAULT_ADMIN_QUOTE_PAIR_ID,
@@ -50,11 +48,12 @@ export function DashboardQuoteRatesCard() {
   );
   const [quote, setQuote] = useState<AdminQuoteRateDto | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [loading, startLoad] = useTransition();
-  const [refreshing, startRefresh] = useTransition();
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const loadPair = useCallback((nextPairId: AdminQuotePairId) => {
-    startLoad(async () => {
+  const loadPair = useCallback(async (nextPairId: AdminQuotePairId) => {
+    setLoading(true);
+    try {
       const result = await adminGetQuoteRate(nextPairId);
       if (result.ok) {
         setQuote(result.data);
@@ -63,18 +62,22 @@ export function DashboardQuoteRatesCard() {
         setQuote(null);
         setLoadError(result.error.msg);
       }
-    });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    loadPair(pairId);
+    void loadPair(pairId);
   }, [pairId, loadPair]);
 
   const selectedMeta =
     ADMIN_QUOTE_PAIRS.find((pair) => pair.id === pairId) ?? ADMIN_QUOTE_PAIRS[0];
 
-  const onRefresh = () => {
-    startRefresh(async () => {
+  const onRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
       const result = await adminRefreshQuoteRate(pairId);
       if (result.ok) {
         setQuote(result.data);
@@ -86,9 +89,11 @@ export function DashboardQuoteRatesCard() {
         );
       } else {
         toast.error(result.error.msg);
-        loadPair(pairId);
+        await loadPair(pairId);
       }
-    });
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const statusVariant =
@@ -105,15 +110,13 @@ export function DashboardQuoteRatesCard() {
         ? "Stale"
         : "Unavailable";
 
-  const busy = loading || refreshing;
-
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0 pb-2">
         <div className="space-y-1">
           <CardDescription>Exchange rate</CardDescription>
           <CardTitle className="text-2xl tabular-nums">
-            {busy && !quote
+            {loading && !quote
               ? "…"
               : formatRate(
                   quote?.rate ?? null,
@@ -132,7 +135,7 @@ export function DashboardQuoteRatesCard() {
               "disabled:opacity-50"
             )}
             value={pairId}
-            disabled={busy}
+            disabled={loading || refreshing}
             onChange={(event) =>
               setPairId(event.target.value as AdminQuotePairId)
             }
@@ -148,8 +151,10 @@ export function DashboardQuoteRatesCard() {
             type="button"
             variant="secondary"
             size="sm"
-            disabled={busy}
-            onClick={onRefresh}
+            disabled={refreshing}
+            onClick={() => {
+              void onRefresh();
+            }}
           >
             <RefreshCw
               className={cn("size-3.5", refreshing && "animate-spin")}
