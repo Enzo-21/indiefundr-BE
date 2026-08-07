@@ -98,7 +98,7 @@ secrets/
 | Token API | `POST /api/users/notifications/token` → `User.device` | Done |
 | Redux token actions | [`frontend/redux/actions/pushNotificationsActions.js`](../../../frontend/redux/actions/pushNotificationsActions.js) | Done |
 | Client `getExpoPushTokenAsync` + register on login | — | **Not wired** |
-| Firebase web client + `firebase-messaging-sw.js` | [`frontend/lib/firebase/webPush.ts`](../../../frontend/lib/firebase/webPush.ts), [`frontend/hooks/useWebPushRegistration.ts`](../../../frontend/hooks/useWebPushRegistration.ts) | Done (desktop web) |
+| Firebase web client + `firebase-messaging-sw.js` | [`frontend/lib/firebase/webPush.ts`](../../../frontend/lib/firebase/webPush.ts), [`frontend/hooks/useWebPushRegistration.ts`](../../../frontend/hooks/useWebPushRegistration.ts) | Done (desktop web + installed standalone PWA) |
 | Hybrid push router (`sendPushNotification`) | [`backend/src/services/orders/pushNotify.ts`](../../src/services/orders/pushNotify.ts) | Done |
 | `firebase-admin` sender for web | [`backend/src/lib/firebase/admin.ts`](../../src/lib/firebase/admin.ts) | Done (requires `FIREBASE_SERVICE_ACCOUNT_PATH`) |
 | Referral `NotificationOutbox` | [`specs/referral-recovery/README.md`](../../specs/referral-recovery/README.md) Phase 5 | Spec only |
@@ -106,7 +106,7 @@ secrets/
 ### Next: wire into the app (after credentials work)
 
 1. **Native** — On app start (iOS/Android only): request permission → `getExpoPushTokenAsync({ projectId })` → dispatch `setPushNotificationsToken` → `POST /api/users/notifications/token`.
-2. **Web** — On desktop web after login: Firebase `getToken` → `POST /api/users/notifications/token` (same `User.device` field; token type detected by prefix at send time).
+2. **Web** — On desktop web or installed standalone PWA (iOS 16.4+) after login: Firebase `getToken` → `POST /api/users/notifications/token` (same `User.device` field; token type detected by prefix at send time). Mobile Safari tabs are not supported.
 3. **Backend** — `sendPushNotification` routes Expo vs FCM tokens. Remaining: implement `NotificationOutbox` for referral events.
 
 ## Official references
