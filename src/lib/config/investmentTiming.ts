@@ -26,7 +26,7 @@ import { addDuration, durationToApproxDays } from "@/lib/duration/parseDuration"
 import { getEnv } from "@/lib/env";
 
 /** Investment term on Shasta / testnet → `maturesAt` at subscribe. */
-export const TESTNET_INVESTMENT_TERM = "3D";
+export const TESTNET_INVESTMENT_TERM = "90D";
 
 /** Investment term on Tron mainnet → `maturesAt` at subscribe. */
 export const MAINNET_INVESTMENT_TERM = "90D";
