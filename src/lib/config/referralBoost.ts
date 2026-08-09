@@ -28,3 +28,16 @@ export function isBoostWindowActive(
   if (!boostActivatedAt) return false;
   return now.getTime() < boostExpiresAt(boostActivatedAt).getTime();
 }
+
+/**
+ * Boost shortens maturesAt to the invite window. Require at least that many
+ * days remaining so activation never extends the original term.
+ */
+export function canActivateBoostGivenMaturesAt(
+  maturesAt: Date | null | undefined,
+  now: Date = new Date()
+): boolean {
+  if (!maturesAt) return false;
+  const minRemainingMs = REFERRAL_BOOST_WINDOW_DAYS() * MS_PER_DAY;
+  return maturesAt.getTime() - now.getTime() >= minRemainingMs;
+}

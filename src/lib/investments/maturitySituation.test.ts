@@ -113,7 +113,25 @@ describe("resolveMaturitySituation", () => {
     );
     assert.equal(view.situation, "boost_in_progress");
     assert.equal(view.chosenPath, "boost");
+    assert.match(view.statusDetail, /High risk/);
     assert.match(view.statusDetail, /1 of 2/);
+  });
+
+  it("labels boost_window_expired forfeiture", () => {
+    const view = resolveMaturitySituation(
+      {
+        ...maturedBase,
+        status: InvestmentStatus.forfeited,
+        unpaidMaturityChoiceDeadlineAt: null,
+        forfeitureReason: ForfeitureReason.boost_window_expired,
+        forfeitedAt: new Date("2099-06-10T00:00:00.000Z"),
+        boostActivatedAt: new Date("2099-06-01T00:00:00.000Z"),
+      },
+      { now: choiceNow }
+    );
+    assert.equal(view.situation, "forfeited");
+    assert.equal(view.statusLabel, "Boost window ended");
+    assert.match(view.statusDetail, /Boost window ended/);
   });
 
   it("returns waiting_liquidity with queue rank", () => {

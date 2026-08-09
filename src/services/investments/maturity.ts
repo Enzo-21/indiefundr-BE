@@ -51,6 +51,8 @@ export async function markMaturedInvestments(options?: {
       fundId: true,
       payoutUnlockedAt: true,
       unpaidMaturityResolution: true,
+      boostActivatedAt: true,
+      boostCompletedAt: true,
     },
   });
 
@@ -69,6 +71,15 @@ export async function markMaturedInvestments(options?: {
       if (result.ok) {
         continue;
       }
+    }
+
+    // Open Boost that reached maturesAt without completing → forfeit (no unpaid choice).
+    if (investment.boostActivatedAt && !investment.boostCompletedAt) {
+      const { forfeitExpiredBoost } = await import(
+        "@/services/referrals/boostLifecycle"
+      );
+      await forfeitExpiredBoost(investment.id, now);
+      continue;
     }
 
     await prisma.investment.update({

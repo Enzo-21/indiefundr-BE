@@ -58,5 +58,6 @@ describe("playerPowers", () => {
     assert.equal(cards[1]?.available, 1);
     assert.equal(cards[2]?.type, "boost");
     assert.equal(cards[2]?.available, 1);
+    assert.match(cards[2]?.description ?? "", /High risk/);
   });
 });

@@ -55,6 +55,12 @@ function forfeitureCopy(
         preview: "Your invite recovery window closed without enough qualified friends",
         body: userForfeitureDetail("recovery_window_expired", recoveryRequiredCount),
       };
+    case "boost_window_expired":
+      return {
+        heading: "Boost window ended",
+        preview: "Your Boost window closed and this investment was forfeited",
+        body: userForfeitureDetail("boost_window_expired", recoveryRequiredCount),
+      };
     default:
       return {
         heading: "Investment forfeited",

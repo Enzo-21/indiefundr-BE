@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   boostExpiresAt,
+  canActivateBoostGivenMaturesAt,
   getBoostInviteesRequired,
   isBoostWindowActive,
 } from "@/lib/config/referralBoost";
@@ -17,12 +18,31 @@ describe("referralBoost config", () => {
     assert.equal(getBoostInviteesRequired(100), 8);
   });
 
-  it("computes a 3-day window from activation", () => {
+  it("computes a 7-day window from activation", () => {
     const activated = new Date("2026-08-01T00:00:00.000Z");
     const expires = boostExpiresAt(activated);
-    assert.equal(expires.toISOString(), "2026-08-04T00:00:00.000Z");
-    assert.equal(isBoostWindowActive(activated, new Date("2026-08-03T23:00:00.000Z")), true);
-    assert.equal(isBoostWindowActive(activated, new Date("2026-08-04T00:00:00.000Z")), false);
+    assert.equal(expires.toISOString(), "2026-08-08T00:00:00.000Z");
+    assert.equal(
+      isBoostWindowActive(activated, new Date("2026-08-07T23:00:00.000Z")),
+      true
+    );
+    assert.equal(
+      isBoostWindowActive(activated, new Date("2026-08-08T00:00:00.000Z")),
+      false
+    );
+  });
+
+  it("blocks activation when fewer than 7 days remain until maturity", () => {
+    const now = new Date("2026-09-03T00:00:00.000Z");
+    assert.equal(
+      canActivateBoostGivenMaturesAt(new Date("2026-09-10T00:00:00.000Z"), now),
+      true
+    );
+    assert.equal(
+      canActivateBoostGivenMaturesAt(new Date("2026-09-09T23:59:59.000Z"), now),
+      false
+    );
+    assert.equal(canActivateBoostGivenMaturesAt(null, now), false);
   });
 });
 

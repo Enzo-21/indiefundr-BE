@@ -126,7 +126,37 @@ describe("userMaturityCopy", () => {
     assertNoInternalInfraTerms(
       userForfeitureDetail(ForfeitureReason.choice_deadline_expired)
     );
+    assertNoInternalInfraTerms(
+      userForfeitureDetail(ForfeitureReason.boost_window_expired, 2)
+    );
     assertNoInternalInfraTerms(userMaturedWaitingEmailBody());
+  });
+
+  it("maps boost_window_expired forfeiture copy", () => {
+    const detail = userForfeitureDetail(ForfeitureReason.boost_window_expired, 4);
+    assert.match(detail, /Boost window ended/);
+    assert.match(detail, /4 friends/);
+    assert.match(detail, /Recovery or Extra Time cannot be used/);
+  });
+
+  it("maps boost_in_progress to high-risk invite copy", () => {
+    const internal = resolveMaturitySituation(
+      {
+        ...maturedBase,
+        status: InvestmentStatus.active,
+        unpaidMaturityChoiceDeadlineAt: null,
+        boostActivatedAt: new Date("2099-06-01T00:00:00.000Z"),
+      },
+      {
+        boostQualifiedCount: 0,
+        boostRequiredCount: 2,
+        now: choiceNow,
+      }
+    );
+    const user = toUserFacingMaturityCopy(internal);
+    assert.equal(user.statusLabel, "Boost in progress");
+    assert.match(user.statusDetail, /High risk/);
+    assert.match(user.statusDetail, /7 days/);
   });
 
   it("maps redeemed payout to fund-strategies copy", () => {

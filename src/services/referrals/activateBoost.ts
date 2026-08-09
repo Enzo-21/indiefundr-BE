@@ -5,8 +5,12 @@ import {
   getPowerInventory,
   PlayerPowerUnavailableError,
 } from "@/services/playerPowers/playerPowers";
-import { getBoostInviteesRequired } from "@/lib/config/referralBoost";
-import { boostExpiresAt } from "@/lib/config/referralBoost";
+import {
+  boostExpiresAt,
+  canActivateBoostGivenMaturesAt,
+  getBoostInviteesRequired,
+  REFERRAL_BOOST_WINDOW_DAYS,
+} from "@/lib/config/referralBoost";
 
 export class BoostActivationError extends Error {
   readonly code:
@@ -14,7 +18,8 @@ export class BoostActivationError extends Error {
     | "forbidden"
     | "invalid_status"
     | "already_boosted"
-    | "power_unavailable";
+    | "power_unavailable"
+    | "too_close_to_maturity";
 
   constructor(
     code: BoostActivationError["code"],
@@ -30,6 +35,7 @@ export type ActivateBoostResult = {
   investmentId: string;
   boostActivatedAt: string;
   boostExpiresAt: string;
+  maturesAt: string;
   requiredCount: number;
   projectedPayoutUsdt: number;
 };
@@ -68,6 +74,14 @@ export async function activateBoostForInvestment(
     );
   }
 
+  const now = new Date();
+  if (!canActivateBoostGivenMaturesAt(investment.maturesAt, now)) {
+    throw new BoostActivationError(
+      "too_close_to_maturity",
+      `Boost requires at least ${REFERRAL_BOOST_WINDOW_DAYS()} days remaining until maturity`
+    );
+  }
+
   const userLevel = investment.user.level;
   const inventory = await getPowerInventory(userId, userLevel);
   if (inventory.boost.available <= 0) {
@@ -77,7 +91,7 @@ export async function activateBoostForInvestment(
     );
   }
 
-  const now = new Date();
+  const expiresAt = boostExpiresAt(now);
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -91,7 +105,10 @@ export async function activateBoostForInvestment(
 
       await tx.investment.update({
         where: { id: investmentId },
-        data: { boostActivatedAt: now },
+        data: {
+          boostActivatedAt: now,
+          maturesAt: expiresAt,
+        },
       });
 
       await tx.referralBoostLink.create({
@@ -112,7 +129,8 @@ export async function activateBoostForInvestment(
   return {
     investmentId,
     boostActivatedAt: now.toISOString(),
-    boostExpiresAt: boostExpiresAt(now).toISOString(),
+    boostExpiresAt: expiresAt.toISOString(),
+    maturesAt: expiresAt.toISOString(),
     requiredCount: getBoostInviteesRequired(investment.amountUsdt),
     projectedPayoutUsdt: investment.projectedPayoutUsdt,
   };
