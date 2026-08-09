@@ -1,7 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { buildAutopilotStopToastMessage } from "@/lib/admin/autopilotBatch";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
 import { PayoutAutopilotDialog } from "./PayoutAutopilotDialog";
+import { usePayoutAutopilot } from "./usePayoutAutopilot";
 
 export function InvestmentsPayoutStatusBar({
   currentLedger,
@@ -17,6 +22,21 @@ export function InvestmentsPayoutStatusBar({
     surplusPayoutCount: number;
   };
 }) {
+  const router = useRouter();
+  const autopilot = usePayoutAutopilot();
+
+  const handleStopContinuous = () => {
+    const { completedCount, manualCheckCount } = autopilot.stopContinuous();
+    router.refresh();
+    toast.message(
+      buildAutopilotStopToastMessage({
+        itemLabel: "payout",
+        completedCount,
+        manualCheckCount,
+      })
+    );
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-md border bg-muted/30 px-4 py-3 text-sm">
       <div>
@@ -55,10 +75,21 @@ export function InvestmentsPayoutStatusBar({
             : "investments"}
         </span>
       </div>
-      <div className="ml-auto">
+      <div className="ml-auto flex flex-wrap items-center gap-2">
+        {autopilot.continuousEnabled ? (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleStopContinuous}
+          >
+            Stop Autopilot
+          </Button>
+        ) : null}
         <PayoutAutopilotDialog
           unlockedPayoutCount={payoutAvailability.unlockedPayoutCount}
           surplusPayoutCount={payoutAvailability.surplusPayoutCount}
+          autopilot={autopilot}
+          hideTrigger={autopilot.continuousEnabled}
         />
       </div>
     </div>

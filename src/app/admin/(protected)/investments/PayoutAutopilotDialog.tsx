@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Check, Loader2 } from "lucide-react";
 import { AutopilotBatchSummaryPanel } from "@/app/admin/_components/AutopilotBatchSummaryPanel";
@@ -79,12 +79,18 @@ type AdvanceOutcome = {
   nextCandidate?: AutopilotPayoutCandidate;
 };
 
+export type PayoutAutopilotController = ReturnType<typeof usePayoutAutopilot>;
+
 export function PayoutAutopilotDialog({
   unlockedPayoutCount,
   surplusPayoutCount,
+  autopilot,
+  hideTrigger = false,
 }: {
   unlockedPayoutCount: number;
   surplusPayoutCount: number;
+  autopilot: PayoutAutopilotController;
+  hideTrigger?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -99,6 +105,7 @@ export function PayoutAutopilotDialog({
   );
   const {
     phase,
+    continuousEnabled,
     includeNormal,
     includeSurplus,
     setIncludeNormal,
@@ -109,20 +116,39 @@ export function PayoutAutopilotDialog({
     currentCandidate,
     pendingCandidate,
     countdownSecondsLeft,
+    loopSecondsLeft,
     interItemOutcome,
     configureError,
-    startBatch,
+    enableContinuousAndStart,
     advanceAfterSuccess,
     advanceAfterFailure,
     beginCountdown,
-    stopAutopilot,
+    stopContinuous,
     resetToConfigure,
-  } = usePayoutAutopilot();
+  } = autopilot;
+
+  // Keep dialog open while a continuous batch / pause is in progress.
+  useEffect(() => {
+    if (
+      phase === "running" ||
+      phase === "countdown" ||
+      phase === "loop_pause" ||
+      phase === "resume_grace" ||
+      phase === "summary"
+    ) {
+      setOpen(true);
+      return;
+    }
+    if (phase === "configure" && !continuousEnabled) {
+      setOpen(false);
+    }
+  }, [phase, continuousEnabled]);
 
   const selectedNormalCount = includeNormal ? unlockedPayoutCount : 0;
   const selectedSurplusCount = includeSurplus ? surplusPayoutCount : 0;
   const selectedTotal = selectedNormalCount + selectedSurplusCount;
   const canStart = selectedTotal > 0 && (includeNormal || includeSurplus);
+  const pendingPayoutCount = unlockedPayoutCount + surplusPayoutCount;
   const processedCount = completedCount + manualCheckItems.length;
   const currentItemIndex = processedCount + 1;
   const nextItemIndex = processedCount + 1;
@@ -142,7 +168,7 @@ export function PayoutAutopilotDialog({
     if (parts.length === 0) {
       return "Select at least one payout mode with eligible investments.";
     }
-    const base = `Will run up to ${parts.join(" and ")} (${selectedTotal} total). Normal payouts run first, then surplus FIFO. Items that fail after retries are skipped and flagged for manual check; autopilot continues with the rest.`;
+    const base = `Will run continuously until stopped: up to ${parts.join(" and ")} (${selectedTotal} total). Normal payouts run first, then surplus FIFO; then pause 30s, refresh, and repeat. Each eligible investment uses the same four-step workflow as Pay now and Pay with surplus. Items that fail after retries are skipped and flagged for manual check; autopilot continues with the rest.`;
     if (selectedTotal > 1) {
       return `${base} There is a 10 second pause between each payout.`;
     }
@@ -183,7 +209,8 @@ export function PayoutAutopilotDialog({
 
   const handleStopAutopilot = () => {
     cancelActiveWorkflowRef.current?.();
-    const { completedCount: stoppedCompleted, manualCheckCount } = stopAutopilot();
+    const { completedCount: stoppedCompleted, manualCheckCount } =
+      stopContinuous();
     setOpen(false);
     router.refresh();
     toast.message(
@@ -206,7 +233,11 @@ export function PayoutAutopilotDialog({
       if (phase === "running") {
         return;
       }
-      if (phase === "countdown") {
+      if (
+        phase === "countdown" ||
+        phase === "loop_pause" ||
+        phase === "resume_grace"
+      ) {
         handleStopAutopilot();
         return;
       }
@@ -221,7 +252,7 @@ export function PayoutAutopilotDialog({
 
   const handleStart = async () => {
     setStarting(true);
-    const result = await startBatch();
+    const result = await enableContinuousAndStart();
     setStarting(false);
     if (!result.ok) {
       toast.error(result.error);
@@ -253,28 +284,32 @@ export function PayoutAutopilotDialog({
   };
 
   const handleCancelAutopilot = () => {
-    cancelActiveWorkflowRef.current?.();
-    const { completedCount: stoppedCompleted, manualCheckCount } = stopAutopilot();
-    setOpen(false);
-    router.refresh();
-    toast.message(
-      buildAutopilotStopToastMessage({
-        itemLabel: "payout",
-        completedCount: stoppedCompleted,
-        manualCheckCount,
-      })
-    );
+    handleStopAutopilot();
   };
+
+  const loopPauseCopy =
+    phase === "resume_grace"
+      ? `Resuming autopilot in ${loopSecondsLeft}s…`
+      : `Batch done. Refreshing in ${loopSecondsLeft}s…`;
 
   return (
     <Dialog
       open={open}
       onOpenChange={handleOpenChange}
-      disablePointerDismissal={phase === "running"}
+      disablePointerDismissal={
+        phase === "running" ||
+        phase === "loop_pause" ||
+        phase === "resume_grace"
+      }
     >
-      <DialogTrigger className={buttonVariants({ variant: "default", size: "sm" })}>
-        Autopilot
-      </DialogTrigger>
+      {!hideTrigger && !continuousEnabled ? (
+        <DialogTrigger
+          disabled={pendingPayoutCount === 0}
+          className={buttonVariants({ variant: "default", size: "sm" })}
+        >
+          Autopilot
+        </DialogTrigger>
+      ) : null}
       <DialogContent
         showCloseButton={phase === "configure" || phase === "summary"}
         className="gap-0 overflow-hidden p-0 sm:max-w-3xl lg:max-w-4xl"
@@ -285,9 +320,9 @@ export function PayoutAutopilotDialog({
               <DialogHeader className="gap-3 text-left">
                 <DialogTitle className="text-xl">Payout autopilot</DialogTitle>
                 <DialogDescription className="text-base leading-relaxed">
-                  Choose which payout modes to run automatically. Each eligible
-                  investment uses the same four-step workflow as Pay now and Pay
-                  with surplus.
+                  Choose which payout modes to run automatically. Autopilot
+                  continues after the queue empties until you stop it. Modes are
+                  saved for this browser session.
                 </DialogDescription>
               </DialogHeader>
 
@@ -346,6 +381,28 @@ export function PayoutAutopilotDialog({
             tone={interItemOutcome ?? "success"}
             onStop={handleStopAutopilot}
           />
+        ) : phase === "loop_pause" || phase === "resume_grace" ? (
+          <div className="space-y-6 p-6">
+            <DialogHeader className="gap-2 text-left">
+              <DialogTitle className="text-xl">
+                {phase === "resume_grace"
+                  ? "Resuming payout autopilot"
+                  : "Payout autopilot looping"}
+              </DialogTitle>
+              <DialogDescription className="text-base leading-relaxed">
+                {loopPauseCopy} Use Stop Autopilot on the status bar (or below)
+                to cancel.
+              </DialogDescription>
+            </DialogHeader>
+            <p className="text-4xl font-semibold tabular-nums tracking-tight">
+              {loopSecondsLeft}s
+            </p>
+            <DialogFooter className="mx-0 mb-0 sm:justify-end">
+              <Button variant="destructive" onClick={handleStopAutopilot}>
+                Stop Autopilot
+              </Button>
+            </DialogFooter>
+          </div>
         ) : phase === "summary" ? (
           <AutopilotBatchSummaryPanel
             title="Payout autopilot finished"
