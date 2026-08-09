@@ -16,6 +16,15 @@ export async function GET(request: Request) {
   }
 
   const startedAt = new Date().toISOString();
+
+  // Boost expiry forfeits before maturity so unpaid-choice never opens.
+  const { processExpiredBoostWindows } = await import(
+    "@/services/referrals/boostLifecycle"
+  );
+  const boostExpiry = await processExpiredBoostWindows({
+    limit: MATURITY_CRON_BATCH_SIZE,
+  });
+
   const { count, matured, pendingCount, notifications } =
     await markMaturedInvestments({
     limit: MATURITY_CRON_BATCH_SIZE,
@@ -33,13 +42,6 @@ export async function GET(request: Request) {
     "@/services/investments/unpaidMaturityChoiceReminders"
   );
   const choiceReminders = await notifyUnpaidMaturityChoiceReminders({
-    limit: MATURITY_CRON_BATCH_SIZE,
-  });
-
-  const { processExpiredBoostWindows } = await import(
-    "@/services/referrals/boostLifecycle"
-  );
-  const boostExpiry = await processExpiredBoostWindows({
     limit: MATURITY_CRON_BATCH_SIZE,
   });
 

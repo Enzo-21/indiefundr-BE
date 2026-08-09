@@ -104,6 +104,9 @@ function forfeitureLabel(reason: ForfeitureReason | null): string {
   if (reason === ForfeitureReason.recovery_window_expired) {
     return "Recovery window ended";
   }
+  if (reason === ForfeitureReason.boost_window_expired) {
+    return "Boost window ended";
+  }
   return "Investment forfeited";
 }
 
@@ -123,6 +126,13 @@ function forfeitureDetail(
         ? recoveryRequiredCount
         : "enough";
     return `The invite recovery window ended before ${friends} friends completed investments.`;
+  }
+  if (reason === ForfeitureReason.boost_window_expired) {
+    const friends =
+      recoveryRequiredCount != null && recoveryRequiredCount > 0
+        ? recoveryRequiredCount
+        : "enough";
+    return `The Boost window ended before ${friends} friends completed investments. This investment is closed with no payout.`;
   }
   return "This investment was forfeited.";
 }
@@ -268,7 +278,7 @@ export function resolveMaturitySituation(
         ...base,
         situation: "boost_in_progress",
         statusLabel: "Boost in progress",
-        statusDetail: `Invite ${required} friends within the Boost window to unlock your full payout early. ${qualified} of ${required} have invested so far.`,
+        statusDetail: `High risk — invite ${required} friends within 7 days to unlock your full payout, or lose this investment. ${qualified} of ${required} have invested so far.`,
         chosenPath: "boost",
         nextDeadlineAt: expires.toISOString(),
         nextDeadlineLabel: "Boost deadline",

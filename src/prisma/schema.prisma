@@ -22,6 +22,7 @@ enum ForfeitureReason {
   choice_deadline_expired
   second_maturity_unpaid
   recovery_window_expired
+  boost_window_expired
 }
 
 enum InvestmentPayabilityStatus {

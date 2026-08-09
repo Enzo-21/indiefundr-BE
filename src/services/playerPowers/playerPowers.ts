@@ -44,7 +44,8 @@ export const PLAYER_POWER_CARD_COPY: Record<
   },
   boost: {
     title: "Boost",
-    description: "Invite friends to get paid faster on an active investment",
+    description:
+      "High risk: invite friends within 7 days to unlock full payout early, or lose the investment",
   },
 };
 

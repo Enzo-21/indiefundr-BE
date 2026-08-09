@@ -24,6 +24,11 @@ function forfeiturePushMessage(
         title: "Recovery window closed",
         body: `Your ${fundName} invite recovery window closed without enough qualified friends.`,
       };
+    case "boost_window_expired":
+      return {
+        title: "Boost window closed",
+        body: `Your ${fundName} Boost window closed without enough qualified friends. This investment is forfeited.`,
+      };
     default:
       return {
         title: "Investment ended",

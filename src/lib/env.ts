@@ -80,7 +80,7 @@ const rawEnvSchema = z.object({
   REFERRAL_INVITEE_BONUS_USDT: z.coerce.number().default(2),
   REFERRAL_INVITER_BONUS_USDT: z.coerce.number().default(2),
   REFERRAL_RECOVERY_WINDOW_DAYS: z.coerce.number().default(7),
-  REFERRAL_BOOST_WINDOW_DAYS: z.coerce.number().default(3),
+  REFERRAL_BOOST_WINDOW_DAYS: z.coerce.number().default(7),
   SYMPATHY_MODAL_COOLDOWN_DAYS: z.coerce.number().default(7),
   UNPAID_MATURITY_CHOICE_HOURS: z.coerce.number().default(48),
   TRANSAK_ENV: z.enum(["staging", "production"]).default("staging"),

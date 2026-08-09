@@ -76,7 +76,7 @@ export function userBoostInProgressCopy(
 ): UserFacingMaturityCopy {
   return {
     statusLabel: "Boost in progress",
-    statusDetail: `Invite ${required} friends within the Boost window to unlock your full payout early. ${qualified} of ${required} have invested so far.`,
+    statusDetail: `High risk — invite ${required} friends within 7 days to unlock your full payout, or lose this investment. ${qualified} of ${required} have invested so far.`,
   };
 }
 
@@ -119,6 +119,16 @@ export function userForfeitureDetail(
         ? recoveryRequiredCount
         : "enough";
     return `The invite recovery window ended before ${friends} friends completed their first investments.`;
+  }
+  if (reason === ForfeitureReason.boost_window_expired) {
+    const friends =
+      recoveryRequiredCount != null && recoveryRequiredCount > 0
+        ? recoveryRequiredCount
+        : "enough";
+    return (
+      `The Boost window ended before ${friends} friends completed their first investments. ` +
+      `This investment is closed with no payout, and Recovery or Extra Time cannot be used.`
+    );
   }
   return "This investment is now closed and no payout will be processed.";
 }
@@ -166,6 +176,9 @@ function forfeitureReasonFromLabel(statusLabel: string): ForfeitureReason | null
   }
   if (statusLabel === "Recovery window ended") {
     return ForfeitureReason.recovery_window_expired;
+  }
+  if (statusLabel === "Boost window ended") {
+    return ForfeitureReason.boost_window_expired;
   }
   return null;
 }
@@ -231,7 +244,8 @@ export function toUserFacingMaturityCopy(
     case "forfeited": {
       const reason = forfeitureReasonFromLabel(view.statusLabel);
       const recoveryRequired =
-        reason === ForfeitureReason.recovery_window_expired
+        reason === ForfeitureReason.recovery_window_expired ||
+        reason === ForfeitureReason.boost_window_expired
           ? parseRecoveryRequiredFromDetail(view.statusDetail)
           : null;
       if (reason === ForfeitureReason.second_maturity_unpaid) {

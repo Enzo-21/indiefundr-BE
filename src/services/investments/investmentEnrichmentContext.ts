@@ -1,6 +1,10 @@
 import type { Investment } from "@prisma/client";
 import { getRecoveryInviteesRequired } from "@/lib/config/referralRecovery";
-import { getBoostInviteesRequired } from "@/lib/config/referralBoost";
+import {
+  canActivateBoostGivenMaturesAt,
+  getBoostInviteesRequired,
+  isBoostWindowActive,
+} from "@/lib/config/referralBoost";
 import {
   enrichInvestment,
   type EnrichInvestmentOptions,
@@ -12,7 +16,6 @@ import {
   loadFifoEligibleIds,
 } from "@/services/investments/unpaidMaturityChoice";
 import { getPowerInventory } from "@/services/playerPowers/playerPowers";
-import { isBoostWindowActive } from "@/lib/config/referralBoost";
 
 export type InvestmentEnrichmentContext = {
   fifoEligibleIds: ReadonlySet<string>;
@@ -105,7 +108,8 @@ export function buildEnrichInvestmentOptions(
     !investment.boostActivatedAt &&
     !investment.boostCompletedAt &&
     !investment.payoutUnlockedAt &&
-    context.powers.boost.available > 0;
+    context.powers.boost.available > 0 &&
+    canActivateBoostGivenMaturesAt(investment.maturesAt);
 
   return {
     fifoEligibleIds: context.fifoEligibleIds,

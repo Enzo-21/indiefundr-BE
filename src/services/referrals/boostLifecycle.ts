@@ -3,9 +3,11 @@ import {
   ReferralRewardRole,
   ReferralRewardStatus,
 } from "@prisma/client";
+import { ForfeitureReason } from "@prisma/client";
 import { REFERRAL_INVITER_BONUS_USDT } from "@/lib/config/referralRecovery";
 import { prisma } from "@/lib/prisma";
 import { enqueueReferralPayoutOrder } from "@/services/referrals/referralPayoutOrderQueue";
+import { forfeitInvestment } from "@/services/investments/investmentForfeiture";
 
 export type CancelBoostReason =
   | "window_expired"
@@ -141,6 +143,54 @@ export async function completeBoostUnlock(
   });
 }
 
+/**
+ * High-risk Boost expiry: restore slot invitees, then forfeit the investment.
+ * No Recovery / Extra Time path afterward.
+ */
+export async function forfeitExpiredBoost(
+  investmentId: string,
+  now: Date = new Date()
+): Promise<{ forfeited: boolean; inviteIdsRestored: number }> {
+  const investment = await prisma.investment.findUnique({
+    where: { id: investmentId },
+    select: {
+      id: true,
+      status: true,
+      boostActivatedAt: true,
+      boostCompletedAt: true,
+      payoutUnlockedAt: true,
+      referralBoostLink: {
+        select: { cancelledAt: true, completedAt: true },
+      },
+    },
+  });
+
+  if (!investment?.boostActivatedAt || investment.boostCompletedAt) {
+    return { forfeited: false, inviteIdsRestored: 0 };
+  }
+  if (investment.status === "forfeited") {
+    return { forfeited: true, inviteIdsRestored: 0 };
+  }
+  // Normal flow already unlocked — do not forfeit
+  if (
+    investment.payoutUnlockedAt ||
+    investment.referralBoostLink?.completedAt
+  ) {
+    return { forfeited: false, inviteIdsRestored: 0 };
+  }
+
+  const cancel = await cancelBoostPath(investmentId, "window_expired", now);
+  const result = await forfeitInvestment(
+    investmentId,
+    ForfeitureReason.boost_window_expired
+  );
+
+  return {
+    forfeited: result.ok,
+    inviteIdsRestored: cancel.inviteIdsRestored,
+  };
+}
+
 export async function processExpiredBoostWindows(options?: {
   limit?: number;
   now?: Date;
@@ -170,14 +220,14 @@ export async function processExpiredBoostWindows(options?: {
 
   for (const row of candidates) {
     if (expiredIds.length >= limit) break;
-    if (row.referralBoostLink?.cancelledAt || row.referralBoostLink?.completedAt) {
+    if (row.referralBoostLink?.completedAt) {
       continue;
     }
     if (isBoostWindowActive(row.boostActivatedAt, now)) {
       continue;
     }
-    const result = await cancelBoostPath(row.id, "window_expired", now);
-    if (result.cancelled) {
+    const result = await forfeitExpiredBoost(row.id, now);
+    if (result.forfeited) {
       expiredIds.push(row.id);
     }
   }

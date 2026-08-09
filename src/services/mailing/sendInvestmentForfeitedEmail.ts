@@ -22,6 +22,8 @@ function forfeitureSubject(
       return `Update: your ${fundName} extended term ended without payout`;
     case "recovery_window_expired":
       return `Update: your ${fundName} invite recovery window closed`;
+    case "boost_window_expired":
+      return `Update: your ${fundName} Boost window closed — investment forfeited`;
     default:
       return `Update: your ${fundName} investment has ended`;
   }
