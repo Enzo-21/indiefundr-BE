@@ -81,6 +81,23 @@ describe("createWithdrawalOrder when another withdrawal is open", () => {
         }),
       },
     });
+    mock.module("@/lib/config/withdrawalSlots", {
+      namedExports: {
+        WithdrawalSlotsEmptyError: class WithdrawalSlotsEmptyError extends Error {
+          code = "WITHDRAWAL_SLOTS_EMPTY";
+          earned = 0;
+          used = 0;
+          available = 0;
+        },
+        assertCanCreateWithdrawal: async () => ({
+          earned: 2,
+          used: 1,
+          available: 1,
+          openWithdrawals: 1,
+          completedWithdrawals: 0,
+        }),
+      },
+    });
     mock.module("@/lib/tron/transactionMemo", {
       namedExports: {
         isIndieFundrChainMemoEnabled: () => false,
