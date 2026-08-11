@@ -158,7 +158,14 @@ export async function createWithdrawalOrder(
     });
   }
 
-  await rebuildWalletActivity(userId, wallet.id, wallet.id);
+  try {
+    await rebuildWalletActivity(userId, wallet.id, wallet.id);
+  } catch (error) {
+    console.error(
+      "[withdrawals] rebuildWalletActivity failed:",
+      error instanceof Error ? error.message : error
+    );
+  }
 
   const refreshed = await prisma.withdrawalOrder.findUnique({
     where: { id: order.id },
