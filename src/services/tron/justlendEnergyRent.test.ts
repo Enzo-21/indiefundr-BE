@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   computeEnergyRentPrepaySun,
+  decodeUint256Hex,
   energyToDelegatedSun,
 } from "./justlendEnergyRent";
 
@@ -48,5 +49,25 @@ describe("computeEnergyRentPrepaySun", () => {
       feeSun: BigInt(20_000_000),
     });
     assert.equal(prepay, BigInt(20_000_000));
+  });
+});
+
+describe("decodeUint256Hex", () => {
+  it("decodes padded constant_result words", () => {
+    assert.equal(
+      decodeUint256Hex(
+        "0000000000000000000000000000000000000000000000000000000191ff52bf"
+      ),
+      BigInt(6744396479)
+    );
+  });
+
+  it("accepts 0x prefix", () => {
+    assert.equal(decodeUint256Hex("0xff"), BigInt(255));
+  });
+
+  it("rejects empty or non-hex", () => {
+    assert.throws(() => decodeUint256Hex(""), /Invalid uint256 hex/);
+    assert.throws(() => decodeUint256Hex("zz"), /Invalid uint256 hex/);
   });
 });
