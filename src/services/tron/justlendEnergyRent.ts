@@ -23,12 +23,12 @@ const MIN_DELEGATED_TRX_SUN = BigInt(1_000_000); // 1 TRX
 const MIN_LIQUIDATION_FEE_SUN = BigInt(20_000_000); // 20 TRX
 const RENT_FEE_LIMIT = 200_000_000;
 
-/** Minimal ABI for JustLend EnergyRental (Mainnet). */
+/** Minimal ABI for JustLend EnergyRental (Mainnet). TronWeb 6 expects lowercase stateMutability. */
 const ENERGY_RENTAL_ABI = [
   {
     name: "rentResource",
     type: "function",
-    stateMutability: "Payable",
+    stateMutability: "payable",
     inputs: [
       { name: "receiver", type: "address" },
       { name: "amount", type: "uint256" },
@@ -39,7 +39,7 @@ const ENERGY_RENTAL_ABI = [
   {
     name: "returnResource",
     type: "function",
-    stateMutability: "Nonpayable",
+    stateMutability: "nonpayable",
     inputs: [
       { name: "receiver", type: "address" },
       { name: "amount", type: "uint256" },
@@ -50,7 +50,7 @@ const ENERGY_RENTAL_ABI = [
   {
     name: "_rentalRate",
     type: "function",
-    stateMutability: "View",
+    stateMutability: "view",
     inputs: [
       { name: "amount", type: "uint256" },
       { name: "resourceType", type: "uint256" },
@@ -60,7 +60,7 @@ const ENERGY_RENTAL_ABI = [
   {
     name: "getRentInfo",
     type: "function",
-    stateMutability: "View",
+    stateMutability: "view",
     inputs: [
       { name: "renter", type: "address" },
       { name: "receiver", type: "address" },
@@ -74,7 +74,7 @@ const ENERGY_RENTAL_ABI = [
   {
     name: "rentals",
     type: "function",
-    stateMutability: "View",
+    stateMutability: "view",
     inputs: [
       { name: "renter", type: "address" },
       { name: "receiver", type: "address" },
@@ -212,6 +212,31 @@ export function computeEnergyRentPrepaySun({
   return usage + feeSun;
 }
 
+/** Decode a uint256 hex word from triggerConstantContract.constant_result. */
+export function decodeUint256Hex(hex: string): bigint {
+  const cleaned = hex.trim().replace(/^0x/i, "");
+  if (!cleaned || !/^[0-9a-fA-F]+$/.test(cleaned)) {
+    throw new Error(`Invalid uint256 hex: ${hex}`);
+  }
+  return BigInt(`0x${cleaned}`);
+}
+
+function assertEnergyRentalContract(
+  raw: unknown
+): asserts raw is EnergyRentalContract {
+  if (!raw || typeof raw !== "object") {
+    throw new Error("JustLend EnergyRental contract failed to load");
+  }
+  const c = raw as Record<string, unknown>;
+  for (const name of ["_rentalRate", "rentResource", "returnResource"] as const) {
+    if (typeof c[name] !== "function") {
+      throw new Error(
+        `JustLend EnergyRental missing bound method ${name} (TronWeb ABI binding failed)`
+      );
+    }
+  }
+}
+
 export async function fetchEnergyPerTrxFromOpenApi(): Promise<number> {
   const base = JUSTLEND_OPENAPI_BASE.replace(/\/$/, "");
   const res = await fetch(`${base}/lend/strx`, {
@@ -242,23 +267,80 @@ async function getTreasuryPrivateKey(): Promise<string> {
 
 async function getEnergyRentalContract(
   privateKey?: string
-): Promise<{ contract: EnergyRentalContract; fromAddress: string }> {
+): Promise<{
+  contract: EnergyRentalContract;
+  fromAddress: string;
+  tronWeb: Awaited<ReturnType<typeof createTronWeb>>;
+}> {
   const pk = privateKey ?? (await getTreasuryPrivateKey());
   const tronWeb = await createTronWeb(pk);
   const address = JUSTLEND_ENERGY_RENTAL_ADDRESS;
-  // TronWeb contract().at accepts ABI via overload or set after; use at + cast.
-  const raw = (await (tronWeb as unknown as {
-    contract: (abi?: unknown, addr?: string) => {
-      at: (a: string) => Promise<EnergyRentalContract>;
-    };
-  })
-    .contract(ENERGY_RENTAL_ABI, address)
-    .at(address)) as EnergyRentalContract;
+  // TronWeb 6: contract(abi, address) binds methods. Do NOT chain .at(address) —
+  // that returns an unbound wrapper where _rentalRate / rentResource are missing.
+  const raw = await (
+    tronWeb as unknown as {
+      contract: (
+        abi?: unknown,
+        addr?: string
+      ) => Promise<EnergyRentalContract> | EnergyRentalContract;
+    }
+  ).contract(ENERGY_RENTAL_ABI, address);
+
+  assertEnergyRentalContract(raw);
 
   return {
     contract: raw,
     fromAddress: tronWeb.defaultAddress.base58,
+    tronWeb,
   };
+}
+
+async function readRentalRate({
+  amountSun,
+  resourceType,
+  contract,
+  tronWeb,
+  fromAddress,
+}: {
+  amountSun: string;
+  resourceType: JustLendResourceType;
+  contract: EnergyRentalContract;
+  tronWeb: Awaited<ReturnType<typeof createTronWeb>>;
+  fromAddress: string;
+}): Promise<bigint> {
+  try {
+    const rateRaw = await contract._rentalRate(amountSun, resourceType).call();
+    return BigInt(Array.isArray(rateRaw) ? String(rateRaw[0]) : String(rateRaw));
+  } catch (primaryError) {
+    const primaryMsg =
+      primaryError instanceof Error ? primaryError.message : String(primaryError);
+    console.warn(
+      "[justlend] contract._rentalRate failed, falling back to triggerConstantContract:",
+      primaryMsg
+    );
+
+    const simulation = (await tronWeb.transactionBuilder.triggerConstantContract(
+      JUSTLEND_ENERGY_RENTAL_ADDRESS,
+      "_rentalRate(uint256,uint256)",
+      { feeLimit: RENT_FEE_LIMIT, callValue: 0 },
+      [
+        { type: "uint256", value: amountSun },
+        { type: "uint256", value: resourceType },
+      ],
+      fromAddress
+    )) as {
+      result?: { result?: boolean; message?: string };
+      constant_result?: string[];
+    };
+
+    const hex = simulation.constant_result?.[0];
+    if (!hex) {
+      throw new Error(
+        `JustLend _rentalRate fallback failed (${primaryMsg}); no constant_result`
+      );
+    }
+    return decodeUint256Hex(hex);
+  }
 }
 
 function resolveSendTxId(result: string | Record<string, unknown>): string {
@@ -283,13 +365,14 @@ export async function quoteEnergyRent({
   const energyPerTrx = await fetchEnergyPerTrxFromOpenApi();
   const amountSun = energyToDelegatedSun(targetEnergy, energyPerTrx);
 
-  const { contract } = await getEnergyRentalContract();
-  const rateRaw = await contract
-    ._rentalRate(amountSun.toString(), resourceType)
-    .call();
-  const rentalRate = BigInt(
-    Array.isArray(rateRaw) ? String(rateRaw[0]) : String(rateRaw)
-  );
+  const { contract, tronWeb, fromAddress } = await getEnergyRentalContract();
+  const rentalRate = await readRentalRate({
+    amountSun: amountSun.toString(),
+    resourceType,
+    contract,
+    tronWeb,
+    fromAddress,
+  });
 
   const prepaySun = computeEnergyRentPrepaySun({
     amountSun,
@@ -396,13 +479,14 @@ export async function rentDelegatedTrxToAddress({
   const delegated =
     amountSun < MIN_DELEGATED_TRX_SUN ? MIN_DELEGATED_TRX_SUN : amountSun;
 
-  const { contract } = await getEnergyRentalContract();
-  const rateRaw = await contract
-    ._rentalRate(delegated.toString(), resourceType)
-    .call();
-  const rentalRate = BigInt(
-    Array.isArray(rateRaw) ? String(rateRaw[0]) : String(rateRaw)
-  );
+  const { contract, tronWeb, fromAddress } = await getEnergyRentalContract();
+  const rentalRate = await readRentalRate({
+    amountSun: delegated.toString(),
+    resourceType,
+    contract,
+    tronWeb,
+    fromAddress,
+  });
   const prepaySun = computeEnergyRentPrepaySun({
     amountSun: delegated,
     rentalRate,
