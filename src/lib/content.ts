@@ -44,7 +44,7 @@ export function buildSiteContent() {
   const siteConfig = {
     name: MARKETING_BRAND,
     title: `IndieFundr — Multiply your money in ${investmentTermLabel}`,
-    description: `Put your money to work in five studied, unconventional ${investmentTermHyphenated} funds with illustrative targets from 6% to 40%. Start from $25. Fund and withdraw globally with USDT.`,
+    description: `Put your money to work in five studied, unconventional ${investmentTermHyphenated} funds with illustrative targets from 6% to 40%. Start from $50. Fund and withdraw globally with USDT.`,
     keywords: [
       "invest money",
       "multiply money",
@@ -55,13 +55,13 @@ export function buildSiteContent() {
       "IndieFundr",
       "passive returns",
       "alternative investments",
-      "fund investing from $25",
+      "fund investing from $50",
     ],
     url: "https://indiefundr.com",
   };
 
   const heroStats = [
-    "From $25 per fund",
+    "From $50 per fund",
     `Five studied, ${investmentTermHyphenated} funds`,
     `Targets up to 40% in ${investmentTermLabel}`,
     "Beyond traditional investing",
@@ -210,7 +210,7 @@ export function buildSiteConfig() {
   return {
     name: MARKETING_BRAND,
     title: `IndieFundr — Multiply your money in ${investmentTermLabel}`,
-    description: `Put your money to work in five studied, unconventional ${investmentTermHyphenated} funds with illustrative targets from 6% to 40%. Start from $25. Fund and withdraw globally with USDT.`,
+    description: `Put your money to work in five studied, unconventional ${investmentTermHyphenated} funds with illustrative targets from 6% to 40%. Start from $50. Fund and withdraw globally with USDT.`,
     keywords: [
       "invest money",
       "multiply money",
@@ -221,7 +221,7 @@ export function buildSiteConfig() {
       "IndieFundr",
       "passive returns",
       "alternative investments",
-      "fund investing from $25",
+      "fund investing from $50",
     ],
     url: "https://indiefundr.com",
   };

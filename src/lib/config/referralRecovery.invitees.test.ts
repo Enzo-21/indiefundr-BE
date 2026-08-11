@@ -5,9 +5,10 @@ import { getRecoveryInviteesRequired } from "./referralRecovery";
 describe("getRecoveryInviteesRequired", () => {
   it("scales invitees with principal tier", () => {
     assert.equal(getRecoveryInviteesRequired(25), 2);
-    assert.equal(getRecoveryInviteesRequired(50), 4);
-    assert.equal(getRecoveryInviteesRequired(75), 6);
-    assert.equal(getRecoveryInviteesRequired(100), 8);
+    assert.equal(getRecoveryInviteesRequired(50), 2);
+    assert.equal(getRecoveryInviteesRequired(100), 4);
+    assert.equal(getRecoveryInviteesRequired(150), 6);
+    assert.equal(getRecoveryInviteesRequired(200), 8);
   });
 
   it("uses at least one base unit", () => {

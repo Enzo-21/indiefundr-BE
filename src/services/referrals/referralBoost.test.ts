@@ -12,10 +12,11 @@ import {
 } from "@/services/referrals/referralRewardEngine";
 
 describe("referralBoost config", () => {
-  it("requires 2 invitees per 25 USDT principal", () => {
+  it("requires 2 invitees per base-tier unit of principal", () => {
     assert.equal(getBoostInviteesRequired(25), 2);
-    assert.equal(getBoostInviteesRequired(50), 4);
-    assert.equal(getBoostInviteesRequired(100), 8);
+    assert.equal(getBoostInviteesRequired(50), 2);
+    assert.equal(getBoostInviteesRequired(100), 4);
+    assert.equal(getBoostInviteesRequired(200), 8);
   });
 
   it("computes a 7-day window from activation", () => {

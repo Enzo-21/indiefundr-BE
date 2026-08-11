@@ -17,8 +17,8 @@ import { shouldUseRecoverySlot } from "./referralRewardEngine";
 describe("referral recovery triad isolation", () => {
   it("recovery invitees required scales with principal", () => {
     assert.equal(getRecoveryInviteesRequired(25), 2);
-    assert.equal(getRecoveryInviteesRequired(50), 4);
-    assert.equal(getRecoveryInviteesRequired(100), 8);
+    assert.equal(getRecoveryInviteesRequired(50), 2);
+    assert.equal(getRecoveryInviteesRequired(100), 4);
   });
 
 

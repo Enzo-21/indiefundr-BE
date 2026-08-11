@@ -1,6 +1,6 @@
 /** Fixed pack size + markups for Mercado Pago USDT purchase (Argentina). Rate from live quote. */
 
-export const USDT_PURCHASE_AMOUNT = 25;
+export const USDT_PURCHASE_AMOUNT = 50;
 /** Markup baked into displayed price (not shown as its own line). */
 export const USDT_PURCHASE_HIDDEN_MARKUP_PCT = 6;
 /** Mercado Pago processing fee shown to the user. */

@@ -11,26 +11,26 @@ describe("buildUsdtPurchasePricing", () => {
       arsPerUsdt: 1500,
       arsChargeScale: 1,
     });
-    assert.equal(p.amountUsdt, 25);
+    assert.equal(p.amountUsdt, 50);
     assert.equal(p.arsPerUsdt, 1500);
-    assert.equal(p.baseArs, 37_500);
-    assert.equal(p.priceWithMarkupArs, 39_750);
-    assert.equal(p.mpFeeArs, 2_385);
-    assert.equal(p.totalArs, 42_135);
+    assert.equal(p.baseArs, 75_000);
+    assert.equal(p.priceWithMarkupArs, 79_500);
+    assert.equal(p.mpFeeArs, 4_770);
+    assert.equal(p.totalArs, 84_270);
     assert.equal(p.arsChargeScale, 1);
   });
 
-  it("scales ARS to 35% on staging while keeping 25 USDT", () => {
+  it("scales ARS to 35% on staging while keeping 50 USDT", () => {
     const p = buildUsdtPurchasePricing({
       arsPerUsdt: 1500,
       arsChargeScale: 0.35,
     });
-    assert.equal(p.amountUsdt, 25);
+    assert.equal(p.amountUsdt, 50);
     assert.equal(p.arsPerUsdt, 525);
-    assert.equal(p.baseArs, 13_125);
-    assert.equal(p.priceWithMarkupArs, 13_912.5);
-    assert.equal(p.mpFeeArs, 834.75);
-    assert.equal(p.totalArs, 14_747.25);
+    assert.equal(p.baseArs, 26_250);
+    assert.equal(p.priceWithMarkupArs, 27_825);
+    assert.equal(p.mpFeeArs, 1_669.5);
+    assert.equal(p.totalArs, 29_494.5);
     assert.equal(p.arsChargeScale, 0.35);
   });
 

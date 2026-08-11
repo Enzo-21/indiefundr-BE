@@ -17,7 +17,7 @@ export const heroDecorCopy = {
   fundSubscribe: {
     fundName: "High Roller Syndicate",
     label: "Fund subscribe",
-    amount: "-$25",
+    amount: "-$50",
   },
   maturity: {
     title: "Earnings credited",
@@ -64,7 +64,7 @@ export function buildMarketingCopy() {
           "High Roller Syndicate to Bonus & Promo Lane — five risk tiers, 6% to 40% illustrative targets.",
       },
       {
-        title: "$25 in, slide to confirm",
+        title: "$50 in, slide to confirm",
         description:
           "Choose a fund, lock in your term, and track every dollar until maturity.",
       },
@@ -146,7 +146,7 @@ export function buildMarketingCopy() {
         highlights: [
           "Binance, Trust Wallet, OKX",
           "TRC20 network",
-          "From $25 to start",
+          "From $50 to start",
         ],
       },
       {
@@ -186,7 +186,7 @@ export function buildMarketingCopy() {
     items: [
       {
         question: "What is IndieFundr?",
-        answer: `IndieFundr is a mobile app that deploys your money into five studied ${investmentTermHyphenated} investment funds — unconventional strategies with illustrative targets from 6% to 40%. From $25 per fund. Built-in wallet, portfolio tracking, and withdrawals included.`,
+        answer: `IndieFundr is a mobile app that deploys your money into five studied ${investmentTermHyphenated} investment funds — unconventional strategies with illustrative targets from 6% to 40%. From $50 per fund. Built-in wallet, portfolio tracking, and withdrawals included.`,
       },
       {
         question: "Why do you use USDT?",
@@ -212,7 +212,7 @@ export function buildMarketingCopy() {
 
   const ctaCopy = {
     title: "Your money isn't going to multiply itself.",
-    subtitle: `$25 minimum. Five studied funds. ${investmentTermHyphenated} terms. Open the app and pick your first strategy.`,
+    subtitle: `$50 minimum. Five studied funds. ${investmentTermHyphenated} terms. Open the app and pick your first strategy.`,
     primary: "Start now",
     appStore: "iPhone & iPad",
     playStore: "Android",

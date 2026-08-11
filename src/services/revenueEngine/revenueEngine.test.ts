@@ -33,27 +33,27 @@ const skipDbTests = SKIP_DB_MUTATING_TESTS || !hasDatabase;
 
 describe("revenueEngine config math", () => {
   it("newSubscribersNeeded: Aggressive head coverage steps", () => {
-    assert.equal(newSubscribersNeeded(25, 35, undefined, 25), 2);
-    assert.equal(newSubscribersNeeded(50, 35, undefined, 25), 1);
-    assert.equal(newSubscribersNeeded(75, 35, undefined, 25), 0);
+    assert.equal(newSubscribersNeeded(50, 70, undefined, 50), 2);
+    assert.equal(newSubscribersNeeded(100, 70, undefined, 50), 1);
+    assert.equal(newSubscribersNeeded(150, 70, undefined, 50), 0);
   });
 
   it("additionalInflowNeeded matches canonical triad", () => {
-    assert.equal(additionalInflowNeeded(25, 35), 50);
-    assert.equal(additionalInflowNeeded(75, 35), 0);
+    assert.equal(additionalInflowNeeded(50, 70), 100);
+    assert.equal(additionalInflowNeeded(150, 70), 0);
   });
 
-  it("surplusPerSubscriber: Capital triad pool_after 48.5", () => {
-    const surplus = surplusPerSubscriber(48.5, 3);
+  it("surplusPerSubscriber: Capital triad pool_after 78.5", () => {
+    const surplus = surplusPerSubscriber(78.5, 3);
     assert.ok(Math.abs(surplus - 8.5 / 3) < 0.01);
   });
 
-  it("surplusPerSubscriber: Aggressive triad pool_after 40 is zero", () => {
-    assert.equal(surplusPerSubscriber(40, 3), 0);
+  it("surplusPerSubscriber: Aggressive triad pool_after 70 is zero", () => {
+    assert.equal(surplusPerSubscriber(70, 3), 0);
   });
 
-  it("triad protected share: 10 subscribers × P_prot = 100 USDT", () => {
-    assert.equal(10 * APP_NET_REVENUE_PER_SUBSCRIBER_USDT(), 100);
+  it("triad protected share: 5 subscribers × P_prot = 100 USDT", () => {
+    assert.equal(5 * APP_NET_REVENUE_PER_SUBSCRIBER_USDT(), 100);
   });
 });
 
@@ -135,11 +135,11 @@ describe("revenueEngine pool", () => {
 
   it("canFundFromPool: pool alone sufficient", () => {
     const head = {
-      projectedPayoutUsdt: 35,
+      projectedPayoutUsdt: 70,
     } as Parameters<typeof getPoolMin>[1];
-    const poolMin = getPoolMin(75, head, 0);
-    assert.ok(75 >= poolMin);
-    const result = canFundFromPool(75, poolMin, 0);
+    const poolMin = getPoolMin(150, head, 0);
+    assert.ok(150 >= poolMin);
+    const result = canFundFromPool(150, poolMin, 0);
     assert.equal(result.ok, true);
     assert.equal(result.fromSurplus, 0);
   });

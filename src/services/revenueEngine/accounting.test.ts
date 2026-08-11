@@ -80,8 +80,8 @@ describe("triad payout accounting", () => {
     assert.ok(accounting.warning);
   });
 
-  it("protected revenue remains 10 USDT per completed investment", () => {
-    assert.equal(APP_NET_REVENUE_PER_SUBSCRIBER_USDT(), 10);
+  it("protected revenue remains 20 USDT per reference subscription", () => {
+    assert.equal(APP_NET_REVENUE_PER_SUBSCRIBER_USDT(), 20);
   });
 
   it("mixed cohort: one 50 USDT unlocker completes triad for 25 USDT head", () => {
