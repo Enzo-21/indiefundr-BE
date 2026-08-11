@@ -8,7 +8,6 @@ import {
 import { getEnv } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import * as feeSponsorship from "@/services/tron/feeSponsorship";
-import * as justlend from "@/services/tron/justlendEnergyRent";
 import * as tron from "@/services/tron/client";
 import type { UsdtTransferEstimate } from "@/services/tron/client";
 
@@ -52,8 +51,6 @@ export type FinalizeSponsoredResourcesResult = {
   detail: string;
 };
 
-const ENERGY_RENT_BUFFER = 1.05;
-
 function logSponsor(
   orderKind: SponsorshipOrderKind,
   orderId: string,
@@ -68,24 +65,12 @@ function logSponsor(
   });
 }
 
-function targetEnergyFromEstimate(estimate: UsdtTransferEstimate): number {
-  const need = Math.max(estimate.energyShortfall, 0);
-  if (need <= 0) return 0;
-  return Math.ceil(need * ENERGY_RENT_BUFFER);
-}
-
 async function persistPurchaseSponsorship(
   orderId: string,
   data: {
     sponsorshipMode: FeeSponsorshipMode;
     estimatedTrx: number;
     trxBefore: number;
-    energyRentTxId?: string | null;
-    energyReturnTxId?: string | null;
-    energyRentAmountSun?: string | null;
-    energyTarget?: number | null;
-    bandwidthRentTxId?: string | null;
-    bandwidthRentAmountSun?: string | null;
     topUpTxId?: string | null;
     sponsoredTrx?: number;
     sponsorRound?: number;
@@ -110,12 +95,6 @@ async function persistWithdrawalSponsorship(
     sponsorshipMode: FeeSponsorshipMode;
     estimatedTrx: number;
     trxBefore: number;
-    energyRentTxId?: string | null;
-    energyReturnTxId?: string | null;
-    energyRentAmountSun?: string | null;
-    energyTarget?: number | null;
-    bandwidthRentTxId?: string | null;
-    bandwidthRentAmountSun?: string | null;
     topUpTxId?: string | null;
     sponsoredTrx?: number;
     sponsorRound?: number;
@@ -134,75 +113,7 @@ async function persistWithdrawalSponsorship(
   });
 }
 
-async function tryJustLendRent(
-  estimate: UsdtTransferEstimate
-): Promise<{
-  ok: true;
-  energyRentTxId: string;
-  energyRentAmountSun: string;
-  energyTarget: number;
-  bandwidthRentTxId: string | null;
-  bandwidthRentAmountSun: string | null;
-} | { ok: false; error: string }> {
-  try {
-    const energyTarget = targetEnergyFromEstimate(estimate);
-    if (energyTarget <= 0 && estimate.bandwidthShortfall <= 0) {
-      return { ok: false, error: "No resource shortfall to rent" };
-    }
-
-    let energyRentTxId = "";
-    let energyRentAmountSun = "";
-    let bandwidthRentTxId: string | null = null;
-    let bandwidthRentAmountSun: string | null = null;
-
-    if (energyTarget > 0) {
-      const rented = await justlend.rentResourceToAddress({
-        receiver: estimate.fromAddress,
-        targetEnergy: energyTarget,
-        resourceType: justlend.JUSTLEND_RESOURCE_ENERGY,
-      });
-      energyRentTxId = rented.txId;
-      energyRentAmountSun = rented.amountSun;
-
-      await justlend.waitUntilEnergyAvailable({
-        address: estimate.fromAddress,
-        minEnergy: estimate.energyUsed,
-      });
-    }
-
-    // Re-check bandwidth after energy rent; free daily quota usually covers it.
-    const refreshed = await tron.estimateUsdtTransfer({
-      fromAddress: estimate.fromAddress,
-      toAddress: estimate.toAddress,
-      amount: estimate.amountUsdt,
-    });
-
-    if (refreshed.bandwidthShortfall > 0) {
-      // JustLend amount is delegated TRX sun (not bandwidth units). Rent min 1 TRX.
-      const bwRented = await justlend.rentDelegatedTrxToAddress({
-        receiver: estimate.fromAddress,
-        amountSun: BigInt(1_000_000),
-        resourceType: justlend.JUSTLEND_RESOURCE_BANDWIDTH,
-      });
-      bandwidthRentTxId = bwRented.txId;
-      bandwidthRentAmountSun = bwRented.amountSun;
-    }
-
-    return {
-      ok: true,
-      energyRentTxId,
-      energyRentAmountSun,
-      energyTarget,
-      bandwidthRentTxId,
-      bandwidthRentAmountSun,
-    };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { ok: false, error: message };
-  }
-}
-
-async function applyTrxTopUpFallback({
+async function applyTrxTopUp({
   orderKind,
   orderId,
   userId,
@@ -244,7 +155,7 @@ async function applyTrxTopUpFallback({
 
   if (amountTrx <= 0) {
     const detail =
-      "Wallet has enough TRX to burn fees — skipping top-up (fallback path)";
+      "Wallet has enough TRX to burn fees — skipping top-up";
     const persist = {
       sponsorshipMode: FeeSponsorshipMode.trx_topup,
       estimatedTrx: estimate.estimatedTrx,
@@ -329,12 +240,12 @@ async function applyTrxTopUpFallback({
     skipped: false,
     topUpTxId: txId,
     amountTrx,
-    detail: `JustLend unavailable — TRX top-up fallback (${amountTrx} TRX)`,
+    detail: `TRX top-up from treasury (${amountTrx} TRX)`,
   };
 }
 
 /**
- * Cascaded fee sponsorship: user resources → JustLend rent → TRX top-up.
+ * Fee sponsorship: free user Energy/Bandwidth → else TRX top-up from treasury.
  */
 export async function sponsorTransferResources({
   orderKind,
@@ -362,7 +273,6 @@ export async function sponsorTransferResources({
     toAddress,
     amount: amountUsdt,
   });
-  const shortfall = feeSponsorship.computeSponsorShortfall(estimate);
   const targetTrx = parseFloat(
     (estimate.estimatedTrx * TRX_TOPUP_BUFFER_RATIO).toFixed(6)
   );
@@ -402,60 +312,12 @@ export async function sponsorTransferResources({
     };
   }
 
-  if (justlend.isJustLendEnergyRentAvailable()) {
-    logSponsor(orderKind, orderId, "justlend_attempt", {
-      energyShortfall: estimate.energyShortfall,
-      bandwidthShortfall: estimate.bandwidthShortfall,
-    });
-    const rented = await tryJustLendRent(estimate);
-    if (rented.ok) {
-      const detail = rented.energyRentTxId
-        ? `Energy rented via JustLend (${rented.energyTarget} energy)`
-        : "Bandwidth rented via JustLend";
-      const persist = {
-        sponsorshipMode: FeeSponsorshipMode.justlend_rent,
-        estimatedTrx: estimate.estimatedTrx,
-        trxBefore: estimate.trxBalance,
-        energyRentTxId: rented.energyRentTxId || null,
-        energyRentAmountSun: rented.energyRentAmountSun || null,
-        energyTarget: rented.energyTarget || null,
-        bandwidthRentTxId: rented.bandwidthRentTxId,
-        bandwidthRentAmountSun: rented.bandwidthRentAmountSun,
-      };
-      if (orderKind === "purchase") {
-        await persistPurchaseSponsorship(orderId, persist);
-      } else {
-        await persistWithdrawalSponsorship(orderId, persist);
-      }
-      logSponsor(orderKind, orderId, "justlend_ok", {
-        energyRentTxId: rented.energyRentTxId,
-        bandwidthRentTxId: rented.bandwidthRentTxId,
-      });
-      return {
-        mode: FeeSponsorshipMode.justlend_rent,
-        skipped: false,
-        estimate,
-        shortfall,
-        energyRentTxId: rented.energyRentTxId || null,
-        bandwidthRentTxId: rented.bandwidthRentTxId,
-        energyRentAmountSun: rented.energyRentAmountSun || null,
-        bandwidthRentAmountSun: rented.bandwidthRentAmountSun,
-        energyTarget: rented.energyTarget || null,
-        topUpTxId: null,
-        amountTrx: 0,
-        targetTrx,
-        bufferRatio: TRX_TOPUP_BUFFER_RATIO,
-        detail,
-      };
-    }
-    logSponsor(orderKind, orderId, "justlend_fail", { error: rented.error });
-  } else {
-    logSponsor(orderKind, orderId, "justlend_skip", {
-      reason: "not available on this network/config",
-    });
-  }
+  logSponsor(orderKind, orderId, "trx_topup", {
+    energyShortfall: estimate.energyShortfall,
+    bandwidthShortfall: estimate.bandwidthShortfall,
+  });
 
-  return applyTrxTopUpFallback({
+  return applyTrxTopUp({
     orderKind,
     orderId,
     userId,
@@ -466,75 +328,9 @@ export async function sponsorTransferResources({
   });
 }
 
-async function returnJustLendForOrder({
-  orderKind,
-  orderId,
-  walletAddress,
-  energyRentAmountSun,
-  bandwidthRentAmountSun,
-}: {
-  orderKind: SponsorshipOrderKind;
-  orderId: string;
-  walletAddress: string;
-  energyRentAmountSun: string | null;
-  bandwidthRentAmountSun: string | null;
-}): Promise<string | null> {
-  let energyReturnTxId: string | null = null;
-
-  if (energyRentAmountSun && BigInt(energyRentAmountSun) > BigInt(0)) {
-    try {
-      const returned = await justlend.returnRentedResource({
-        receiver: walletAddress,
-        amountSun: energyRentAmountSun,
-        resourceType: justlend.JUSTLEND_RESOURCE_ENERGY,
-      });
-      energyReturnTxId = returned.txId;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.warn("[resource-sponsorship] energy return failed:", message, {
-        orderKind,
-        orderId,
-      });
-    }
-  }
-
-  if (bandwidthRentAmountSun && BigInt(bandwidthRentAmountSun) > BigInt(0)) {
-    try {
-      await justlend.returnRentedResource({
-        receiver: walletAddress,
-        amountSun: bandwidthRentAmountSun,
-        resourceType: justlend.JUSTLEND_RESOURCE_BANDWIDTH,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.warn("[resource-sponsorship] bandwidth return failed:", message, {
-        orderKind,
-        orderId,
-      });
-    }
-  }
-
-  if (energyReturnTxId) {
-    if (orderKind === "purchase") {
-      await prisma.purchaseOrder.update({
-        where: { id: orderId },
-        data: { energyReturnTxId, updatedAt: new Date() },
-      });
-    } else {
-      await prisma.withdrawalOrder.update({
-        where: { id: orderId },
-        data: { energyReturnTxId, updatedAt: new Date() },
-      });
-    }
-  }
-
-  return energyReturnTxId;
-}
-
 /**
- * After USDT: return JustLend rentals and/or prepare for TRX sweep.
- * Does not perform the sweep itself for purchase (existing recoverAdminSponsoredTrx).
- * For convenience returns whether a TRX recover step is needed.
+ * After USDT: prepare for TRX sweep when top-up was used.
+ * Does not perform the sweep itself (existing recoverAdminSponsoredTrx / recoverWithdrawalSponsoredTrx).
  */
 export async function finalizeSponsoredResources({
   orderKind,
@@ -546,29 +342,8 @@ export async function finalizeSponsoredResources({
   if (orderKind === "purchase") {
     const order = await prisma.purchaseOrder.findUnique({ where: { id: orderId } });
     if (!order) throw new Error("Purchase order not found");
-    const wallet = await prisma.wallet.findUnique({ where: { id: order.walletId } });
-    if (!wallet?.address) throw new Error("User wallet not found");
 
     const mode = order.sponsorshipMode;
-    if (mode === FeeSponsorshipMode.justlend_rent) {
-      const energyReturnTxId = await returnJustLendForOrder({
-        orderKind,
-        orderId,
-        walletAddress: wallet.address,
-        energyRentAmountSun: order.energyRentAmountSun,
-        bandwidthRentAmountSun: order.bandwidthRentAmountSun,
-      });
-      return {
-        mode,
-        energyReturnTxId,
-        sweepTxId: null,
-        recoveredTrx: 0,
-        detail: energyReturnTxId
-          ? "JustLend Energy returned to treasury"
-          : "JustLend return skipped or failed — check open rentals",
-      };
-    }
-
     if (mode === FeeSponsorshipMode.user_resources) {
       return {
         mode,
@@ -593,40 +368,8 @@ export async function finalizeSponsoredResources({
 
   const order = await prisma.withdrawalOrder.findUnique({ where: { id: orderId } });
   if (!order) throw new Error("Withdrawal order not found");
-  const senderAddress = order.fromTreasury
-    ? getEnv().treasuryAddress?.trim()
-    : order.walletId
-      ? (await prisma.wallet.findUnique({ where: { id: order.walletId } }))
-          ?.address
-      : undefined;
-  if (!senderAddress) {
-    throw new Error(
-      order.fromTreasury
-        ? "Treasury address is not configured"
-        : "User wallet not found"
-    );
-  }
 
   const mode = order.sponsorshipMode;
-  if (mode === FeeSponsorshipMode.justlend_rent) {
-    const energyReturnTxId = await returnJustLendForOrder({
-      orderKind,
-      orderId,
-      walletAddress: senderAddress,
-      energyRentAmountSun: order.energyRentAmountSun,
-      bandwidthRentAmountSun: order.bandwidthRentAmountSun,
-    });
-    return {
-      mode,
-      energyReturnTxId,
-      sweepTxId: null,
-      recoveredTrx: 0,
-      detail: energyReturnTxId
-        ? "JustLend Energy returned to treasury"
-        : "JustLend return skipped or failed — check open rentals",
-    };
-  }
-
   if (mode === FeeSponsorshipMode.user_resources) {
     return {
       mode,

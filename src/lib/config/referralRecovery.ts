@@ -17,8 +17,8 @@ export const REFERRAL_RECOVERY_WINDOW_DAYS = () => cfg().REFERRAL_RECOVERY_WINDO
 export const SYMPATHY_MODAL_COOLDOWN_DAYS = () => cfg().SYMPATHY_MODAL_COOLDOWN_DAYS;
 
 /**
- * Invitees required to recover principal: 2 per base tier unit (25 USDT).
- * 25 → 2, 50 → 4, 75 → 6, 100 → 8.
+ * Invitees required to recover principal: 2 per base tier unit (50 USDT).
+ * 50 → 2, 100 → 4, 150 → 6, 200 → 8.
  */
 export function getRecoveryInviteesRequired(principalUsdt: number): number {
   const units = Math.max(

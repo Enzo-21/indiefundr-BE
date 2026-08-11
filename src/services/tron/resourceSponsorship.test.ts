@@ -26,19 +26,11 @@ describe("shouldRecoverSponsoredTrx", () => {
     );
   });
 
-  it("returns false for user_resources and justlend_rent modes", () => {
+  it("returns false for user_resources mode", () => {
     assert.equal(
       shouldRecoverSponsoredTrx({
         sponsorshipMode: FeeSponsorshipMode.user_resources,
         sponsoredTrx: 5,
-        sweepTxId: null,
-      }),
-      false
-    );
-    assert.equal(
-      shouldRecoverSponsoredTrx({
-        sponsorshipMode: FeeSponsorshipMode.justlend_rent,
-        sponsoredTrx: 0,
         sweepTxId: null,
       }),
       false

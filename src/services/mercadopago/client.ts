@@ -64,7 +64,7 @@ export async function createCheckoutPreference(input: {
   const body = {
     items: [
       {
-        id: "indie-25",
+        id: "indie-50",
         title: input.title,
         description: input.description ?? "IndieFundr credit",
         category_id: input.categoryId ?? "services",

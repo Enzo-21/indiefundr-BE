@@ -9,15 +9,15 @@ export {
 } from "./investmentTiming";
 
 /** Base tier amount (levels 0–1). */
-export const BASE_INVESTMENT_AMOUNT_USDT = 25;
+export const BASE_INVESTMENT_AMOUNT_USDT = 50;
 
 /** USDT principal required for a new subscription at the given player level. */
 export function getInvestmentAmountUsdtForLevel(level: number): number {
   const l = normalizePlayerLevel(level);
-  if (l <= 1) return 25;
-  if (l === 2) return 50;
-  if (l <= 4) return 75;
-  return 100;
+  if (l <= 1) return 50;
+  if (l === 2) return 100;
+  if (l <= 4) return 150;
+  return 200;
 }
 
 export function isValidInvestmentAmount(

@@ -203,8 +203,7 @@ export async function sponsorWithdrawalTransferResources(
     existingTopUpTxIds: order.topUpTxIds ?? [],
   });
 
-  const txId =
-    result.topUpTxId ?? result.energyRentTxId ?? result.bandwidthRentTxId;
+  const txId = result.topUpTxId;
 
   logWithdrawalAdmin(orderId, "sponsor_resources_done", {
     mode: result.mode,
@@ -215,7 +214,7 @@ export async function sponsorWithdrawalTransferResources(
   });
 
   return {
-    mode: result.mode,
+    mode: result.mode as "user_resources" | "trx_topup",
     skipped: result.skipped,
     txId,
     amountTrx: result.amountTrx,
@@ -225,9 +224,9 @@ export async function sponsorWithdrawalTransferResources(
     targetTrx: result.targetTrx,
     bufferRatio: result.bufferRatio,
     detail: result.detail,
-    energyRentTxId: result.energyRentTxId,
-    bandwidthRentTxId: result.bandwidthRentTxId,
-    energyTarget: result.energyTarget,
+    energyRentTxId: null,
+    bandwidthRentTxId: null,
+    energyTarget: null,
   };
 }
 
@@ -350,15 +349,14 @@ export async function recoverWithdrawalSponsoredTrx(
     orderId,
   });
 
-  if (finalized.mode === "justlend_rent" || finalized.mode === "user_resources") {
+  if (finalized.mode === "user_resources") {
     logWithdrawalAdmin(orderId, "recover_skip", {
       reason: finalized.detail,
       mode: finalized.mode,
-      energyReturnTxId: finalized.energyReturnTxId,
     });
     return {
       skipped: true,
-      sweepTxId: finalized.energyReturnTxId,
+      sweepTxId: null,
       recoveredTrx: 0,
       sponsoredTrx: order.sponsoredTrx || 0,
       recoverableTrx: 0,

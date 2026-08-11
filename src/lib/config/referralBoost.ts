@@ -10,7 +10,7 @@ function cfg() {
 
 export const REFERRAL_BOOST_WINDOW_DAYS = () => cfg().REFERRAL_BOOST_WINDOW_DAYS;
 
-/** Same invitee math as Recovery: 2 per 25 USDT principal. */
+/** Same invitee math as Recovery: 2 per base-tier unit of principal. */
 export const getBoostInviteesRequired = getRecoveryInviteesRequired;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;

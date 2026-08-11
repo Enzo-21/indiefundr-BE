@@ -31,7 +31,7 @@ describe("subscribeToFund", () => {
 
       const result = await subscribeToFund(user.id, {
         fundId: "aggressive-alpha",
-        cost: 25,
+        cost: 50,
       });
       assert.equal(result.ok, false);
       if (!result.ok) {
@@ -55,7 +55,7 @@ describe("subscribeToFund", () => {
 
       const result = await subscribeToFund(user.id, {
         fundId: "invalid-fund",
-        cost: 25,
+        cost: 50,
       });
       assert.equal(result.ok, false);
       if (!result.ok) {
@@ -102,7 +102,7 @@ describe("subscribeToFund", () => {
 
       const result = await subscribeToFund(user.id, {
         fundId,
-        cost: 25,
+        cost: 50,
       });
 
       assert.notEqual(result.status, 409);
@@ -163,7 +163,7 @@ describe("subscribeToFund", () => {
 
       const result = await subscribeToFund(user.id, {
         fundId: "growth",
-        cost: 25,
+        cost: 50,
       });
 
       assert.equal(result.ok, false);
@@ -220,7 +220,7 @@ describe("subscribeToFund", () => {
 
       const result = await subscribeToFund(user.id, {
         fundId,
-        cost: 25,
+        cost: 50,
       });
 
       assert.equal(result.ok, false);
@@ -276,7 +276,7 @@ describe("subscribeToFund", () => {
 
       const result = await subscribeToFund(user.id, {
         fundId: "growth-partners",
-        cost: 25,
+        cost: 50,
       });
 
       assert.equal(result.ok, false);
@@ -330,7 +330,7 @@ describe("subscribeToFund", () => {
 
       const result = await subscribeToFund(user.id, {
         fundId,
-        cost: 25,
+        cost: 50,
       });
 
       assert.notEqual(result.ok, true);

@@ -74,8 +74,8 @@ const rawEnvSchema = z.object({
     .enum(["off", "errors", "info", "debug"])
     .default("errors"),
   REVENUE_ENGINE_ENABLED: z.string().optional(),
-  MIN_APP_MARGIN_USDT: z.coerce.number().default(40),
-  APP_NET_REVENUE_PER_SUBSCRIBER_USDT: z.coerce.number().default(10),
+  MIN_APP_MARGIN_USDT: z.coerce.number().default(80),
+  APP_NET_REVENUE_PER_SUBSCRIBER_USDT: z.coerce.number().default(20),
   INVESTMENT_TERM: z.string().default(""),
   REFERRAL_INVITEE_BONUS_USDT: z.coerce.number().default(2),
   REFERRAL_INVITER_BONUS_USDT: z.coerce.number().default(2),
