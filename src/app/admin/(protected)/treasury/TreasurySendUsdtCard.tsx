@@ -4,19 +4,23 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { adminCreateTreasuryWithdrawal } from "@/actions/admin/withdrawals";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 export function TreasurySendUsdtCard() {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [destination, setDestination] = useState("");
   const [pending, startTransition] = useTransition();
@@ -45,23 +49,28 @@ export function TreasurySendUsdtCard() {
       toast.success("Treasury withdrawal queued — complete it in Orders");
       setAmount("");
       setDestination("");
+      setOpen(false);
       router.push("/admin/orders");
       router.refresh();
     });
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Send USDT from Treasury</CardTitle>
-        <CardDescription>
-          Creates a withdrawal order funded by the treasury wallet. Complete it
-          in Orders to use JustLend Energy rent (mainnet) instead of burning
-          TRX in an external wallet.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        className={cn(buttonVariants({ variant: "default" }))}
+      >
+        Send USDT
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <DialogHeader>
+            <DialogTitle>Send USDT from Treasury</DialogTitle>
+            <DialogDescription>
+              Creates a withdrawal order funded by the treasury wallet. Complete
+              it in Orders to use JustLend Energy rent on mainnet.
+            </DialogDescription>
+          </DialogHeader>
           <div className="space-y-2">
             <Label htmlFor="treasury-amount">Amount (USDT)</Label>
             <Input
@@ -87,11 +96,21 @@ export function TreasurySendUsdtCard() {
               className="font-mono text-sm"
             />
           </div>
-          <Button type="submit" disabled={pending}>
-            {pending ? "Creating…" : "Create withdrawal order"}
-          </Button>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pending}
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={pending}>
+              {pending ? "Creating…" : "Create withdrawal order"}
+            </Button>
+          </DialogFooter>
         </form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }

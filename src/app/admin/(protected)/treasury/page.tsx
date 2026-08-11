@@ -82,12 +82,11 @@ export default async function AdminTreasuryPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <TreasurySendUsdtCard />
           <EvaluateButton action={triggerEvaluate} />
           <SyncTreasuryHistoryButton />
         </div>
       </div>
-
-      <TreasurySendUsdtCard />
 
       {onChainResult.ok ? (
         <TreasuryOnChainSection report={onChainResult.data} />
