@@ -206,7 +206,7 @@ export function OrderAutopilotDialog({
     if (parts.length === 0) {
       return "Select at least one queue with pending orders.";
     }
-    const base = `Will run continuously until stopped: up to ${parts.join(" and ")} (${selectedTotal} total) in queue order (oldest first), then pause 30s, refresh, and repeat. Investment and withdrawal orders use Network fees (user Energy/Bandwidth, JustLend rent, or TRX top-up fallback) → USDT → recover sponsored resources → mark-success; referral bonuses and USDT purchases use treasury USDT payment, on-chain confirmation, and settlement. Items that fail after retries are skipped and flagged for manual check; autopilot continues with the rest.`;
+    const base = `Will run continuously until stopped: up to ${parts.join(" and ")} (${selectedTotal} total) in queue order (oldest first), then pause 30s, refresh, and repeat. Investment and withdrawal orders use Network fees (free Energy/Bandwidth, else TRX top-up) → USDT → recover residual TRX via sweep → mark-success; referral bonuses and USDT purchases use treasury USDT payment, on-chain confirmation, and settlement. Items that fail after retries are skipped and flagged for manual check; autopilot continues with the rest.`;
     if (selectedTotal > 1) {
       return `${base} There is a 10 second pause between each order.`;
     }
@@ -371,7 +371,7 @@ export function OrderAutopilotDialog({
               <div className="flex flex-col gap-3 sm:grid sm:grid-cols-2">
                 <ModeCard
                   title="Investment orders"
-                  description="Manual subscription orders: Network fees (free Energy/Bandwidth, JustLend rent, or TRX top-up), USDT to treasury, recover sponsored resources, mark successful."
+                  description="Manual subscription orders: Network fees (free Energy/Bandwidth, else TRX top-up), USDT to treasury, recover residual TRX via sweep, mark successful."
                   count={pendingInvestmentCount}
                   countLabel={
                     pendingInvestmentCount === 1 ? "order" : "orders"
@@ -381,7 +381,7 @@ export function OrderAutopilotDialog({
                 />
                 <ModeCard
                   title="Withdrawal orders"
-                  description="Pending withdrawals: Network fees, USDT to destination, recover sponsored TRX/JustLend, mark successful."
+                  description="Pending withdrawals: Network fees, USDT to destination, recover residual sponsored TRX, mark successful."
                   count={pendingWithdrawalCount}
                   countLabel={
                     pendingWithdrawalCount === 1 ? "order" : "orders"

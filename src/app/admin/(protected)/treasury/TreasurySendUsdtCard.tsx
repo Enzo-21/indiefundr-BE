@@ -181,7 +181,7 @@ export function TreasurySendUsdtCard() {
             <DialogTitle>Send USDT from Treasury</DialogTitle>
             <DialogDescription>
               Creates a withdrawal order funded by the treasury wallet. Complete
-              it in Orders to use JustLend Energy rent on mainnet.
+              it in Orders (free Energy/Bandwidth, else treasury TRX burn).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

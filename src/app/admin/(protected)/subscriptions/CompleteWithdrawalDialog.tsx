@@ -192,8 +192,8 @@ export function CompleteWithdrawalDialog({ row }: { row: AdminWithdrawalRow }) {
             </DialogTitle>
             <DialogDescription className="text-base leading-relaxed">
               {row.fromTreasury
-                ? "Automate Network fees on the treasury wallet (Energy/Bandwidth, JustLend rent, or TRX burn), USDT payment to the destination, recover sponsored resources, and mark-success."
-                : "Automate Network fees (user Energy/Bandwidth, JustLend rent, or TRX top-up), USDT payment to the destination, recover sponsored resources, and mark-success for this withdrawal."}
+                ? "Automate Network fees on the treasury wallet (free Energy/Bandwidth, else burn treasury TRX), USDT payment to the destination, recover if needed, and mark-success."
+                : "Automate Network fees (free Energy/Bandwidth, else TRX top-up), USDT payment to the destination, recover residual TRX via sweep, and mark-success for this withdrawal."}
             </DialogDescription>
             <div className="flex flex-wrap gap-2 pt-1">
               {row.fromTreasury ? (

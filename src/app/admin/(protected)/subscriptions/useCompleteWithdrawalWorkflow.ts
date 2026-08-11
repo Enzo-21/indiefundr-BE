@@ -363,7 +363,7 @@ export function useCompleteWithdrawalWorkflow(
     } else {
       patchStep("trx", {
         state: "running",
-        detail: `Energy shortfall ${estimate.energyShortfall} — trying JustLend rent, then TRX top-up fallback…`,
+        detail: `Energy shortfall ${estimate.energyShortfall} — topping up TRX from treasury…`,
       });
     }
 
@@ -380,39 +380,6 @@ export function useCompleteWithdrawalWorkflow(
         detail: broadcast.detail,
       });
       logWithdrawalWorkflow(orderId, "trx", "step_skipped", { mode: broadcast.mode });
-      return;
-    }
-
-    if (broadcast.mode === "justlend_rent") {
-      const rentTxId = broadcast.energyRentTxId ?? broadcast.txId;
-      if (rentTxId) {
-        const tronscanUrl = getTronscanTxUrl(rentTxId);
-        patchStep("trx", {
-          state: "waiting_chain",
-          detail: "Waiting for JustLend Energy rent confirmation…",
-          txId: rentTxId,
-          tronscanUrl,
-        });
-        const poll = await pollTransaction("trx", rentTxId, false);
-        if (poll.outcome === "failed") {
-          throw new Error(poll.message);
-        }
-        patchStep("trx", {
-          state: "success",
-          detail: broadcast.detail,
-          txId: rentTxId,
-          tronscanUrl,
-        });
-      } else {
-        patchStep("trx", {
-          state: "success",
-          detail: broadcast.detail,
-        });
-      }
-      logWithdrawalWorkflow(orderId, "trx", "step_success", {
-        mode: broadcast.mode,
-        txId: rentTxId,
-      });
       return;
     }
 
@@ -443,7 +410,7 @@ export function useCompleteWithdrawalWorkflow(
 
     patchStep("trx", {
       state: "success",
-      detail: `TRX top-up confirmed (${formatTrx(broadcast.amountTrx)} TRX) — fallback path`,
+      detail: `TRX top-up confirmed (${formatTrx(broadcast.amountTrx)} TRX)`,
       txId: broadcast.txId,
       tronscanUrl,
     });
@@ -543,7 +510,7 @@ export function useCompleteWithdrawalWorkflow(
     logWithdrawalWorkflow(orderId, "recover", "step_start");
     patchStep("recover", {
       state: "running",
-      detail: "Finalizing sponsored resources (JustLend return / TRX sweep)…",
+      detail: "Recovering residual sponsored TRX (sweep to treasury)…",
       txId: null,
       tronscanUrl: null,
     });
@@ -555,11 +522,8 @@ export function useCompleteWithdrawalWorkflow(
 
     const recovery = result.data;
     if (recovery.skipped) {
-      const isJustLendReturn =
-        Boolean(recovery.sweepTxId) &&
-        /JustLend/i.test(recovery.reason ?? "");
       patchStep("recover", {
-        state: isJustLendReturn ? "success" : "skipped",
+        state: "skipped",
         detail: recovery.reason ?? "No sponsored TRX to recover",
         txId: recovery.sweepTxId,
         tronscanUrl: recovery.sweepTxId

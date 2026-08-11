@@ -410,7 +410,7 @@ export async function estimateUsdtTransfer({
   };
 }
 
-/** Public helper for Energy availability checks (e.g. JustLend wait loops). */
+/** Public helper for Energy availability checks. */
 export async function getAccountEnergyAvailableForAddress(
   address: string
 ): Promise<number> {
@@ -429,7 +429,7 @@ export async function getAccountEnergyAvailableForAddress(
   }
 }
 
-/** Export createTronWeb for JustLend / sponsorship modules that need signing. */
+/** Export createTronWeb for sponsorship modules that need signing. */
 export { createTronWeb };
 
 export async function transferUsdt({

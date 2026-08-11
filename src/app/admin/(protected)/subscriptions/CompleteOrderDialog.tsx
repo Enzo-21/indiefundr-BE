@@ -209,9 +209,9 @@ export function CompleteOrderDialog({ row }: { row: AdminSubscriptionRow }) {
           <DialogHeader className="gap-3 text-left">
             <DialogTitle className="text-xl">Complete order</DialogTitle>
             <DialogDescription className="text-base leading-relaxed">
-              Automate Network fees (user Energy/Bandwidth, JustLend rent, or
-              TRX top-up), USDT payment, recover sponsored resources, and
-              mark-success for this subscription.
+              Automate Network fees (free Energy/Bandwidth, else TRX top-up),
+              USDT payment, recover residual TRX via sweep, and mark-success for
+              this subscription.
             </DialogDescription>
             <div className="flex flex-wrap gap-2 pt-1">
               <span className="rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
