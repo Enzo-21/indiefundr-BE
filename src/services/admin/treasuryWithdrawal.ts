@@ -5,7 +5,6 @@ import {
 } from "@prisma/client";
 import { getEnv } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
-import { getMainWallet } from "@/lib/wallets/helpers";
 import * as tron from "@/services/tron/client";
 
 export type CreateTreasuryWithdrawalInput = {
@@ -20,7 +19,7 @@ export type CreateTreasuryWithdrawalResult = {
 
 /**
  * Queue a withdrawal that sends USDT from the app Treasury (admin-only).
- * Attribution user/wallet = IndieFundr account matching the admin email.
+ * No IndieFundr user/wallet attribution is required.
  */
 export async function createTreasuryWithdrawalOrder(
   input: CreateTreasuryWithdrawalInput
@@ -50,21 +49,6 @@ export async function createTreasuryWithdrawalOrder(
   }
 
   const adminEmail = input.adminEmail.trim().toLowerCase();
-  const adminUser = await prisma.user.findFirst({
-    where: { email: adminEmail },
-  });
-  if (!adminUser) {
-    throw new Error(
-      `No IndieFundr user found for admin email ${adminEmail}. Sign up with that email first.`
-    );
-  }
-
-  const attributionWallet = await getMainWallet(adminUser.id);
-  if (!attributionWallet) {
-    throw new Error(
-      "Admin IndieFundr account has no wallet. Open the app once to create one."
-    );
-  }
 
   const usdtBalance = await tron.getUsdtBalance(treasuryAddress);
   if (usdtBalance < amount) {
@@ -91,8 +75,6 @@ export async function createTreasuryWithdrawalOrder(
 
   const order = await prisma.withdrawalOrder.create({
     data: {
-      userId: adminUser.id,
-      walletId: attributionWallet.id,
       amountUsdt: amount,
       reservedUsdt: 0,
       destinationAddress: destNorm,

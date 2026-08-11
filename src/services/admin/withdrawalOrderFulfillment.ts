@@ -71,6 +71,9 @@ async function resolveWithdrawalSender(order: WithdrawalOrder): Promise<{
     };
   }
 
+  if (!order.walletId) {
+    throw new Error("User wallet not found");
+  }
   const wallet = await prisma.wallet.findUnique({ where: { id: order.walletId } });
   if (!wallet?.address || !wallet.privateKey) {
     throw new Error("User wallet not found");
@@ -195,7 +198,7 @@ export async function sponsorWithdrawalTransferResources(
     fromAddress: sender.address,
     toAddress: order.destinationAddress,
     amountUsdt: order.amountUsdt,
-    userId: order.userId,
+    userId: order.userId ?? "treasury",
     existingSponsoredTrx: order.sponsoredTrx || 0,
     existingTopUpTxIds: order.topUpTxIds ?? [],
   });
@@ -272,7 +275,7 @@ export async function broadcastWithdrawalAdminTrxTopUp(
   }
 
   const treasuryPk = getTreasuryPrivateKey();
-  await feeSponsorship.assertCanSponsor(order.userId, amountTrx, {
+  await feeSponsorship.assertCanSponsor(order.userId ?? "treasury", amountTrx, {
     existingSponsoredOnOrder: 0,
   });
 
@@ -408,6 +411,9 @@ export async function recoverWithdrawalSponsoredTrx(
     };
   }
 
+  if (!order.walletId) {
+    throw new Error("User wallet not found");
+  }
   const wallet = await prisma.wallet.findUnique({ where: { id: order.walletId } });
   if (!wallet?.privateKey || !wallet.address) {
     throw new Error("User wallet not found");
@@ -534,6 +540,10 @@ export async function markAdminWithdrawalSuccess(
     return;
   }
 
+  if (!completed.userId || !completed.walletId) {
+    return;
+  }
+
   await rebuildWalletActivity(completed.userId, completed.walletId, completed.walletId);
 
   try {
@@ -590,7 +600,7 @@ export async function markAdminWithdrawalFailed(
       updatedAt: new Date(),
     },
   });
-  if (!order.fromTreasury) {
+  if (!order.fromTreasury && order.userId && order.walletId) {
     await rebuildWalletActivity(order.userId, order.walletId, order.walletId);
   }
 }
@@ -668,9 +678,9 @@ export async function listAdminWithdrawalQueue(): Promise<AdminWithdrawalRow[]> 
     rows.push({
       orderType: "withdraw",
       orderId: order.id,
-      userId: order.userId,
-      userEmail: order.user.email,
-      userName: order.user.name,
+      userId: order.userId ?? "",
+      userEmail: order.user?.email ?? order.adminSettledBy ?? "Treasury",
+      userName: order.user?.name ?? "Treasury",
       fundId: "withdraw",
       fundName: order.fromTreasury ? "Treasury withdrawal" : "Withdrawal",
       destinationAddress: order.destinationAddress,

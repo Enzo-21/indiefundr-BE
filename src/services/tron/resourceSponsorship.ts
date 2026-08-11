@@ -595,8 +595,10 @@ export async function finalizeSponsoredResources({
   if (!order) throw new Error("Withdrawal order not found");
   const senderAddress = order.fromTreasury
     ? getEnv().treasuryAddress?.trim()
-    : (await prisma.wallet.findUnique({ where: { id: order.walletId } }))
-        ?.address;
+    : order.walletId
+      ? (await prisma.wallet.findUnique({ where: { id: order.walletId } }))
+          ?.address
+      : undefined;
   if (!senderAddress) {
     throw new Error(
       order.fromTreasury

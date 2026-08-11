@@ -129,8 +129,15 @@ function resolveUserId(params: NotifyUserPaymentParams): string {
   switch (params.kind) {
     case "investment_payout":
       return params.investment.userId;
-    default:
-      return params.order.userId;
+    default: {
+      const userId = params.order.userId;
+      if (!userId) {
+        throw new Error(
+          `Payment notification requires a userId (order ${params.order.id})`
+        );
+      }
+      return userId;
+    }
   }
 }
 
