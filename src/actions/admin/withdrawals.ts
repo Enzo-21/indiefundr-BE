@@ -69,9 +69,12 @@ export async function adminWithdrawalBroadcastTrxTopUp(orderId: string) {
   return result;
 }
 
-export async function adminWithdrawalSponsorTransferResources(orderId: string) {
+export async function adminWithdrawalSponsorTransferResources(
+  orderId: string,
+  minEstimatedTrx?: number
+) {
   const result = await withAdminAction(() =>
-    sponsorWithdrawalTransferResources(orderId)
+    sponsorWithdrawalTransferResources(orderId, { minEstimatedTrx })
   );
   if (result.ok) {
     revalidateOrderViews();

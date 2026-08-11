@@ -367,7 +367,10 @@ export function useCompleteWithdrawalWorkflow(
       });
     }
 
-    const broadcastResult = await adminWithdrawalSponsorTransferResources(orderId);
+    const broadcastResult = await adminWithdrawalSponsorTransferResources(
+      orderId,
+      minEstimatedTrxRef.current > 0 ? minEstimatedTrxRef.current : undefined
+    );
     if (!broadcastResult.ok) {
       throw new Error(broadcastResult.error.msg);
     }

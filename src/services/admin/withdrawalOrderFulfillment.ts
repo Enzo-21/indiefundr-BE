@@ -186,9 +186,12 @@ export async function getWithdrawalFulfillmentEstimate(
 }
 
 export async function sponsorWithdrawalTransferResources(
-  orderId: string
+  orderId: string,
+  options: { minEstimatedTrx?: number } = {}
 ): Promise<AdminSponsorResourcesResult> {
-  logWithdrawalAdmin(orderId, "sponsor_resources_start");
+  logWithdrawalAdmin(orderId, "sponsor_resources_start", {
+    minEstimatedTrx: options.minEstimatedTrx ?? 0,
+  });
   const order = await loadOpenWithdrawal(orderId);
   const sender = await resolveWithdrawalSender(order);
 
@@ -201,6 +204,7 @@ export async function sponsorWithdrawalTransferResources(
     userId: order.userId ?? "treasury",
     existingSponsoredTrx: order.sponsoredTrx || 0,
     existingTopUpTxIds: order.topUpTxIds ?? [],
+    minEstimatedTrx: options.minEstimatedTrx ?? 0,
   });
 
   const txId = result.topUpTxId;

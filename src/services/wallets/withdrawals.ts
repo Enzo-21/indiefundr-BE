@@ -6,11 +6,16 @@ import {
   WithdrawalSlotsEmptyError,
   assertCanCreateWithdrawal,
 } from "@/lib/config/withdrawalSlots";
-import { formatTronTransferError } from "@/lib/utils/tronErrors";
+import {
+  formatTronTransferError,
+  isSponsorshipCoverableFeeError,
+} from "@/lib/utils/tronErrors";
 import { getMainWallet } from "@/lib/wallets/helpers";
 import { prisma } from "@/lib/prisma";
 import { buildIndieFundrMemo, isIndieFundrChainMemoEnabled } from "@/lib/tron/transactionMemo";
 import * as tron from "@/services/tron/client";
+import * as feeSponsorship from "@/services/tron/feeSponsorship";
+import { SPONSORED_FEE_ESTIMATE_FALLBACK_TRX } from "@/services/funds/estimate";
 import {
   getActiveWithdrawalForUser,
   getWalletUsdtAvailability,
@@ -124,12 +129,23 @@ export async function createWithdrawalOrder(
     });
     estimatedTrx = feeEstimate.estimatedTrx;
   } catch (estimateError) {
-    const body = formatTronTransferError(estimateError, {
-      fromAddress: wallet.address,
-      usdtBalance: availability.availableUsdt,
-      amountUsdt: amount,
-    });
-    return { ok: false, status: 400, body };
+    if (
+      feeSponsorship.isEnabled() &&
+      isSponsorshipCoverableFeeError(estimateError, {
+        fromAddress: wallet.address,
+        usdtBalance: availability.availableUsdt,
+        amountUsdt: amount,
+      })
+    ) {
+      estimatedTrx = SPONSORED_FEE_ESTIMATE_FALLBACK_TRX;
+    } else {
+      const body = formatTronTransferError(estimateError, {
+        fromAddress: wallet.address,
+        usdtBalance: availability.availableUsdt,
+        amountUsdt: amount,
+      });
+      return { ok: false, status: 400, body };
+    }
   }
 
   const order = await prisma.withdrawalOrder.create({

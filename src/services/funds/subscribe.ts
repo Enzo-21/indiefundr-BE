@@ -4,7 +4,9 @@ import {
   isValidFundId,
   isValidInvestmentAmount,
 } from "@/lib/config/pricing";
-import { formatTronTransferError } from "@/lib/utils/tronErrors";
+import { formatTronTransferError, isSponsorshipCoverableFeeError } from "@/lib/utils/tronErrors";
+import { SPONSORED_FEE_ESTIMATE_FALLBACK_TRX } from "@/services/funds/estimate";
+import * as feeSponsorship from "@/services/tron/feeSponsorship";
 import { getMainWallet } from "@/lib/wallets/helpers";
 import { getEnv } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
@@ -170,22 +172,43 @@ export async function subscribeToFund(
         amount: cost,
       });
     } catch (estimateError) {
-      const body = formatTronTransferError(estimateError, {
-        fromAddress: sender.address,
-        usdtBalance: availability.availableUsdt,
-        amountUsdt: cost,
-      });
-      logFundsRejected("subscribe", "fee_estimate_failed", {
-        ...baseFields,
-        walletId: sender.id,
-        code: body.code,
-        rawMessage: body.rawMessage,
-      });
-      return {
-        ok: false,
-        status: 400,
-        body,
-      };
+      if (
+        feeSponsorship.isEnabled() &&
+        isSponsorshipCoverableFeeError(estimateError, {
+          fromAddress: sender.address,
+          usdtBalance: availability.availableUsdt,
+          amountUsdt: cost,
+        })
+      ) {
+        logFundsEvent("subscribe", "info", "fee estimate soft-ok under sponsorship", {
+          ...baseFields,
+          walletId: sender.id,
+          estimateError:
+            estimateError instanceof Error
+              ? estimateError.message
+              : String(estimateError),
+        });
+        feeEstimate = {
+          estimatedTrx: SPONSORED_FEE_ESTIMATE_FALLBACK_TRX,
+        };
+      } else {
+        const body = formatTronTransferError(estimateError, {
+          fromAddress: sender.address,
+          usdtBalance: availability.availableUsdt,
+          amountUsdt: cost,
+        });
+        logFundsRejected("subscribe", "fee_estimate_failed", {
+          ...baseFields,
+          walletId: sender.id,
+          code: body.code,
+          rawMessage: body.rawMessage,
+        });
+        return {
+          ok: false,
+          status: 400,
+          body,
+        };
+      }
     }
 
     let order = await prisma.purchaseOrder.create({
