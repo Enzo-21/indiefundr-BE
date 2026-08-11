@@ -15,7 +15,10 @@ import {
   recoverWithdrawalSponsoredTrx,
   sponsorWithdrawalTransferResources,
 } from "@/services/admin/withdrawalOrderFulfillment";
-import { createTreasuryWithdrawalOrder } from "@/services/admin/treasuryWithdrawal";
+import {
+  createTreasuryWithdrawalOrder,
+  validateTreasuryWithdrawalDestination,
+} from "@/services/admin/treasuryWithdrawal";
 
 function revalidateOrderViews() {
   revalidatePath("/admin/orders");
@@ -137,6 +140,13 @@ export async function adminMarkWithdrawalAutopilotManualCheck(
     revalidateOrderViews();
   }
   return result;
+}
+
+export async function adminValidateTreasuryWithdrawalDestination(
+  address: string
+) {
+  await verifyAdminSession();
+  return withAdminAction(() => validateTreasuryWithdrawalDestination(address));
 }
 
 export async function adminCreateTreasuryWithdrawal(input: {

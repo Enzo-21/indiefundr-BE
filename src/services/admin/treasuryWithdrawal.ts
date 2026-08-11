@@ -6,6 +6,7 @@ import {
 import { getEnv } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import * as tron from "@/services/tron/client";
+import type { WithdrawalDestinationValidation } from "@/services/wallets/withdrawalDestination";
 
 export type CreateTreasuryWithdrawalInput = {
   amountUsdt: number;
@@ -16,6 +17,42 @@ export type CreateTreasuryWithdrawalInput = {
 export type CreateTreasuryWithdrawalResult = {
   order: WithdrawalOrder;
 };
+
+/**
+ * Same destination checks as the mobile withdraw flow: valid TRC20 address,
+ * and not the sender (treasury) address. Activation is not required to receive.
+ */
+export async function validateTreasuryWithdrawalDestination(
+  rawAddress: string
+): Promise<WithdrawalDestinationValidation> {
+  const trimmed = rawAddress.trim();
+  if (!trimmed) {
+    return { valid: false, message: "Destination address is required" };
+  }
+
+  const destNorm =
+    (await tron.normalizeTronAddress(trimmed)) ?? trimmed;
+  if (!(await tron.validateAddress(destNorm))) {
+    return {
+      valid: false,
+      message: "Enter a valid Tron (TRC20) address",
+    };
+  }
+
+  const treasuryAddress = getEnv().treasuryAddress?.trim();
+  if (treasuryAddress) {
+    const treasuryNorm =
+      (await tron.normalizeTronAddress(treasuryAddress)) ?? treasuryAddress;
+    if (destNorm === treasuryNorm) {
+      return {
+        valid: false,
+        message: "Destination cannot be the treasury address",
+      };
+    }
+  }
+
+  return { valid: true, normalizedAddress: destNorm };
+}
 
 /**
  * Queue a withdrawal that sends USDT from the app Treasury (admin-only).
@@ -35,18 +72,13 @@ export async function createTreasuryWithdrawalOrder(
     throw new Error("Treasury is not configured");
   }
 
-  const destNorm =
-    (await tron.normalizeTronAddress(input.destinationAddress.trim())) ??
-    input.destinationAddress.trim();
-  if (!(await tron.validateAddress(destNorm))) {
-    throw new Error("Enter a valid Tron (TRC20) address");
+  const destCheck = await validateTreasuryWithdrawalDestination(
+    input.destinationAddress
+  );
+  if (!destCheck.valid) {
+    throw new Error(destCheck.message);
   }
-
-  const treasuryNorm =
-    (await tron.normalizeTronAddress(treasuryAddress)) ?? treasuryAddress;
-  if (destNorm === treasuryNorm) {
-    throw new Error("Destination cannot be the treasury address");
-  }
+  const destNorm = destCheck.normalizedAddress;
 
   const adminEmail = input.adminEmail.trim().toLowerCase();
 
