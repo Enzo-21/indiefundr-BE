@@ -24,6 +24,14 @@ function computeTrxTopUpAmount(estimate: {
   return parseFloat(Math.max(0, target - estimate.trxBalance).toFixed(6));
 }
 
+/** Admin-facing message when treasury cannot fund a TRX top-up. */
+export function formatTreasuryInsufficientForTopUpError(
+  needTrx: number,
+  treasuryTrx: number
+): string {
+  return `Treasury TRX insufficient for top-up: need ${needTrx} TRX, treasury has ${treasuryTrx} TRX. Fund treasury and retry.`;
+}
+
 export type SponsorshipOrderKind = "purchase" | "withdrawal";
 
 export type SponsorTransferResourcesResult = {
@@ -205,11 +213,38 @@ async function applyTrxTopUp({
     existingSponsoredOnOrder: existingSponsoredTrx,
   });
 
-  const signed = await tron.transferTrx({
-    fromPrivateKey: treasuryPk,
-    toAddress: walletAddress,
-    amountTrx,
-  });
+  const treasuryFromAddress =
+    treasuryAddress || (await tron.privateKeyToAddress(treasuryPk));
+  const treasuryTrxBalance = await tron.getTrxBalance(treasuryFromAddress);
+  const treasuryTransferFee = await tron.estimateTrxTransferFee(
+    treasuryFromAddress
+  );
+  const needTrx = parseFloat(
+    (amountTrx + treasuryTransferFee.estimatedTrx).toFixed(6)
+  );
+  if (treasuryTrxBalance < needTrx) {
+    throw new Error(
+      formatTreasuryInsufficientForTopUpError(needTrx, treasuryTrxBalance)
+    );
+  }
+
+  let signed: Record<string, unknown>;
+  try {
+    signed = await tron.transferTrx({
+      fromPrivateKey: treasuryPk,
+      toAddress: walletAddress,
+      amountTrx,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (tron.isInsufficientTrxBalanceError(message)) {
+      const freshBalance = await tron.getTrxBalance(treasuryFromAddress);
+      throw new Error(
+        formatTreasuryInsufficientForTopUpError(needTrx, freshBalance)
+      );
+    }
+    throw error;
+  }
   const txId = tron.getTxId(signed);
   if (!txId) {
     throw new Error("TRX broadcast missing transaction id");
