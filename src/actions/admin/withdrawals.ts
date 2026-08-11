@@ -12,6 +12,8 @@ import {
   markAdminWithdrawalSuccess,
   recordWithdrawalAdminTrxTopUp,
   recordWithdrawalAdminUsdtTx,
+  recoverWithdrawalSponsoredTrx,
+  sponsorWithdrawalTransferResources,
 } from "@/services/admin/withdrawalOrderFulfillment";
 
 function revalidateOrderViews() {
@@ -55,6 +57,26 @@ export async function adminWithdrawalGetEstimate(orderId: string) {
 export async function adminWithdrawalBroadcastTrxTopUp(orderId: string) {
   const result = await withAdminAction(() =>
     broadcastWithdrawalAdminTrxTopUp(orderId)
+  );
+  if (result.ok) {
+    revalidateOrderViews();
+  }
+  return result;
+}
+
+export async function adminWithdrawalSponsorTransferResources(orderId: string) {
+  const result = await withAdminAction(() =>
+    sponsorWithdrawalTransferResources(orderId)
+  );
+  if (result.ok) {
+    revalidateOrderViews();
+  }
+  return result;
+}
+
+export async function adminWithdrawalRecoverSponsoredTrx(orderId: string) {
+  const result = await withAdminAction(() =>
+    recoverWithdrawalSponsoredTrx(orderId)
   );
   if (result.ok) {
     revalidateOrderViews();

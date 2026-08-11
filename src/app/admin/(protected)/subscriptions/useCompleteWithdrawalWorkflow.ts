@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { adminGetTransactionStatus } from "@/actions/admin/purchaseOrders";
 import {
-  adminWithdrawalBroadcastTrxTopUp,
   adminWithdrawalBroadcastUsdt,
   adminWithdrawalGetEstimate,
   adminWithdrawalMarkSuccess,
+  adminWithdrawalRecoverSponsoredTrx,
+  adminWithdrawalSponsorTransferResources,
 } from "@/actions/admin/withdrawals";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
 import {
@@ -20,13 +21,12 @@ import {
   type CompleteOrderStepState,
 } from "./useCompleteOrderWorkflow";
 
-const TRX_TOPUP_BUFFER_RATIO = 1.5;
-
-export type CompleteWithdrawalStepId = "trx" | "usdt" | "complete";
+export type CompleteWithdrawalStepId = "trx" | "usdt" | "recover" | "complete";
 
 const STEP_LABELS: Record<CompleteWithdrawalStepId, string> = {
-  trx: "TRX confirmation",
+  trx: "Network fees",
   usdt: "USDT payment",
+  recover: "Recover TRX",
   complete: "Mark successful",
 };
 
@@ -34,7 +34,7 @@ const MANUAL_SKIP_DETAIL =
   "Marked complete manually — will skip during automation";
 
 function initialSteps(): CompleteOrderStepSnapshot[] {
-  return (["trx", "usdt", "complete"] as const).map((id) => ({
+  return (["trx", "usdt", "recover", "complete"] as const).map((id) => ({
     id,
     label: STEP_LABELS[id],
     state: "idle" as CompleteOrderStepState,
@@ -314,7 +314,7 @@ export function useCompleteWithdrawalWorkflow(
     setError(null);
     patchStep("trx", {
       state: "retry_wait",
-      detail: "Waiting 60s before retrying TRX top-up…",
+      detail: "Waiting 60s before retrying network fees…",
     });
     while (Date.now() < until.getTime()) {
       if (abortRef.current) {
@@ -342,10 +342,9 @@ export function useCompleteWithdrawalWorkflow(
     }
 
     logWithdrawalWorkflow(orderId, "trx", "step_start");
-    const minEstimatedTrx = minEstimatedTrxRef.current;
     patchStep("trx", {
       state: "running",
-      detail: "Estimating network fees…",
+      detail: "Checking Energy/Bandwidth and sponsorship path…",
       txId: null,
       tronscanUrl: null,
     });
@@ -356,43 +355,74 @@ export function useCompleteWithdrawalWorkflow(
     }
 
     const estimate = estimateResult.data;
-    const needed = Math.max(estimate.estimatedTrx, minEstimatedTrx);
-    const targetTrx = parseFloat(
-      (needed * TRX_TOPUP_BUFFER_RATIO).toFixed(6)
-    );
-    const topUpAmount = parseFloat(
-      Math.max(0, targetTrx - estimate.trxBalance).toFixed(6)
-    );
-
-    if (topUpAmount <= 0) {
+    if (estimate.canTransferZeroBurn) {
       patchStep("trx", {
-        state: "skipped",
-        detail: `Wallet has enough TRX (${formatTrx(estimate.trxBalance)} TRX) for estimated ${formatTrx(needed)} TRX — skipping top-up`,
+        state: "running",
+        detail: "User has enough Energy/Bandwidth — confirming free transfer path…",
       });
-      logWithdrawalWorkflow(orderId, "trx", "step_skipped", {
-        trxBalance: estimate.trxBalance,
-        needed,
+    } else {
+      patchStep("trx", {
+        state: "running",
+        detail: `Energy shortfall ${estimate.energyShortfall} — trying JustLend rent, then TRX top-up fallback…`,
       });
-      return;
     }
 
-    patchStep("trx", {
-      state: "running",
-      detail: `Need ${formatTrx(needed)} TRX → sending ${formatTrx(topUpAmount)} TRX (${Math.round((TRX_TOPUP_BUFFER_RATIO - 1) * 100)}% buffer)…`,
-    });
-
-    const broadcastResult = await adminWithdrawalBroadcastTrxTopUp(orderId);
+    const broadcastResult = await adminWithdrawalSponsorTransferResources(orderId);
     if (!broadcastResult.ok) {
       throw new Error(broadcastResult.error.msg);
     }
 
     const broadcast = broadcastResult.data;
+
+    if (broadcast.mode === "user_resources") {
+      patchStep("trx", {
+        state: "skipped",
+        detail: broadcast.detail,
+      });
+      logWithdrawalWorkflow(orderId, "trx", "step_skipped", { mode: broadcast.mode });
+      return;
+    }
+
+    if (broadcast.mode === "justlend_rent") {
+      const rentTxId = broadcast.energyRentTxId ?? broadcast.txId;
+      if (rentTxId) {
+        const tronscanUrl = getTronscanTxUrl(rentTxId);
+        patchStep("trx", {
+          state: "waiting_chain",
+          detail: "Waiting for JustLend Energy rent confirmation…",
+          txId: rentTxId,
+          tronscanUrl,
+        });
+        const poll = await pollTransaction("trx", rentTxId, false);
+        if (poll.outcome === "failed") {
+          throw new Error(poll.message);
+        }
+        patchStep("trx", {
+          state: "success",
+          detail: broadcast.detail,
+          txId: rentTxId,
+          tronscanUrl,
+        });
+      } else {
+        patchStep("trx", {
+          state: "success",
+          detail: broadcast.detail,
+        });
+      }
+      logWithdrawalWorkflow(orderId, "trx", "step_success", {
+        mode: broadcast.mode,
+        txId: rentTxId,
+      });
+      return;
+    }
+
     if (broadcast.skipped || !broadcast.txId) {
       patchStep("trx", {
         state: "skipped",
-        detail: `Wallet has enough TRX (${formatTrx(broadcast.trxBalance)} TRX) — skipping top-up`,
+        detail: broadcast.detail,
       });
       logWithdrawalWorkflow(orderId, "trx", "step_skipped", {
+        mode: broadcast.mode,
         trxBalance: broadcast.trxBalance,
       });
       return;
@@ -401,7 +431,7 @@ export function useCompleteWithdrawalWorkflow(
     const tronscanUrl = getTronscanTxUrl(broadcast.txId);
     patchStep("trx", {
       state: "waiting_chain",
-      detail: "Waiting for TRX confirmation on-chain…",
+      detail: "Waiting for TRX top-up confirmation on-chain…",
       txId: broadcast.txId,
       tronscanUrl,
     });
@@ -413,11 +443,12 @@ export function useCompleteWithdrawalWorkflow(
 
     patchStep("trx", {
       state: "success",
-      detail: `TRX confirmed on-chain (${formatTrx(broadcast.amountTrx)} TRX sent)`,
+      detail: `TRX top-up confirmed (${formatTrx(broadcast.amountTrx)} TRX) — fallback path`,
       txId: broadcast.txId,
       tronscanUrl,
     });
     logWithdrawalWorkflow(orderId, "trx", "step_success", {
+      mode: broadcast.mode,
       txId: broadcast.txId,
       amountTrx: broadcast.amountTrx,
     });
@@ -430,7 +461,7 @@ export function useCompleteWithdrawalWorkflow(
       }
       patchStep("usdt", {
         state: "failed",
-        detail: `${failureMessage} — retrying from TRX step`,
+        detail: `${failureMessage} — retrying from network fees step`,
       });
       if (feeTrx > 0) {
         minEstimatedTrxRef.current = Math.max(minEstimatedTrxRef.current, feeTrx);
@@ -438,6 +469,7 @@ export function useCompleteWithdrawalWorkflow(
       await waitFuelRetry();
       resetStepIfNotManual("trx");
       resetStepIfNotManual("usdt");
+      resetStepIfNotManual("recover");
       return true;
     },
     [patchStep, resetStepIfNotManual, waitFuelRetry]
@@ -502,6 +534,73 @@ export function useCompleteWithdrawalWorkflow(
     [costUsdt, handleFuelRetry, isStepManuallySkipped, orderId, patchStep, pollTransaction]
   );
 
+  const runRecoverStep = useCallback(async () => {
+    if (isStepManuallySkipped("recover")) {
+      logWithdrawalWorkflow(orderId, "recover", "step_manually_skipped");
+      return;
+    }
+
+    logWithdrawalWorkflow(orderId, "recover", "step_start");
+    patchStep("recover", {
+      state: "running",
+      detail: "Finalizing sponsored resources (JustLend return / TRX sweep)…",
+      txId: null,
+      tronscanUrl: null,
+    });
+
+    const result = await adminWithdrawalRecoverSponsoredTrx(orderId);
+    if (!result.ok) {
+      throw new Error(result.error.msg);
+    }
+
+    const recovery = result.data;
+    if (recovery.skipped) {
+      const isJustLendReturn =
+        Boolean(recovery.sweepTxId) &&
+        /JustLend/i.test(recovery.reason ?? "");
+      patchStep("recover", {
+        state: isJustLendReturn ? "success" : "skipped",
+        detail: recovery.reason ?? "No sponsored TRX to recover",
+        txId: recovery.sweepTxId,
+        tronscanUrl: recovery.sweepTxId
+          ? getTronscanTxUrl(recovery.sweepTxId)
+          : null,
+      });
+      logWithdrawalWorkflow(orderId, "recover", "step_skipped", {
+        reason: recovery.reason,
+      });
+      return;
+    }
+
+    if (!recovery.sweepTxId || recovery.recoveredTrx <= 0) {
+      throw new Error("TRX recovery broadcast failed");
+    }
+
+    const tronscanUrl = getTronscanTxUrl(recovery.sweepTxId);
+    patchStep("recover", {
+      state: "waiting_chain",
+      detail: `Returning ${formatTrx(recovery.recoveredTrx)} TRX to treasury…`,
+      txId: recovery.sweepTxId,
+      tronscanUrl,
+    });
+
+    const poll = await pollTransaction("recover", recovery.sweepTxId, false);
+    if (poll.outcome === "failed") {
+      throw new Error(poll.message);
+    }
+
+    patchStep("recover", {
+      state: "success",
+      detail: `Returned ${formatTrx(recovery.recoveredTrx)} TRX to treasury`,
+      txId: recovery.sweepTxId,
+      tronscanUrl,
+    });
+    logWithdrawalWorkflow(orderId, "recover", "step_success", {
+      sweepTxId: recovery.sweepTxId,
+      recoveredTrx: recovery.recoveredTrx,
+    });
+  }, [isStepManuallySkipped, orderId, patchStep, pollTransaction]);
+
   const runCompleteStep = useCallback(async () => {
     if (isStepManuallySkipped("complete")) {
       logWithdrawalWorkflow(orderId, "complete", "step_manually_skipped");
@@ -549,6 +648,7 @@ export function useCompleteWithdrawalWorkflow(
         break;
       }
 
+      await runRecoverStep();
       await runCompleteStep();
       logWithdrawalWorkflow(orderId, "complete", "workflow_success");
       return { success: true };
@@ -586,6 +686,7 @@ export function useCompleteWithdrawalWorkflow(
     orderId,
     prepareRunBeforeStart,
     runCompleteStep,
+    runRecoverStep,
     runTrxStep,
     runUsdtStep,
   ]);

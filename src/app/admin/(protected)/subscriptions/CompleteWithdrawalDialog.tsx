@@ -25,7 +25,12 @@ import {
   useCompleteWithdrawalWorkflow,
 } from "./useCompleteWithdrawalWorkflow";
 
-const STEP_ORDER: CompleteWithdrawalStepId[] = ["trx", "usdt", "complete"];
+const STEP_ORDER: CompleteWithdrawalStepId[] = [
+  "trx",
+  "usdt",
+  "recover",
+  "complete",
+];
 
 function formatBalance(value: number | null, decimals = 2) {
   if (value == null) {
@@ -178,8 +183,9 @@ export function CompleteWithdrawalDialog({ row }: { row: AdminWithdrawalRow }) {
           <DialogHeader className="gap-3 text-left">
             <DialogTitle className="text-xl">Complete withdrawal</DialogTitle>
             <DialogDescription className="text-base leading-relaxed">
-              Automate TRX top-up, USDT payment to the destination address, and
-              mark-success for this withdrawal.
+              Automate Network fees (user Energy/Bandwidth, JustLend rent, or
+              TRX top-up), USDT payment to the destination, recover sponsored
+              resources, and mark-success for this withdrawal.
             </DialogDescription>
             <div className="flex flex-wrap gap-2 pt-1">
               <span className="rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
@@ -238,7 +244,7 @@ export function CompleteWithdrawalDialog({ row }: { row: AdminWithdrawalRow }) {
               Click a step to mark it as already done. Marked steps are skipped
               when automation runs.
             </p>
-            <div className="grid gap-3 lg:grid-cols-3">
+            <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
               {STEP_ORDER.map((stepId, index) => {
                 const step = stepsById[stepId];
                 if (!step) {
@@ -289,7 +295,7 @@ export function CompleteWithdrawalDialog({ row }: { row: AdminWithdrawalRow }) {
                 void handleStart();
               }}
             >
-              Retry from TRX
+              Retry from fees
             </Button>
           ) : (
             <Button

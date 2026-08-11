@@ -158,6 +158,12 @@ enum FeeSponsorshipStatus {
   loss
 }
 
+enum FeeSponsorshipMode {
+  user_resources
+  justlend_rent
+  trx_topup
+}
+
 type ProfileSocial {
   twitter   String?
   facebook  String?
@@ -414,6 +420,13 @@ model PurchaseOrder {
   adminSettledBy    String?
   adminNotes        String?
   estimatedTrx    Float?
+  sponsorshipMode FeeSponsorshipMode?
+  energyRentTxId  String?
+  energyReturnTxId String?
+  energyRentAmountSun String?
+  energyTarget    Int?
+  bandwidthRentTxId String?
+  bandwidthRentAmountSun String?
   sponsoredTrx    Float               @default(0)
   sponsorRound    Int                 @default(0)
   recoveredTrx    Float               @default(0)
@@ -464,6 +477,21 @@ model WithdrawalOrder {
   adminSettledBy       String?
   adminNotes           String?
   estimatedTrx         Float?
+  sponsorshipMode      FeeSponsorshipMode?
+  energyRentTxId       String?
+  energyReturnTxId     String?
+  energyRentAmountSun  String?
+  energyTarget         Int?
+  bandwidthRentTxId    String?
+  bandwidthRentAmountSun String?
+  sponsoredTrx         Float                 @default(0)
+  sponsorRound         Int                   @default(0)
+  recoveredTrx         Float                 @default(0)
+  trxBefore            Float                 @default(0)
+  trxAfterUsdt         Float?
+  topUpTxId            String?
+  topUpTxIds           String[]              @default([])
+  sweepTxId            String?
   failureReason        String?
   paymentChainOutcome  String?
   paymentChainTxId     String?

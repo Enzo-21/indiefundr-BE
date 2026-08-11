@@ -41,6 +41,15 @@ const rawEnvSchema = z.object({
   SPONSOR_TRX_RESERVE: z.coerce.number().default(0.1),
   TREASURY_TRX_TOPUP_WAIT_MS: z.coerce.number().default(120_000),
   TREASURY_TRX_TOPUP_MAX_ROUNDS: z.coerce.number().default(5),
+  JUSTLEND_ENERGY_RENT_ENABLED: z.string().optional(),
+  JUSTLEND_ENERGY_RENTAL_ADDRESS: z
+    .string()
+    .default("TU2MJ5Veik1LRAgjeSzEdvmDYx7mefJZvd"),
+  JUSTLEND_OPENAPI_BASE: z.string().default("https://openapi.just.network"),
+  JUSTLEND_RENT_DURATION_SECONDS: z.coerce.number().default(3600),
+  JUSTLEND_PREPAY_BUFFER_RATIO: z.coerce.number().default(1.2),
+  JUSTLEND_ENERGY_WAIT_TIMEOUT_MS: z.coerce.number().default(90_000),
+  JUSTLEND_ENERGY_WAIT_POLL_MS: z.coerce.number().default(2_000),
   FAILED_INVESTMENT_CLEANUP_LIMIT: z.coerce.number().default(50),
   WALLET_ACTIVITY_LIMIT: z.coerce.number().default(50),
   WALLET_ACTIVITY_CHAIN_LIMIT: z.coerce.number().default(30),
@@ -129,6 +138,16 @@ function buildEnv(raw: z.infer<typeof rawEnvSchema>) {
     sponsorTrxReserve: raw.SPONSOR_TRX_RESERVE,
     treasuryTrxTopUpWaitMs: raw.TREASURY_TRX_TOPUP_WAIT_MS,
     treasuryTrxTopUpMaxRounds: raw.TREASURY_TRX_TOPUP_MAX_ROUNDS,
+    justlendEnergyRentEnabled: envFlag(
+      raw.JUSTLEND_ENERGY_RENT_ENABLED,
+      raw.BLOCKCHAIN_NETWORK === "mainnet"
+    ),
+    justlendEnergyRentalAddress: raw.JUSTLEND_ENERGY_RENTAL_ADDRESS.trim(),
+    justlendOpenApiBase: raw.JUSTLEND_OPENAPI_BASE.replace(/\/$/, ""),
+    justlendRentDurationSeconds: raw.JUSTLEND_RENT_DURATION_SECONDS,
+    justlendPrepayBufferRatio: raw.JUSTLEND_PREPAY_BUFFER_RATIO,
+    justlendEnergyWaitTimeoutMs: raw.JUSTLEND_ENERGY_WAIT_TIMEOUT_MS,
+    justlendEnergyWaitPollMs: raw.JUSTLEND_ENERGY_WAIT_POLL_MS,
     failedInvestmentCleanupLimit: raw.FAILED_INVESTMENT_CLEANUP_LIMIT,
     walletActivityLimit: raw.WALLET_ACTIVITY_LIMIT,
     walletActivityChainLimit: raw.WALLET_ACTIVITY_CHAIN_LIMIT,

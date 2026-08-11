@@ -284,14 +284,22 @@ export type UsdtTransferEstimate = {
   energyUsed: number;
   energyAvailable: number;
   energyBillable: number;
+  energyShortfall: number;
   energyPriceSun: number;
+  bandwidthAvailable: number;
+  bandwidthBillable: number;
+  bandwidthShortfall: number;
   estimatedTrx: number;
   estimatedTrxBase: number;
   feeBufferPercent: number;
   trxBalance: number;
   usdtBalance: number;
+  hasEnoughEnergy: boolean;
+  hasEnoughBandwidth: boolean;
   hasEnoughTrx: boolean;
   hasEnoughUsdt: boolean;
+  /** True when Energy + Bandwidth cover the transfer with no TRX burn. */
+  canTransferZeroBurn: boolean;
   canTransfer: boolean;
 };
 
@@ -352,11 +360,13 @@ export async function estimateUsdtTransfer({
   const energyAvailable = getAccountEnergyAvailable(resources);
   const bandwidthAvailable = getAccountBandwidthAvailable(resources);
   const energyBillable = Math.max(0, energyUsed - energyAvailable);
+  const energyShortfall = energyBillable;
   const energyCostSun = energyBillable * energyPriceSun;
   const txBytes = simulation.transaction?.raw_data
     ? JSON.stringify(simulation.transaction.raw_data).length
     : 350;
   const bandwidthBillable = Math.max(0, txBytes - bandwidthAvailable);
+  const bandwidthShortfall = bandwidthBillable;
   const bandwidthCostSun = bandwidthBillable * DEFAULT_BANDWIDTH_FEE_SUN;
   const estimatedTrxBase = (energyCostSun + bandwidthCostSun) / 1e6;
   const estimatedTrx = parseFloat(
@@ -368,6 +378,10 @@ export async function estimateUsdtTransfer({
     getUsdtBalance(fromAddress),
   ]);
 
+  const hasEnoughEnergy = energyBillable === 0;
+  const hasEnoughBandwidth = bandwidthBillable === 0;
+  const canTransferZeroBurn = hasEnoughEnergy && hasEnoughBandwidth;
+
   return {
     fromAddress,
     toAddress,
@@ -375,17 +389,48 @@ export async function estimateUsdtTransfer({
     energyUsed,
     energyAvailable,
     energyBillable,
+    energyShortfall,
     energyPriceSun,
+    bandwidthAvailable,
+    bandwidthBillable,
+    bandwidthShortfall,
     estimatedTrx,
     estimatedTrxBase: parseFloat(estimatedTrxBase.toFixed(6)),
     feeBufferPercent: Math.round((FEE_BUFFER_RATIO - 1) * 100),
     trxBalance,
     usdtBalance,
+    hasEnoughEnergy,
+    hasEnoughBandwidth,
     hasEnoughTrx: trxBalance >= estimatedTrx,
     hasEnoughUsdt: usdtBalance >= amount,
-    canTransfer: trxBalance >= estimatedTrx && usdtBalance >= amount,
+    canTransferZeroBurn,
+    canTransfer:
+      (canTransferZeroBurn || trxBalance >= estimatedTrx) &&
+      usdtBalance >= amount,
   };
 }
+
+/** Public helper for Energy availability checks (e.g. JustLend wait loops). */
+export async function getAccountEnergyAvailableForAddress(
+  address: string
+): Promise<number> {
+  const tronWeb = await createTronWeb();
+  try {
+    const resources = await runWithTronLimiter("trx.getAccountResources", () =>
+      tronWeb.trx.getAccountResources(address)
+    );
+    return getAccountEnergyAvailable(resources);
+  } catch (err) {
+    console.warn(
+      "[tron] getAccountEnergyAvailableForAddress failed:",
+      err instanceof Error ? err.message : err
+    );
+    return 0;
+  }
+}
+
+/** Export createTronWeb for JustLend / sponsorship modules that need signing. */
+export { createTronWeb };
 
 export async function transferUsdt({
   fromPrivateKey,

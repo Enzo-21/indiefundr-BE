@@ -14,12 +14,20 @@ import {
 } from "@/lib/admin/autopilotBatch";
 import {
   ADMIN_TRX_TOPUP_BUFFER_RATIO,
+  computeAdminRecoverableTrx,
   computeAdminTrxTopUpAmount,
   type AdminFulfillmentEstimate,
+  type AdminRecoverTrxResult,
+  type AdminSponsorResourcesResult,
   type AdminTrxTopUpResult,
 } from "@/services/admin/purchaseOrderFulfillment";
 import * as feeSponsorship from "@/services/tron/feeSponsorship";
 import * as tron from "@/services/tron/client";
+import {
+  finalizeSponsoredResources,
+  shouldRecoverSponsoredTrx,
+  sponsorTransferResources,
+} from "@/services/tron/resourceSponsorship";
 
 const OPEN_STATUSES: WithdrawalOrderStatus[] = [
   WithdrawalOrderStatus.queued,
@@ -133,7 +141,63 @@ export async function getWithdrawalFulfillmentEstimate(
     shortfall,
     hasEnoughTrx: feeEstimate.hasEnoughTrx,
     hasEnoughUsdt: feeEstimate.hasEnoughUsdt,
+    hasEnoughEnergy: feeEstimate.hasEnoughEnergy,
+    hasEnoughBandwidth: feeEstimate.hasEnoughBandwidth,
+    canTransferZeroBurn: feeEstimate.canTransferZeroBurn,
+    energyUsed: feeEstimate.energyUsed,
+    energyAvailable: feeEstimate.energyAvailable,
+    energyShortfall: feeEstimate.energyShortfall,
+    bandwidthAvailable: feeEstimate.bandwidthAvailable,
+    bandwidthShortfall: feeEstimate.bandwidthShortfall,
     costUsdt: order.amountUsdt,
+  };
+}
+
+export async function sponsorWithdrawalTransferResources(
+  orderId: string
+): Promise<AdminSponsorResourcesResult> {
+  logWithdrawalAdmin(orderId, "sponsor_resources_start");
+  const order = await loadOpenWithdrawal(orderId);
+  const wallet = await prisma.wallet.findUnique({ where: { id: order.walletId } });
+  if (!wallet?.address) {
+    throw new Error("User wallet not found");
+  }
+
+  const result = await sponsorTransferResources({
+    orderKind: "withdrawal",
+    orderId,
+    fromAddress: wallet.address,
+    toAddress: order.destinationAddress,
+    amountUsdt: order.amountUsdt,
+    userId: order.userId,
+    existingSponsoredTrx: order.sponsoredTrx || 0,
+    existingTopUpTxIds: order.topUpTxIds ?? [],
+  });
+
+  const txId =
+    result.topUpTxId ?? result.energyRentTxId ?? result.bandwidthRentTxId;
+
+  logWithdrawalAdmin(orderId, "sponsor_resources_done", {
+    mode: result.mode,
+    skipped: result.skipped,
+    txId,
+    detail: result.detail,
+  });
+
+  return {
+    mode: result.mode,
+    skipped: result.skipped,
+    txId,
+    amountTrx: result.amountTrx,
+    estimatedTrx: result.estimate.estimatedTrx,
+    trxBalance: result.estimate.trxBalance,
+    shortfall: result.shortfall,
+    targetTrx: result.targetTrx,
+    bufferRatio: result.bufferRatio,
+    detail: result.detail,
+    energyRentTxId: result.energyRentTxId,
+    bandwidthRentTxId: result.bandwidthRentTxId,
+    energyTarget: result.energyTarget,
   };
 }
 
@@ -243,6 +307,155 @@ export async function broadcastWithdrawalAdminUsdt(
   await recordWithdrawalAdminUsdtTx(orderId, txId);
   logWithdrawalAdmin(orderId, "usdt_broadcast_success", { txId });
   return txId;
+}
+
+export async function recoverWithdrawalSponsoredTrx(
+  orderId: string
+): Promise<AdminRecoverTrxResult> {
+  logWithdrawalAdmin(orderId, "recover_start");
+  const order = await loadOpenWithdrawal(orderId);
+
+  const treasuryAddress = getEnv().treasuryAddress;
+  if (!treasuryAddress) {
+    throw new Error("Treasury address is not configured");
+  }
+
+  const finalized = await finalizeSponsoredResources({
+    orderKind: "withdrawal",
+    orderId,
+  });
+
+  if (finalized.mode === "justlend_rent" || finalized.mode === "user_resources") {
+    logWithdrawalAdmin(orderId, "recover_skip", {
+      reason: finalized.detail,
+      mode: finalized.mode,
+      energyReturnTxId: finalized.energyReturnTxId,
+    });
+    return {
+      skipped: true,
+      sweepTxId: finalized.energyReturnTxId,
+      recoveredTrx: 0,
+      sponsoredTrx: order.sponsoredTrx || 0,
+      recoverableTrx: 0,
+      reason: finalized.detail,
+    };
+  }
+
+  if (!shouldRecoverSponsoredTrx(order)) {
+    return {
+      skipped: true,
+      sweepTxId: null,
+      recoveredTrx: 0,
+      sponsoredTrx: order.sponsoredTrx || 0,
+      recoverableTrx: 0,
+      reason: "No sponsored TRX to recover",
+    };
+  }
+
+  const sponsoredTrx = order.sponsoredTrx || 0;
+  if (sponsoredTrx <= 0) {
+    return {
+      skipped: true,
+      sweepTxId: null,
+      recoveredTrx: 0,
+      sponsoredTrx: 0,
+      recoverableTrx: 0,
+      reason: "No sponsored TRX to recover",
+    };
+  }
+
+  if (order.recoveredTrx > 0 && order.sweepTxId) {
+    return {
+      skipped: true,
+      sweepTxId: order.sweepTxId,
+      recoveredTrx: order.recoveredTrx,
+      sponsoredTrx,
+      recoverableTrx: 0,
+      reason: "TRX already recovered",
+    };
+  }
+
+  const wallet = await prisma.wallet.findUnique({ where: { id: order.walletId } });
+  if (!wallet?.privateKey || !wallet.address) {
+    throw new Error("User wallet not found");
+  }
+
+  const reserveTrx = getEnv().sponsorTrxReserve;
+  const trxBalance = await tron.getTrxBalance(wallet.address);
+  const transferFee = await tron.estimateAdminSweepTransferFee(wallet.address);
+  const transferFeeTrx = transferFee.estimatedTrx;
+  const recoverableTrx = computeAdminRecoverableTrx({
+    sponsoredTrx,
+    currentTrxBalance: trxBalance,
+    reserveTrx,
+    transferFeeTrx,
+  });
+
+  if (recoverableTrx <= 0) {
+    const reason = `Balance ${trxBalance.toFixed(4)} TRX, recoverable 0 TRX (reserve ${reserveTrx} TRX, sweep fee ${transferFeeTrx.toFixed(4)} TRX)`;
+    return {
+      skipped: true,
+      sweepTxId: null,
+      recoveredTrx: 0,
+      trxBalance,
+      sponsoredTrx,
+      recoverableTrx: 0,
+      transferFeeTrx,
+      reason,
+    };
+  }
+
+  let sweep: Record<string, unknown> | null = null;
+  try {
+    sweep = await tron.sweepTrxToTreasury({
+      userPrivateKey: wallet.privateKey,
+      treasuryAddress,
+      maxAmountTrx: recoverableTrx,
+      reserveTrx,
+      trxBalanceBefore: order.trxBefore || trxBalance,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Withdrawal TRX sweep failed: ${message}`);
+  }
+
+  const sweepTxId = sweep ? tron.getTxId(sweep) : null;
+  const recoveredTrx = sweepTxId
+    ? Number((sweep as { amountTrx?: number }).amountTrx || 0)
+    : 0;
+
+  if (!sweepTxId || recoveredTrx <= 0) {
+    return {
+      skipped: true,
+      sweepTxId: null,
+      recoveredTrx: 0,
+      trxBalance,
+      sponsoredTrx,
+      recoverableTrx,
+      transferFeeTrx,
+      reason: "Sweep produced no recoverable amount",
+    };
+  }
+
+  await prisma.withdrawalOrder.update({
+    where: { id: orderId },
+    data: {
+      sweepTxId,
+      recoveredTrx,
+      updatedAt: new Date(),
+    },
+  });
+
+  logWithdrawalAdmin(orderId, "recover_success", { sweepTxId, recoveredTrx });
+  return {
+    skipped: false,
+    sweepTxId,
+    recoveredTrx,
+    trxBalance,
+    sponsoredTrx,
+    recoverableTrx: recoveredTrx,
+    transferFeeTrx,
+  };
 }
 
 export async function markAdminWithdrawalSuccess(
