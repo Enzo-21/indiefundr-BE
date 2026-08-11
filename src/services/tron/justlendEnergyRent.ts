@@ -1,5 +1,14 @@
 import { getEnv } from "@/lib/env";
 import {
+  JUSTLEND_ENERGY_RENT_ENABLED,
+  JUSTLEND_ENERGY_RENTAL_ADDRESS,
+  JUSTLEND_ENERGY_WAIT_POLL_MS,
+  JUSTLEND_ENERGY_WAIT_TIMEOUT_MS,
+  JUSTLEND_OPENAPI_BASE,
+  JUSTLEND_PREPAY_BUFFER_RATIO,
+  JUSTLEND_RENT_DURATION_SECONDS,
+} from "@/lib/config/justlend";
+import {
   createTronWeb,
   getAccountEnergyAvailableForAddress,
   getTxId,
@@ -153,9 +162,9 @@ export function isJustLendEnergyRentAvailable(): boolean {
   const env = getEnv();
   return (
     env.blockchainNetwork === "mainnet" &&
-    env.justlendEnergyRentEnabled &&
+    JUSTLEND_ENERGY_RENT_ENABLED &&
     Boolean(env.treasuryPrivateKey?.trim()) &&
-    Boolean(env.justlendEnergyRentalAddress)
+    Boolean(JUSTLEND_ENERGY_RENTAL_ADDRESS)
   );
 }
 
@@ -204,7 +213,7 @@ export function computeEnergyRentPrepaySun({
 }
 
 export async function fetchEnergyPerTrxFromOpenApi(): Promise<number> {
-  const base = getEnv().justlendOpenApiBase;
+  const base = JUSTLEND_OPENAPI_BASE.replace(/\/$/, "");
   const res = await fetch(`${base}/lend/strx`, {
     method: "GET",
     headers: { Accept: "application/json" },
@@ -236,7 +245,7 @@ async function getEnergyRentalContract(
 ): Promise<{ contract: EnergyRentalContract; fromAddress: string }> {
   const pk = privateKey ?? (await getTreasuryPrivateKey());
   const tronWeb = await createTronWeb(pk);
-  const address = getEnv().justlendEnergyRentalAddress;
+  const address = JUSTLEND_ENERGY_RENTAL_ADDRESS;
   // TronWeb contract().at accepts ABI via overload or set after; use at + cast.
   const raw = (await (tronWeb as unknown as {
     contract: (abi?: unknown, addr?: string) => {
@@ -270,8 +279,7 @@ export async function quoteEnergyRent({
   durationSeconds?: number;
   resourceType?: JustLendResourceType;
 }): Promise<EnergyRentQuote> {
-  const env = getEnv();
-  const duration = durationSeconds ?? env.justlendRentDurationSeconds;
+  const duration = durationSeconds ?? JUSTLEND_RENT_DURATION_SECONDS;
   const energyPerTrx = await fetchEnergyPerTrxFromOpenApi();
   const amountSun = energyToDelegatedSun(targetEnergy, energyPerTrx);
 
@@ -287,7 +295,7 @@ export async function quoteEnergyRent({
     amountSun,
     rentalRate,
     durationSeconds: duration,
-    bufferRatio: env.justlendPrepayBufferRatio,
+    bufferRatio: JUSTLEND_PREPAY_BUFFER_RATIO,
   });
 
   return {
@@ -384,8 +392,7 @@ export async function rentDelegatedTrxToAddress({
     );
   }
 
-  const env = getEnv();
-  const duration = durationSeconds ?? env.justlendRentDurationSeconds;
+  const duration = durationSeconds ?? JUSTLEND_RENT_DURATION_SECONDS;
   const delegated =
     amountSun < MIN_DELEGATED_TRX_SUN ? MIN_DELEGATED_TRX_SUN : amountSun;
 
@@ -400,7 +407,7 @@ export async function rentDelegatedTrxToAddress({
     amountSun: delegated,
     rentalRate,
     durationSeconds: duration,
-    bufferRatio: env.justlendPrepayBufferRatio,
+    bufferRatio: JUSTLEND_PREPAY_BUFFER_RATIO,
   });
 
   if (prepaySun > BigInt(Number.MAX_SAFE_INTEGER)) {
@@ -465,9 +472,8 @@ export async function waitUntilEnergyAvailable({
   timeoutMs?: number;
   pollMs?: number;
 }): Promise<number> {
-  const env = getEnv();
-  const timeout = timeoutMs ?? env.justlendEnergyWaitTimeoutMs;
-  const interval = pollMs ?? env.justlendEnergyWaitPollMs;
+  const timeout = timeoutMs ?? JUSTLEND_ENERGY_WAIT_TIMEOUT_MS;
+  const interval = pollMs ?? JUSTLEND_ENERGY_WAIT_POLL_MS;
   const started = Date.now();
   let last = 0;
 
