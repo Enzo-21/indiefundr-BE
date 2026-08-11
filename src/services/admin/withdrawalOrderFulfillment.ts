@@ -50,6 +50,38 @@ function getTreasuryPrivateKey(): string {
   return pk;
 }
 
+function getTreasuryAddressOrThrow(): string {
+  const address = getEnv().treasuryAddress?.trim();
+  if (!address) {
+    throw new Error("Treasury address is not configured");
+  }
+  return address;
+}
+
+async function resolveWithdrawalSender(order: WithdrawalOrder): Promise<{
+  address: string;
+  privateKey: string;
+  fromTreasury: boolean;
+}> {
+  if (order.fromTreasury) {
+    return {
+      address: getTreasuryAddressOrThrow(),
+      privateKey: getTreasuryPrivateKey(),
+      fromTreasury: true,
+    };
+  }
+
+  const wallet = await prisma.wallet.findUnique({ where: { id: order.walletId } });
+  if (!wallet?.address || !wallet.privateKey) {
+    throw new Error("User wallet not found");
+  }
+  return {
+    address: wallet.address,
+    privateKey: wallet.privateKey,
+    fromTreasury: false,
+  };
+}
+
 async function loadOpenWithdrawal(orderId: string): Promise<WithdrawalOrder> {
   const order = await prisma.withdrawalOrder.findUnique({ where: { id: orderId } });
   if (!order) {
@@ -122,13 +154,10 @@ export async function getWithdrawalFulfillmentEstimate(
   orderId: string
 ): Promise<AdminFulfillmentEstimate> {
   const order = await loadOpenWithdrawal(orderId);
-  const wallet = await prisma.wallet.findUnique({ where: { id: order.walletId } });
-  if (!wallet?.address) {
-    throw new Error("User wallet not found");
-  }
+  const sender = await resolveWithdrawalSender(order);
 
   const feeEstimate = await tron.estimateUsdtTransfer({
-    fromAddress: wallet.address,
+    fromAddress: sender.address,
     toAddress: order.destinationAddress,
     amount: order.amountUsdt,
   });
@@ -158,15 +187,12 @@ export async function sponsorWithdrawalTransferResources(
 ): Promise<AdminSponsorResourcesResult> {
   logWithdrawalAdmin(orderId, "sponsor_resources_start");
   const order = await loadOpenWithdrawal(orderId);
-  const wallet = await prisma.wallet.findUnique({ where: { id: order.walletId } });
-  if (!wallet?.address) {
-    throw new Error("User wallet not found");
-  }
+  const sender = await resolveWithdrawalSender(order);
 
   const result = await sponsorTransferResources({
     orderKind: "withdrawal",
     orderId,
-    fromAddress: wallet.address,
+    fromAddress: sender.address,
     toAddress: order.destinationAddress,
     amountUsdt: order.amountUsdt,
     userId: order.userId,
@@ -182,6 +208,7 @@ export async function sponsorWithdrawalTransferResources(
     skipped: result.skipped,
     txId,
     detail: result.detail,
+    fromTreasury: sender.fromTreasury,
   });
 
   return {
@@ -206,18 +233,11 @@ export async function broadcastWithdrawalAdminTrxTopUp(
 ): Promise<AdminTrxTopUpResult> {
   logWithdrawalAdmin(orderId, "trx_topup_start");
   const order = await loadOpenWithdrawal(orderId);
-  const treasuryAddress = getEnv().treasuryAddress;
-  if (!treasuryAddress) {
-    throw new Error("Treasury address is not configured");
-  }
-
-  const wallet = await prisma.wallet.findUnique({ where: { id: order.walletId } });
-  if (!wallet?.privateKey) {
-    throw new Error("User wallet not found");
-  }
+  const treasuryAddress = getTreasuryAddressOrThrow();
+  const sender = await resolveWithdrawalSender(order);
 
   const feeEstimate = await tron.estimateUsdtTransfer({
-    fromAddress: wallet.address,
+    fromAddress: sender.address,
     toAddress: order.destinationAddress,
     amount: order.amountUsdt,
   });
@@ -234,7 +254,7 @@ export async function broadcastWithdrawalAdminTrxTopUp(
     bufferRatio: ADMIN_TRX_TOPUP_BUFFER_RATIO,
   };
 
-  if (amountTrx <= 0) {
+  if (amountTrx <= 0 || sender.fromTreasury) {
     await prisma.withdrawalOrder.update({
       where: { id: orderId },
       data: {
@@ -243,7 +263,12 @@ export async function broadcastWithdrawalAdminTrxTopUp(
         updatedAt: new Date(),
       },
     });
-    return { ...baseResult, skipped: true, txId: null, amountTrx: 0 };
+    return {
+      ...baseResult,
+      skipped: true,
+      txId: null,
+      amountTrx: 0,
+    };
   }
 
   const treasuryPk = getTreasuryPrivateKey();
@@ -253,7 +278,7 @@ export async function broadcastWithdrawalAdminTrxTopUp(
 
   const signed = await tron.transferTrx({
     fromPrivateKey: treasuryPk,
-    toAddress: wallet.address,
+    toAddress: sender.address,
     amountTrx,
   });
   const txId = tron.getTxId(signed);
@@ -279,10 +304,7 @@ export async function broadcastWithdrawalAdminUsdt(
 ): Promise<string> {
   logWithdrawalAdmin(orderId, "usdt_broadcast_start");
   const order = await loadOpenWithdrawal(orderId);
-  const wallet = await prisma.wallet.findUnique({ where: { id: order.walletId } });
-  if (!wallet?.privateKey) {
-    throw new Error("User wallet not found");
-  }
+  const sender = await resolveWithdrawalSender(order);
 
   const chainMemo = isIndieFundrChainMemoEnabled()
     ? buildIndieFundrMemo({
@@ -293,7 +315,7 @@ export async function broadcastWithdrawalAdminUsdt(
     : undefined;
 
   const signed = await tron.transferUsdt({
-    fromPrivateKey: wallet.privateKey,
+    fromPrivateKey: sender.privateKey,
     toAddress: order.destinationAddress,
     amount: order.amountUsdt,
     memo: chainMemo,
@@ -305,7 +327,10 @@ export async function broadcastWithdrawalAdminUsdt(
   }
 
   await recordWithdrawalAdminUsdtTx(orderId, txId);
-  logWithdrawalAdmin(orderId, "usdt_broadcast_success", { txId });
+  logWithdrawalAdmin(orderId, "usdt_broadcast_success", {
+    txId,
+    fromTreasury: sender.fromTreasury,
+  });
   return txId;
 }
 
@@ -315,10 +340,7 @@ export async function recoverWithdrawalSponsoredTrx(
   logWithdrawalAdmin(orderId, "recover_start");
   const order = await loadOpenWithdrawal(orderId);
 
-  const treasuryAddress = getEnv().treasuryAddress;
-  if (!treasuryAddress) {
-    throw new Error("Treasury address is not configured");
-  }
+  const treasuryAddress = getTreasuryAddressOrThrow();
 
   const finalized = await finalizeSponsoredResources({
     orderKind: "withdrawal",
@@ -338,6 +360,17 @@ export async function recoverWithdrawalSponsoredTrx(
       sponsoredTrx: order.sponsoredTrx || 0,
       recoverableTrx: 0,
       reason: finalized.detail,
+    };
+  }
+
+  if (order.fromTreasury) {
+    return {
+      skipped: true,
+      sweepTxId: null,
+      recoveredTrx: 0,
+      sponsoredTrx: order.sponsoredTrx || 0,
+      recoverableTrx: 0,
+      reason: "Treasury withdrawal — no TRX sweep",
     };
   }
 
@@ -497,6 +530,10 @@ export async function markAdminWithdrawalSuccess(
     throw new Error("Withdrawal order not found after completion");
   }
 
+  if (completed.fromTreasury) {
+    return;
+  }
+
   await rebuildWalletActivity(completed.userId, completed.walletId, completed.walletId);
 
   try {
@@ -553,7 +590,9 @@ export async function markAdminWithdrawalFailed(
       updatedAt: new Date(),
     },
   });
-  await rebuildWalletActivity(order.userId, order.walletId, order.walletId);
+  if (!order.fromTreasury) {
+    await rebuildWalletActivity(order.userId, order.walletId, order.walletId);
+  }
 }
 
 export type AdminWithdrawalRow = {
@@ -570,6 +609,7 @@ export type AdminWithdrawalRow = {
   status: WithdrawalOrderStatus;
   step: WithdrawalOrderStep;
   walletAddress: string;
+  fromTreasury: boolean;
   trxBalance: number | null;
   usdtBalance: number | null;
   balanceReadStatus: "ok" | "rate_limited" | "read_failed";
@@ -596,20 +636,22 @@ export async function listAdminWithdrawalQueue(): Promise<AdminWithdrawalRow[]> 
     },
   });
 
+  const treasuryAddress = getEnv().treasuryAddress?.trim() ?? "";
   const rows: AdminWithdrawalRow[] = [];
   for (const order of orders) {
     let trxBalance: number | null = null;
     let usdtBalance: number | null = null;
     let balanceReadStatus: AdminWithdrawalRow["balanceReadStatus"] = "ok";
 
-    if (
-      order.wallet?.address &&
-      (await tron.validateAddress(order.wallet.address))
-    ) {
+    const sourceAddress = order.fromTreasury
+      ? treasuryAddress
+      : (order.wallet?.address ?? "");
+
+    if (sourceAddress && (await tron.validateAddress(sourceAddress))) {
       try {
         [trxBalance, usdtBalance] = await Promise.all([
-          tron.getTrxBalance(order.wallet.address),
-          tron.getUsdtBalance(order.wallet.address),
+          tron.getTrxBalance(sourceAddress),
+          tron.getUsdtBalance(sourceAddress),
         ]);
       } catch {
         trxBalance = null;
@@ -630,13 +672,14 @@ export async function listAdminWithdrawalQueue(): Promise<AdminWithdrawalRow[]> 
       userEmail: order.user.email,
       userName: order.user.name,
       fundId: "withdraw",
-      fundName: "Withdrawal",
+      fundName: order.fromTreasury ? "Treasury withdrawal" : "Withdrawal",
       destinationAddress: order.destinationAddress,
       costUsdt: order.amountUsdt,
       reservedUsdt: order.reservedUsdt,
       status: order.status,
       step: order.step,
-      walletAddress: order.wallet?.address ?? "",
+      walletAddress: sourceAddress,
+      fromTreasury: order.fromTreasury,
       trxBalance,
       usdtBalance,
       balanceReadStatus,

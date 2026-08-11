@@ -31,6 +31,7 @@ import { buildLedgerIntegrityReport } from "@/services/revenueEngine/ledgerRecon
 import { TreasuryLedgerIntegrityCard } from "./TreasuryLedgerIntegrityCard";
 import { TreasuryOnChainSection } from "./TreasuryOnChainSection";
 import { TreasuryRecordedWithdrawalsTable } from "./TreasuryRecordedWithdrawalsTable";
+import { TreasurySendUsdtCard } from "./TreasurySendUsdtCard";
 
 export const dynamic = "force-dynamic";
 
@@ -85,6 +86,8 @@ export default async function AdminTreasuryPage() {
           <SyncTreasuryHistoryButton />
         </div>
       </div>
+
+      <TreasurySendUsdtCard />
 
       {onChainResult.ok ? (
         <TreasuryOnChainSection report={onChainResult.data} />

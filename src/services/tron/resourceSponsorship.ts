@@ -264,6 +264,32 @@ async function applyTrxTopUpFallback({
     };
   }
 
+  const treasuryAddress = getEnv().treasuryAddress?.trim();
+  if (
+    treasuryAddress &&
+    walletAddress.trim().toLowerCase() === treasuryAddress.toLowerCase()
+  ) {
+    const detail =
+      "Sender is treasury — skipping self TRX top-up; treasury will burn own TRX";
+    const persist = {
+      sponsorshipMode: FeeSponsorshipMode.trx_topup,
+      estimatedTrx: estimate.estimatedTrx,
+      trxBefore: estimate.trxBalance,
+    };
+    if (orderKind === "purchase") {
+      await persistPurchaseSponsorship(orderId, persist);
+    } else {
+      await persistWithdrawalSponsorship(orderId, persist);
+    }
+    return {
+      ...base,
+      skipped: true,
+      topUpTxId: null,
+      amountTrx: 0,
+      detail,
+    };
+  }
+
   await feeSponsorship.assertCanSponsor(userId, amountTrx, {
     existingSponsoredOnOrder: existingSponsoredTrx,
   });
@@ -567,15 +593,24 @@ export async function finalizeSponsoredResources({
 
   const order = await prisma.withdrawalOrder.findUnique({ where: { id: orderId } });
   if (!order) throw new Error("Withdrawal order not found");
-  const wallet = await prisma.wallet.findUnique({ where: { id: order.walletId } });
-  if (!wallet?.address) throw new Error("User wallet not found");
+  const senderAddress = order.fromTreasury
+    ? getEnv().treasuryAddress?.trim()
+    : (await prisma.wallet.findUnique({ where: { id: order.walletId } }))
+        ?.address;
+  if (!senderAddress) {
+    throw new Error(
+      order.fromTreasury
+        ? "Treasury address is not configured"
+        : "User wallet not found"
+    );
+  }
 
   const mode = order.sponsorshipMode;
   if (mode === FeeSponsorshipMode.justlend_rent) {
     const energyReturnTxId = await returnJustLendForOrder({
       orderKind,
       orderId,
-      walletAddress: wallet.address,
+      walletAddress: senderAddress,
       energyRentAmountSun: order.energyRentAmountSun,
       bandwidthRentAmountSun: order.bandwidthRentAmountSun,
     });
@@ -601,12 +636,13 @@ export async function finalizeSponsoredResources({
   }
 
   return {
-    mode: mode ?? null,
+    mode: mode ?? FeeSponsorshipMode.trx_topup,
     energyReturnTxId: null,
     sweepTxId: order.sweepTxId,
     recoveredTrx: order.recoveredTrx || 0,
-    detail:
-      (order.sponsoredTrx || 0) > 0
+    detail: order.fromTreasury
+      ? "Treasury burn path — no TRX sweep"
+      : (order.sponsoredTrx || 0) > 0
         ? "TRX top-up path — recover via sweep step"
         : "No sponsored TRX to recover",
   };

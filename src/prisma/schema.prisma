@@ -498,6 +498,8 @@ model WithdrawalOrder {
   paymentChainCheckedAt DateTime?
   paymentChainFinal    Boolean               @default(false)
   chainMemo            String?
+  /// When true, USDT is sent from the app Treasury (not the user wallet).
+  fromTreasury         Boolean               @default(false)
   date                 DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 

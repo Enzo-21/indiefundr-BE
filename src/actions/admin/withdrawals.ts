@@ -15,11 +15,13 @@ import {
   recoverWithdrawalSponsoredTrx,
   sponsorWithdrawalTransferResources,
 } from "@/services/admin/withdrawalOrderFulfillment";
+import { createTreasuryWithdrawalOrder } from "@/services/admin/treasuryWithdrawal";
 
 function revalidateOrderViews() {
   revalidatePath("/admin/orders");
   revalidatePath("/admin/subscriptions");
   revalidatePath("/admin/dashboard");
+  revalidatePath("/admin/treasury");
 }
 
 export async function adminWithdrawalRecordTrxTopUp(
@@ -130,6 +132,24 @@ export async function adminMarkWithdrawalAutopilotManualCheck(
       error,
       session.email
     )
+  );
+  if (result.ok) {
+    revalidateOrderViews();
+  }
+  return result;
+}
+
+export async function adminCreateTreasuryWithdrawal(input: {
+  amountUsdt: number;
+  destinationAddress: string;
+}) {
+  const session = await verifyAdminSession();
+  const result = await withAdminAction(() =>
+    createTreasuryWithdrawalOrder({
+      amountUsdt: input.amountUsdt,
+      destinationAddress: input.destinationAddress,
+      adminEmail: session.email,
+    })
   );
   if (result.ok) {
     revalidateOrderViews();

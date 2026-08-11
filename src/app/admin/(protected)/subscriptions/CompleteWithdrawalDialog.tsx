@@ -87,9 +87,13 @@ export function CompleteWithdrawalDialog({ row }: { row: AdminWithdrawalRow }) {
     row.balanceReadStatus !== "ok"
       ? "Chain balances unavailable — refresh and try again"
       : !row.walletAddress
-        ? "Wallet address missing"
+        ? row.fromTreasury
+          ? "Treasury address missing"
+          : "Wallet address missing"
         : row.usdtBalance == null || row.usdtBalance < row.costUsdt
-          ? "Insufficient USDT in user wallet"
+          ? row.fromTreasury
+            ? "Insufficient USDT in treasury"
+            : "Insufficient USDT in user wallet"
           : undefined;
 
   const wasOpenRef = useRef(false);
@@ -181,16 +185,26 @@ export function CompleteWithdrawalDialog({ row }: { row: AdminWithdrawalRow }) {
       >
         <div className="space-y-5 p-6 pb-4">
           <DialogHeader className="gap-3 text-left">
-            <DialogTitle className="text-xl">Complete withdrawal</DialogTitle>
+            <DialogTitle className="text-xl">
+              {row.fromTreasury
+                ? "Complete treasury withdrawal"
+                : "Complete withdrawal"}
+            </DialogTitle>
             <DialogDescription className="text-base leading-relaxed">
-              Automate Network fees (user Energy/Bandwidth, JustLend rent, or
-              TRX top-up), USDT payment to the destination, recover sponsored
-              resources, and mark-success for this withdrawal.
+              {row.fromTreasury
+                ? "Automate Network fees on the treasury wallet (Energy/Bandwidth, JustLend rent, or TRX burn), USDT payment to the destination, recover sponsored resources, and mark-success."
+                : "Automate Network fees (user Energy/Bandwidth, JustLend rent, or TRX top-up), USDT payment to the destination, recover sponsored resources, and mark-success for this withdrawal."}
             </DialogDescription>
             <div className="flex flex-wrap gap-2 pt-1">
-              <span className="rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
-                {row.userEmail}
-              </span>
+              {row.fromTreasury ? (
+                <span className="rounded-md bg-amber-500/15 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                  Treasury
+                </span>
+              ) : (
+                <span className="rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
+                  {row.userEmail}
+                </span>
+              )}
               <span
                 className="max-w-full truncate rounded-md bg-muted px-2.5 py-1 font-mono text-xs font-medium text-foreground"
                 title={row.destinationAddress}
