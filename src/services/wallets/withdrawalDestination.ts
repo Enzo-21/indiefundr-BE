@@ -8,17 +8,19 @@ export type WithdrawalDestinationValidation =
 export type WithdrawalDestinationDeps = {
   normalizeTronAddress: typeof tron.normalizeTronAddress;
   validateAddress: typeof tron.validateAddress;
-  isAccountActivatedOnChain: typeof tron.isAccountActivatedOnChain;
   getMainWallet: typeof getMainWallet;
 };
 
 const defaultDeps: WithdrawalDestinationDeps = {
   normalizeTronAddress: tron.normalizeTronAddress,
   validateAddress: tron.validateAddress,
-  isAccountActivatedOnChain: tron.isAccountActivatedOnChain,
   getMainWallet,
 };
 
+/**
+ * Destination only needs a valid TRC20 address (and not the sender's own).
+ * On-chain activation is required to send, not to receive USDT.
+ */
 export async function validateWithdrawalDestination(
   userId: string,
   rawAddress: string,
@@ -38,18 +40,11 @@ export async function validateWithdrawalDestination(
     };
   }
 
-  if (!(await deps.isAccountActivatedOnChain(destNorm))) {
-    return {
-      valid: false,
-      message: "This destination address could not be found on the network",
-    };
-  }
-
-  const wallet = await deps.getMainWallet(userId);
-  if (wallet) {
+  const senderWallet = await deps.getMainWallet(userId);
+  if (senderWallet) {
     const walletNorm =
-      (await deps.normalizeTronAddress(wallet.address)) ??
-      wallet.address.trim();
+      (await deps.normalizeTronAddress(senderWallet.address)) ??
+      senderWallet.address.trim();
     if (destNorm === walletNorm) {
       return {
         valid: false,

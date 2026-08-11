@@ -134,13 +134,20 @@ export default async function AdminSubscriptionsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {row.orderType === "withdraw"
-                      ? "Withdrawal"
-                      : row.orderType === "referral"
-                        ? "Referral"
-                        : row.orderType === "usdt_purchase"
-                          ? "USDT purchase"
-                          : "Investment"}
+                    {row.orderType === "withdraw" ? (
+                      <div className="space-y-1">
+                        <div>Withdrawal</div>
+                        {"fromTreasury" in row && row.fromTreasury ? (
+                          <span className="inline-flex rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                            Treasury
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : row.orderType === "referral"
+                      ? "Referral"
+                      : row.orderType === "usdt_purchase"
+                        ? "USDT purchase"
+                        : "Investment"}
                   </TableCell>
                   <TableCell className="max-w-[200px]">
                     {row.orderType === "withdraw" ? (

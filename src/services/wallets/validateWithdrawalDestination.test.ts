@@ -13,7 +13,6 @@ function mockDeps(
   return {
     normalizeTronAddress: async (address) => address.trim(),
     validateAddress: async () => true,
-    isAccountActivatedOnChain: async () => true,
     getMainWallet: async () =>
       ({ id: "w1", address: mainAddress }) as NonNullable<
         Awaited<ReturnType<WithdrawalDestinationDeps["getMainWallet"]>>
@@ -46,18 +45,27 @@ describe("validateWithdrawalDestination", () => {
     }
   });
 
-  it("rejects address not found on network", async () => {
+  it("accepts unactivated external address", async () => {
     const result = await validateWithdrawalDestination(
       userId,
       destAddress,
-      mockDeps({
-        normalizeTronAddress: async () => destAddress,
-        isAccountActivatedOnChain: async () => false,
-      })
+      mockDeps()
     );
-    assert.equal(result.valid, false);
-    if (!result.valid) {
-      assert.match(result.message, /could not be found on the network/i);
+    assert.equal(result.valid, true);
+    if (result.valid) {
+      assert.equal(result.normalizedAddress, destAddress);
+    }
+  });
+
+  it("accepts unactivated IndieFundr app wallet without activating", async () => {
+    const result = await validateWithdrawalDestination(
+      userId,
+      destAddress,
+      mockDeps()
+    );
+    assert.equal(result.valid, true);
+    if (result.valid) {
+      assert.equal(result.normalizedAddress, destAddress);
     }
   });
 
@@ -79,9 +87,7 @@ describe("validateWithdrawalDestination", () => {
     const result = await validateWithdrawalDestination(
       userId,
       destAddress,
-      mockDeps({
-        normalizeTronAddress: async (addr) => addr.trim(),
-      })
+      mockDeps()
     );
     assert.equal(result.valid, true);
     if (result.valid) {

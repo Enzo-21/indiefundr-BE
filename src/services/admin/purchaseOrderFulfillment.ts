@@ -22,6 +22,11 @@ import {
 import { isManualFulfillmentOrder } from "@/services/orders/purchaseOrderManual";
 import * as feeSponsorship from "@/services/tron/feeSponsorship";
 import * as tron from "@/services/tron/client";
+import {
+  finalizeSponsoredResources,
+  shouldRecoverSponsoredTrx,
+  sponsorTransferResources,
+} from "@/services/tron/resourceSponsorship";
 import type { AdminWithdrawalRow } from "@/services/admin/withdrawalOrderFulfillment";
 import {
   countSiblingOpenOrders,
@@ -217,6 +222,14 @@ export type AdminFulfillmentEstimate = {
   shortfall: number;
   hasEnoughTrx: boolean;
   hasEnoughUsdt: boolean;
+  hasEnoughEnergy: boolean;
+  hasEnoughBandwidth: boolean;
+  canTransferZeroBurn: boolean;
+  energyUsed: number;
+  energyAvailable: number;
+  energyShortfall: number;
+  bandwidthAvailable: number;
+  bandwidthShortfall: number;
   costUsdt: number;
 };
 
@@ -229,6 +242,22 @@ export type AdminTrxTopUpResult = {
   shortfall: number;
   targetTrx: number;
   bufferRatio: number;
+};
+
+export type AdminSponsorResourcesResult = {
+  mode: "user_resources" | "justlend_rent" | "trx_topup";
+  skipped: boolean;
+  txId: string | null;
+  amountTrx: number;
+  estimatedTrx: number;
+  trxBalance: number;
+  shortfall: number;
+  targetTrx: number;
+  bufferRatio: number;
+  detail: string;
+  energyRentTxId: string | null;
+  bandwidthRentTxId: string | null;
+  energyTarget: number | null;
 };
 
 export type AdminTransactionStatus = {
@@ -584,7 +613,68 @@ export async function getAdminFulfillmentEstimate(
     shortfall,
     hasEnoughTrx: feeEstimate.hasEnoughTrx,
     hasEnoughUsdt: feeEstimate.hasEnoughUsdt,
+    hasEnoughEnergy: feeEstimate.hasEnoughEnergy,
+    hasEnoughBandwidth: feeEstimate.hasEnoughBandwidth,
+    canTransferZeroBurn: feeEstimate.canTransferZeroBurn,
+    energyUsed: feeEstimate.energyUsed,
+    energyAvailable: feeEstimate.energyAvailable,
+    energyShortfall: feeEstimate.energyShortfall,
+    bandwidthAvailable: feeEstimate.bandwidthAvailable,
+    bandwidthShortfall: feeEstimate.bandwidthShortfall,
     costUsdt: order.costUsdt,
+  };
+}
+
+export async function sponsorAdminTransferResources(
+  orderId: string
+): Promise<AdminSponsorResourcesResult> {
+  logAdminCompleteOrder(orderId, "sponsor_resources_start");
+  const order = await loadManualOrder(orderId);
+  const treasuryAddress = getEnv().treasuryAddress;
+  if (!treasuryAddress) {
+    throw new Error("Treasury address is not configured");
+  }
+
+  const wallet = await prisma.wallet.findUnique({ where: { id: order.walletId } });
+  if (!wallet?.address) {
+    throw new Error("User wallet not found");
+  }
+
+  const result = await sponsorTransferResources({
+    orderKind: "purchase",
+    orderId,
+    fromAddress: wallet.address,
+    toAddress: treasuryAddress,
+    amountUsdt: order.costUsdt,
+    userId: order.userId,
+    existingSponsoredTrx: order.sponsoredTrx || 0,
+    existingTopUpTxIds: order.topUpTxIds ?? [],
+  });
+
+  const txId =
+    result.topUpTxId ?? result.energyRentTxId ?? result.bandwidthRentTxId;
+
+  logAdminCompleteOrder(orderId, "sponsor_resources_done", {
+    mode: result.mode,
+    skipped: result.skipped,
+    txId,
+    detail: result.detail,
+  });
+
+  return {
+    mode: result.mode,
+    skipped: result.skipped,
+    txId,
+    amountTrx: result.amountTrx,
+    estimatedTrx: result.estimate.estimatedTrx,
+    trxBalance: result.estimate.trxBalance,
+    shortfall: result.shortfall,
+    targetTrx: result.targetTrx,
+    bufferRatio: result.bufferRatio,
+    detail: result.detail,
+    energyRentTxId: result.energyRentTxId,
+    bandwidthRentTxId: result.bandwidthRentTxId,
+    energyTarget: result.energyTarget,
   };
 }
 
@@ -850,6 +940,41 @@ export async function recoverAdminSponsoredTrx(
   const treasuryAddress = getEnv().treasuryAddress;
   if (!treasuryAddress) {
     throw new Error("Treasury address is not configured");
+  }
+
+  const finalized = await finalizeSponsoredResources({
+    orderKind: "purchase",
+    orderId,
+  });
+  if (finalized.mode === "justlend_rent" || finalized.mode === "user_resources") {
+    logAdminCompleteOrder(orderId, "recover_skip", {
+      reason: finalized.detail,
+      mode: finalized.mode,
+      energyReturnTxId: finalized.energyReturnTxId,
+    });
+    return {
+      skipped: true,
+      sweepTxId: finalized.energyReturnTxId,
+      recoveredTrx: 0,
+      sponsoredTrx: order.sponsoredTrx || 0,
+      recoverableTrx: 0,
+      reason: finalized.detail,
+    };
+  }
+
+  if (!shouldRecoverSponsoredTrx(order)) {
+    logAdminCompleteOrder(orderId, "recover_skip", {
+      reason: "No sponsored TRX to recover",
+      mode: order.sponsorshipMode,
+    });
+    return {
+      skipped: true,
+      sweepTxId: null,
+      recoveredTrx: 0,
+      sponsoredTrx: order.sponsoredTrx || 0,
+      recoverableTrx: 0,
+      reason: "No sponsored TRX to recover",
+    };
   }
 
   const siblings = await countSiblingOpenOrders({

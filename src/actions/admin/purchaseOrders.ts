@@ -17,6 +17,7 @@ import {
   recordAdminTrxTopUpTx,
   recordAdminUsdtTx,
   resetAdminUsdtForFuelRetry,
+  sponsorAdminTransferResources,
   updateAdminPurchaseOrderNotes,
   appendAdminOrderAutopilotManualCheckNote,
 } from "@/services/admin/purchaseOrderFulfillment";
@@ -110,6 +111,17 @@ export async function adminBroadcastTrxTopUp(
   logCompleteOrderAction("adminBroadcastTrxTopUp", orderId, { minEstimatedTrx });
   const result = await withAdminAction(() =>
     broadcastAdminTrxTopUp(orderId, { minEstimatedTrx })
+  );
+  if (result.ok) {
+    revalidateOrderViews();
+  }
+  return result;
+}
+
+export async function adminSponsorTransferResources(orderId: string) {
+  logCompleteOrderAction("adminSponsorTransferResources", orderId);
+  const result = await withAdminAction(() =>
+    sponsorAdminTransferResources(orderId)
   );
   if (result.ok) {
     revalidateOrderViews();

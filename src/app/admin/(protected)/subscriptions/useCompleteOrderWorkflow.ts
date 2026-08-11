@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  adminBroadcastTrxTopUp,
   adminBroadcastUsdtPayment,
   adminGetFulfillmentEstimate,
   adminGetOrderWalletSnapshot,
@@ -11,11 +10,10 @@ import {
   adminRecordTrxAfterUsdt,
   adminRecoverSponsoredTrx,
   adminResetUsdtForFuelRetry,
+  adminSponsorTransferResources,
 } from "@/actions/admin/purchaseOrders";
 import { formatUsdtDisplay } from "@/lib/money/formatUsdt";
 import type { AdminOrderWalletSnapshot } from "@/services/admin/purchaseOrderFulfillment";
-
-const TRX_TOPUP_BUFFER_RATIO = 1.5;
 
 export const COMPLETE_ORDER_POLL_MS = 2_000;
 export const COMPLETE_ORDER_CHAIN_TIMEOUT_MS = 90_000;
@@ -58,7 +56,7 @@ export type CompleteOrderRunResult = {
 };
 
 const STEP_LABELS: Record<CompleteOrderStepId, string> = {
-  trx: "TRX confirmation",
+  trx: "Network fees",
   usdt: "USDT payment",
   recover: "Recover TRX",
   complete: "Mark successful",
@@ -366,7 +364,7 @@ export function useCompleteOrderWorkflow(
     setError(null);
     patchStep("trx", {
       state: "retry_wait",
-      detail: "Waiting 60s before retrying TRX top-up…",
+      detail: "Waiting 60s before retrying network fees…",
     });
     while (Date.now() < until.getTime()) {
       if (abortRef.current) {
@@ -394,10 +392,9 @@ export function useCompleteOrderWorkflow(
     }
 
     logCompleteOrderWorkflow(orderId, "trx", "step_start");
-    const minEstimatedTrx = minEstimatedTrxRef.current;
     patchStep("trx", {
       state: "running",
-      detail: "Estimating network fees…",
+      detail: "Checking Energy/Bandwidth and sponsorship path…",
       txId: null,
       tronscanUrl: null,
     });
@@ -408,48 +405,80 @@ export function useCompleteOrderWorkflow(
     }
 
     const estimate = estimateResult.data;
-    const needed = Math.max(estimate.estimatedTrx, minEstimatedTrx);
-    const targetTrx = parseFloat(
-      (needed * TRX_TOPUP_BUFFER_RATIO).toFixed(6)
-    );
-    const topUpAmount = parseFloat(
-      Math.max(0, targetTrx - estimate.trxBalance).toFixed(6)
-    );
-
-    if (topUpAmount <= 0) {
+    if (estimate.canTransferZeroBurn) {
       patchStep("trx", {
-        state: "skipped",
-        detail: `Wallet has enough TRX (${formatTrx(estimate.trxBalance)} TRX) for estimated ${formatTrx(needed)} TRX — skipping top-up`,
+        state: "running",
+        detail: "User has enough Energy/Bandwidth — confirming free transfer path…",
       });
-      await refreshWalletSnapshot();
-      logCompleteOrderWorkflow(orderId, "trx", "step_skipped", {
-        trxBalance: estimate.trxBalance,
-        needed,
+    } else {
+      patchStep("trx", {
+        state: "running",
+        detail: `Energy shortfall ${estimate.energyShortfall} — trying JustLend rent, then TRX top-up fallback…`,
       });
-      return;
     }
 
-    patchStep("trx", {
-      state: "running",
-      detail: `Need ${formatTrx(needed)} TRX → sending ${formatTrx(topUpAmount)} TRX (${Math.round((TRX_TOPUP_BUFFER_RATIO - 1) * 100)}% buffer)…`,
-    });
-
-    const broadcastResult = await adminBroadcastTrxTopUp(
-      orderId,
-      minEstimatedTrx > 0 ? minEstimatedTrx : undefined
-    );
+    const broadcastResult = await adminSponsorTransferResources(orderId);
     if (!broadcastResult.ok) {
       throw new Error(broadcastResult.error.msg);
     }
 
     const broadcast = broadcastResult.data;
-    if (broadcast.skipped || !broadcast.txId) {
+
+    if (broadcast.mode === "user_resources") {
       patchStep("trx", {
         state: "skipped",
-        detail: `Wallet has enough TRX (${formatTrx(broadcast.trxBalance)} TRX) — skipping top-up`,
+        detail: broadcast.detail,
       });
       await refreshWalletSnapshot();
       logCompleteOrderWorkflow(orderId, "trx", "step_skipped", {
+        mode: broadcast.mode,
+      });
+      return;
+    }
+
+    if (broadcast.mode === "justlend_rent") {
+      const rentTxId = broadcast.energyRentTxId ?? broadcast.txId;
+      if (rentTxId) {
+        const tronscanUrl = getTronscanTxUrl(rentTxId);
+        patchStep("trx", {
+          state: "waiting_chain",
+          detail: "Waiting for JustLend Energy rent confirmation…",
+          txId: rentTxId,
+          tronscanUrl,
+        });
+        const poll = await pollTransaction("trx", rentTxId, false);
+        if (poll.outcome === "failed") {
+          throw new Error(poll.message);
+        }
+        patchStep("trx", {
+          state: "success",
+          detail: broadcast.detail,
+          txId: rentTxId,
+          tronscanUrl,
+        });
+      } else {
+        patchStep("trx", {
+          state: "success",
+          detail: broadcast.detail,
+        });
+      }
+      await refreshWalletSnapshot();
+      logCompleteOrderWorkflow(orderId, "trx", "step_success", {
+        mode: broadcast.mode,
+        txId: rentTxId,
+      });
+      return;
+    }
+
+    // trx_topup fallback
+    if (broadcast.skipped || !broadcast.txId) {
+      patchStep("trx", {
+        state: "skipped",
+        detail: broadcast.detail,
+      });
+      await refreshWalletSnapshot();
+      logCompleteOrderWorkflow(orderId, "trx", "step_skipped", {
+        mode: broadcast.mode,
         trxBalance: broadcast.trxBalance,
       });
       return;
@@ -458,7 +487,7 @@ export function useCompleteOrderWorkflow(
     const tronscanUrl = getTronscanTxUrl(broadcast.txId);
     patchStep("trx", {
       state: "waiting_chain",
-      detail: "Waiting for TRX confirmation on-chain…",
+      detail: "Waiting for TRX top-up confirmation on-chain…",
       txId: broadcast.txId,
       tronscanUrl,
     });
@@ -470,12 +499,13 @@ export function useCompleteOrderWorkflow(
 
     patchStep("trx", {
       state: "success",
-      detail: `TRX confirmed on-chain (${formatTrx(broadcast.amountTrx)} TRX sent)`,
+      detail: `TRX top-up confirmed (${formatTrx(broadcast.amountTrx)} TRX) — fallback path`,
       txId: broadcast.txId,
       tronscanUrl,
     });
     await refreshWalletSnapshot();
     logCompleteOrderWorkflow(orderId, "trx", "step_success", {
+      mode: broadcast.mode,
       txId: broadcast.txId,
       amountTrx: broadcast.amountTrx,
     });
@@ -598,48 +628,19 @@ export function useCompleteOrderWorkflow(
     logCompleteOrderWorkflow(orderId, "recover", "step_start");
     patchStep("recover", {
       state: "running",
-      detail: "Reading wallet balance…",
+      detail: "Finalizing sponsored resources (JustLend return / TRX sweep)…",
       txId: null,
       tronscanUrl: null,
     });
 
     const snapshot = await refreshWalletSnapshot();
 
-    if (snapshot.sponsoredTrx <= 0) {
+    if (snapshot.sponsoredTrx > 0 && snapshot.recoverableTrx > 0) {
       patchStep("recover", {
-        state: "skipped",
-        detail: "No sponsored TRX to recover",
+        state: "running",
+        detail: `${formatTrx(snapshot.recoverableTrx)} TRX recoverable (wallet ${formatTrx(snapshot.trxBalance)} TRX, sponsored ${formatTrx(snapshot.sponsoredTrx)} TRX, sweep fee ${formatTrx(snapshot.transferFeeTrx)} TRX)`,
       });
-      logCompleteOrderWorkflow(orderId, "recover", "step_skipped", {
-        reason: "No sponsored TRX to recover",
-      });
-      return;
     }
-
-    if (snapshot.recoverableTrx <= 0) {
-      patchStep("recover", {
-        state: "skipped",
-        detail: `Balance ${formatTrx(snapshot.trxBalance)} TRX, recoverable 0 TRX (sponsored ${formatTrx(snapshot.sponsoredTrx)} TRX, sweep fee ${formatTrx(snapshot.transferFeeTrx)} TRX)`,
-      });
-      logCompleteOrderWorkflow(orderId, "recover", "step_skipped", {
-        trxBalance: snapshot.trxBalance,
-        sponsoredTrx: snapshot.sponsoredTrx,
-        transferFeeTrx: snapshot.transferFeeTrx,
-        recoverableTrx: snapshot.recoverableTrx,
-      });
-      return;
-    }
-
-    patchStep("recover", {
-      state: "running",
-      detail: `${formatTrx(snapshot.recoverableTrx)} TRX recoverable (wallet ${formatTrx(snapshot.trxBalance)} TRX, sponsored ${formatTrx(snapshot.sponsoredTrx)} TRX, sweep fee ${formatTrx(snapshot.transferFeeTrx)} TRX)`,
-    });
-    logCompleteOrderWorkflow(orderId, "recover", "preview", {
-      trxBalance: snapshot.trxBalance,
-      sponsoredTrx: snapshot.sponsoredTrx,
-      transferFeeTrx: snapshot.transferFeeTrx,
-      recoverableTrx: snapshot.recoverableTrx,
-    });
 
     const result = await adminRecoverSponsoredTrx(orderId);
     if (!result.ok) {
@@ -648,11 +649,18 @@ export function useCompleteOrderWorkflow(
 
     const recovery = result.data;
     if (recovery.skipped) {
+      const isJustLendReturn =
+        Boolean(recovery.sweepTxId) &&
+        /JustLend/i.test(recovery.reason ?? "");
       patchStep("recover", {
-        state: "skipped",
+        state: isJustLendReturn ? "success" : "skipped",
         detail:
           recovery.reason ??
           `Balance ${formatTrx(recovery.trxBalance ?? snapshot.trxBalance)} TRX, recoverable 0 TRX`,
+        txId: recovery.sweepTxId,
+        tronscanUrl: recovery.sweepTxId
+          ? getTronscanTxUrl(recovery.sweepTxId)
+          : null,
       });
       logCompleteOrderWorkflow(orderId, "recover", "step_skipped", {
         reason: recovery.reason,

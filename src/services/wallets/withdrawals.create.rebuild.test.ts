@@ -5,28 +5,15 @@ import {
   WithdrawalOrderStep,
 } from "@prisma/client";
 
-const userId = "user-parallel";
+const userId = "user-rebuild";
 const walletId = "wallet-main";
 const walletAddress = "TArjbXnrL5qTZo6YrT1GzbKHYa3bJSj6Yr";
 const destAddress = "TDestWalletAddress1234567890123456";
 const now = new Date();
 
-const existingActiveOrder = {
-  id: "withdraw-existing",
-  userId,
-  walletId,
-  amountUsdt: 80,
-  reservedUsdt: 80,
-  destinationAddress: destAddress,
-  status: WithdrawalOrderStatus.queued,
-  step: WithdrawalOrderStep.awaiting_trx,
-  date: now,
-  updatedAt: now,
-};
-
 function buildCreatedOrder(amount: number) {
   return {
-    id: "withdraw-new",
+    id: "withdraw-rebuild",
     userId,
     walletId,
     amountUsdt: amount,
@@ -45,8 +32,8 @@ function buildCreatedOrder(amount: number) {
   };
 }
 
-describe("createWithdrawalOrder when another withdrawal is open", () => {
-  it("creates a second order when available balance covers the amount", async () => {
+describe("createWithdrawalOrder when rebuildWalletActivity fails", () => {
+  it("still returns 202 after the order is persisted", async () => {
     mock.module("@/lib/wallets/helpers", {
       namedExports: {
         getMainWallet: async () => ({
@@ -63,13 +50,13 @@ describe("createWithdrawalOrder when another withdrawal is open", () => {
     });
     mock.module("./walletBalance", {
       namedExports: {
-        getActiveWithdrawalForUser: async () => existingActiveOrder,
+        getActiveWithdrawalForUser: async () => null,
         getWalletUsdtAvailability: async () => ({
-          onChainUsdt: 90,
-          reservedUsdt: 80,
-          availableUsdt: 10,
+          onChainUsdt: 100,
+          reservedUsdt: 0,
+          availableUsdt: 100,
           pendingOrdersCount: 0,
-          pendingWithdrawalsCount: 1,
+          pendingWithdrawalsCount: 0,
         }),
       },
     });
@@ -90,10 +77,10 @@ describe("createWithdrawalOrder when another withdrawal is open", () => {
           available = 0;
         },
         assertCanCreateWithdrawal: async () => ({
-          earned: 2,
-          used: 1,
+          earned: 1,
+          used: 0,
           available: 1,
-          openWithdrawals: 1,
+          openWithdrawals: 0,
           completedWithdrawals: 0,
         }),
       },
@@ -105,7 +92,11 @@ describe("createWithdrawalOrder when another withdrawal is open", () => {
       },
     });
     mock.module("./walletActivityMaterializer", {
-      namedExports: { rebuildWalletActivity: async () => {} },
+      namedExports: {
+        rebuildWalletActivity: async () => {
+          throw new Error("materializer blew up");
+        },
+      },
     });
     mock.module("@/lib/prisma", {
       namedExports: {
@@ -113,8 +104,8 @@ describe("createWithdrawalOrder when another withdrawal is open", () => {
           withdrawalOrder: {
             create: async ({ data }: { data: Record<string, unknown> }) =>
               buildCreatedOrder(Number(data.amountUsdt)),
-            findUnique: async () => buildCreatedOrder(10),
-            update: async () => buildCreatedOrder(10),
+            findUnique: async () => buildCreatedOrder(25),
+            update: async () => buildCreatedOrder(25),
           },
         },
       },
@@ -122,14 +113,14 @@ describe("createWithdrawalOrder when another withdrawal is open", () => {
 
     const { createWithdrawalOrder } = await import("./withdrawals");
     const result = await createWithdrawalOrder(userId, {
-      amountUsdt: 10,
+      amountUsdt: 25,
       destinationAddress: destAddress,
     });
 
     assert.equal(result.ok, true);
     if (result.ok) {
       assert.equal(result.status, 202);
-      assert.equal(result.data.amountUsdt, 10);
+      assert.equal(result.data.amountUsdt, 25);
     }
   });
 });

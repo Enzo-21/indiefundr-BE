@@ -40,6 +40,23 @@ describe("createWithdrawalOrder insufficient available balance", () => {
         }),
       },
     });
+    mock.module("@/lib/config/withdrawalSlots", {
+      namedExports: {
+        WithdrawalSlotsEmptyError: class WithdrawalSlotsEmptyError extends Error {
+          code = "WITHDRAWAL_SLOTS_EMPTY";
+          earned = 0;
+          used = 0;
+          available = 0;
+        },
+        assertCanCreateWithdrawal: async () => ({
+          earned: 2,
+          used: 0,
+          available: 2,
+          openWithdrawals: 0,
+          completedWithdrawals: 0,
+        }),
+      },
+    });
 
     const { createWithdrawalOrder } = await import("./withdrawals");
     const result = await createWithdrawalOrder(userId, {

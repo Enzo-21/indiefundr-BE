@@ -158,6 +158,12 @@ enum FeeSponsorshipStatus {
   loss
 }
 
+enum FeeSponsorshipMode {
+  user_resources
+  justlend_rent
+  trx_topup
+}
+
 type ProfileSocial {
   twitter   String?
   facebook  String?
@@ -414,6 +420,13 @@ model PurchaseOrder {
   adminSettledBy    String?
   adminNotes        String?
   estimatedTrx    Float?
+  sponsorshipMode FeeSponsorshipMode?
+  energyRentTxId  String?
+  energyReturnTxId String?
+  energyRentAmountSun String?
+  energyTarget    Int?
+  bandwidthRentTxId String?
+  bandwidthRentAmountSun String?
   sponsoredTrx    Float               @default(0)
   sponsorRound    Int                 @default(0)
   recoveredTrx    Float               @default(0)
@@ -450,8 +463,10 @@ model PurchaseOrder {
 
 model WithdrawalOrder {
   id                   String                @id @default(auto()) @map("_id") @db.ObjectId
-  userId               String                @map("user") @db.ObjectId
-  walletId             String                @map("wallet") @db.ObjectId
+  /// Null for fromTreasury admin withdrawals (no app user attribution required).
+  userId               String?               @map("user") @db.ObjectId
+  /// Null for fromTreasury admin withdrawals.
+  walletId             String?               @map("wallet") @db.ObjectId
   amountUsdt           Float
   reservedUsdt         Float
   destinationAddress   String
@@ -464,17 +479,34 @@ model WithdrawalOrder {
   adminSettledBy       String?
   adminNotes           String?
   estimatedTrx         Float?
+  sponsorshipMode      FeeSponsorshipMode?
+  energyRentTxId       String?
+  energyReturnTxId     String?
+  energyRentAmountSun  String?
+  energyTarget         Int?
+  bandwidthRentTxId    String?
+  bandwidthRentAmountSun String?
+  sponsoredTrx         Float                 @default(0)
+  sponsorRound         Int                   @default(0)
+  recoveredTrx         Float                 @default(0)
+  trxBefore            Float                 @default(0)
+  trxAfterUsdt         Float?
+  topUpTxId            String?
+  topUpTxIds           String[]              @default([])
+  sweepTxId            String?
   failureReason        String?
   paymentChainOutcome  String?
   paymentChainTxId     String?
   paymentChainCheckedAt DateTime?
   paymentChainFinal    Boolean               @default(false)
   chainMemo            String?
+  /// When true, USDT is sent from the app Treasury (not the user wallet).
+  fromTreasury         Boolean               @default(false)
   date                 DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 
-  user   User   @relation(fields: [userId], references: [id])
-  wallet Wallet @relation(fields: [walletId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
+  wallet Wallet? @relation(fields: [walletId], references: [id])
 
   @@index([userId, status])
   @@index([walletId, status])

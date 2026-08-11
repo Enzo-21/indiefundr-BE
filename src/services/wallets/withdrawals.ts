@@ -2,6 +2,10 @@ import {
   WithdrawalOrderStatus,
   WithdrawalOrderStep,
 } from "@prisma/client";
+import {
+  WithdrawalSlotsEmptyError,
+  assertCanCreateWithdrawal,
+} from "@/lib/config/withdrawalSlots";
 import { formatTronTransferError } from "@/lib/utils/tronErrors";
 import { getMainWallet } from "@/lib/wallets/helpers";
 import { prisma } from "@/lib/prisma";
@@ -55,6 +59,25 @@ export async function createWithdrawalOrder(
         msg: "Wallet uses a legacy address format. Please add a new Tron wallet.",
       },
     };
+  }
+
+  try {
+    await assertCanCreateWithdrawal(userId);
+  } catch (err) {
+    if (err instanceof WithdrawalSlotsEmptyError) {
+      return {
+        ok: false,
+        status: 400,
+        body: {
+          msg: err.message,
+          code: err.code,
+          earned: err.earned,
+          used: err.used,
+          available: err.available,
+        },
+      };
+    }
+    throw err;
   }
 
   const destCheck = await validateWithdrawalDestination(
@@ -135,7 +158,14 @@ export async function createWithdrawalOrder(
     });
   }
 
-  await rebuildWalletActivity(userId, wallet.id, wallet.id);
+  try {
+    await rebuildWalletActivity(userId, wallet.id, wallet.id);
+  } catch (error) {
+    console.error(
+      "[withdrawals] rebuildWalletActivity failed:",
+      error instanceof Error ? error.message : error
+    );
+  }
 
   const refreshed = await prisma.withdrawalOrder.findUnique({
     where: { id: order.id },

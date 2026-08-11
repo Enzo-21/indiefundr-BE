@@ -12,12 +12,19 @@ import {
   markAdminWithdrawalSuccess,
   recordWithdrawalAdminTrxTopUp,
   recordWithdrawalAdminUsdtTx,
+  recoverWithdrawalSponsoredTrx,
+  sponsorWithdrawalTransferResources,
 } from "@/services/admin/withdrawalOrderFulfillment";
+import {
+  createTreasuryWithdrawalOrder,
+  validateTreasuryWithdrawalDestination,
+} from "@/services/admin/treasuryWithdrawal";
 
 function revalidateOrderViews() {
   revalidatePath("/admin/orders");
   revalidatePath("/admin/subscriptions");
   revalidatePath("/admin/dashboard");
+  revalidatePath("/admin/treasury");
 }
 
 export async function adminWithdrawalRecordTrxTopUp(
@@ -55,6 +62,26 @@ export async function adminWithdrawalGetEstimate(orderId: string) {
 export async function adminWithdrawalBroadcastTrxTopUp(orderId: string) {
   const result = await withAdminAction(() =>
     broadcastWithdrawalAdminTrxTopUp(orderId)
+  );
+  if (result.ok) {
+    revalidateOrderViews();
+  }
+  return result;
+}
+
+export async function adminWithdrawalSponsorTransferResources(orderId: string) {
+  const result = await withAdminAction(() =>
+    sponsorWithdrawalTransferResources(orderId)
+  );
+  if (result.ok) {
+    revalidateOrderViews();
+  }
+  return result;
+}
+
+export async function adminWithdrawalRecoverSponsoredTrx(orderId: string) {
+  const result = await withAdminAction(() =>
+    recoverWithdrawalSponsoredTrx(orderId)
   );
   if (result.ok) {
     revalidateOrderViews();
@@ -108,6 +135,31 @@ export async function adminMarkWithdrawalAutopilotManualCheck(
       error,
       session.email
     )
+  );
+  if (result.ok) {
+    revalidateOrderViews();
+  }
+  return result;
+}
+
+export async function adminValidateTreasuryWithdrawalDestination(
+  address: string
+) {
+  await verifyAdminSession();
+  return withAdminAction(() => validateTreasuryWithdrawalDestination(address));
+}
+
+export async function adminCreateTreasuryWithdrawal(input: {
+  amountUsdt: number;
+  destinationAddress: string;
+}) {
+  const session = await verifyAdminSession();
+  const result = await withAdminAction(() =>
+    createTreasuryWithdrawalOrder({
+      amountUsdt: input.amountUsdt,
+      destinationAddress: input.destinationAddress,
+      adminEmail: session.email,
+    })
   );
   if (result.ok) {
     revalidateOrderViews();

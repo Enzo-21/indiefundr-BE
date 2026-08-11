@@ -33,7 +33,12 @@ const INVEST_STEP_ORDER: CompleteOrderStepId[] = [
   "recover",
   "complete",
 ];
-const WITHDRAW_STEP_ORDER: CompleteWithdrawalStepId[] = ["trx", "usdt", "complete"];
+const WITHDRAW_STEP_ORDER: CompleteWithdrawalStepId[] = [
+  "trx",
+  "usdt",
+  "recover",
+  "complete",
+];
 const REFERRAL_STEP_ORDER: CompleteReferralPayoutStepId[] = [
   "broadcast",
   "confirm",
