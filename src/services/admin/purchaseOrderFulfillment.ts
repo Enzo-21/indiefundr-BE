@@ -626,9 +626,12 @@ export async function getAdminFulfillmentEstimate(
 }
 
 export async function sponsorAdminTransferResources(
-  orderId: string
+  orderId: string,
+  options: { minEstimatedTrx?: number } = {}
 ): Promise<AdminSponsorResourcesResult> {
-  logAdminCompleteOrder(orderId, "sponsor_resources_start");
+  logAdminCompleteOrder(orderId, "sponsor_resources_start", {
+    minEstimatedTrx: options.minEstimatedTrx ?? 0,
+  });
   const order = await loadManualOrder(orderId);
   const treasuryAddress = getEnv().treasuryAddress;
   if (!treasuryAddress) {
@@ -649,6 +652,7 @@ export async function sponsorAdminTransferResources(
     userId: order.userId,
     existingSponsoredTrx: order.sponsoredTrx || 0,
     existingTopUpTxIds: order.topUpTxIds ?? [],
+    minEstimatedTrx: options.minEstimatedTrx ?? 0,
   });
 
   const txId = result.topUpTxId;

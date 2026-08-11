@@ -118,10 +118,15 @@ export async function adminBroadcastTrxTopUp(
   return result;
 }
 
-export async function adminSponsorTransferResources(orderId: string) {
-  logCompleteOrderAction("adminSponsorTransferResources", orderId);
+export async function adminSponsorTransferResources(
+  orderId: string,
+  minEstimatedTrx?: number
+) {
+  logCompleteOrderAction("adminSponsorTransferResources", orderId, {
+    minEstimatedTrx,
+  });
   const result = await withAdminAction(() =>
-    sponsorAdminTransferResources(orderId)
+    sponsorAdminTransferResources(orderId, { minEstimatedTrx })
   );
   if (result.ok) {
     revalidateOrderViews();

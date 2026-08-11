@@ -417,7 +417,10 @@ export function useCompleteOrderWorkflow(
       });
     }
 
-    const broadcastResult = await adminSponsorTransferResources(orderId);
+    const broadcastResult = await adminSponsorTransferResources(
+      orderId,
+      minEstimatedTrxRef.current > 0 ? minEstimatedTrxRef.current : undefined
+    );
     if (!broadcastResult.ok) {
       throw new Error(broadcastResult.error.msg);
     }

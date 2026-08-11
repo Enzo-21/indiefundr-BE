@@ -106,7 +106,9 @@ export function formatTronTransferError(
   const insufficientTrx =
     trxBalance === 0 ||
     (estimatedTrx != null && trxBalance != null && trxBalance < estimatedTrx) ||
-    /insufficient.*trx|bandwidth|energy|out_of_energy/i.test(raw);
+    /insufficient.*trx|not enough.*trx|bandwidth|energy|out_of_energy/i.test(
+      raw
+    );
 
   if (insufficientTrx) {
     const feeDetail =
@@ -234,4 +236,13 @@ export function formatTronTransferError(
           "See TronScan and Tron docs below for more detail.",
         ],
   };
+}
+
+/** Fee/activation errors that IndieFundr sponsorship can resolve via TRX top-up. */
+export function isSponsorshipCoverableFeeError(
+  error: unknown,
+  context: TronTransferErrorContext = {}
+): boolean {
+  const code = formatTronTransferError(error, context).code;
+  return code === "INSUFFICIENT_TRX" || code === "ACCOUNT_NOT_ACTIVATED";
 }

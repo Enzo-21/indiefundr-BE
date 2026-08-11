@@ -12,16 +12,47 @@ import * as tron from "@/services/tron/client";
 import type { UsdtTransferEstimate } from "@/services/tron/client";
 
 /** Keep in sync with purchaseOrderFulfillment.ADMIN_TRX_TOPUP_BUFFER_RATIO */
-const TRX_TOPUP_BUFFER_RATIO = 1.5;
+export const TRX_TOPUP_BUFFER_RATIO = 1.5;
 
-function computeTrxTopUpAmount(estimate: {
-  estimatedTrx: number;
-  trxBalance: number;
-}): number {
-  const target = parseFloat(
-    (estimate.estimatedTrx * TRX_TOPUP_BUFFER_RATIO).toFixed(6)
+/** Minimum TRX top-up when energy/bandwidth shortfall exists but estimate understates need. */
+const MIN_TOPUP_WHEN_RESOURCE_SHORTFALL_TRX = 0.5;
+
+/**
+ * Top-up amount = max(estimatedTrx, minEstimatedTrx) × buffer − wallet TRX.
+ * When zero-burn is impossible and the formula yields ≤0, force a floor so we
+ * never skip sponsorship while Energy/Bandwidth are still short.
+ */
+export function computeTrxTopUpAmount(
+  estimate: {
+    estimatedTrx: number;
+    trxBalance: number;
+    canTransferZeroBurn?: boolean;
+    energyShortfall?: number;
+    bandwidthShortfall?: number;
+  },
+  minEstimatedTrx = 0
+): { amountTrx: number; targetTrx: number; neededTrx: number } {
+  const neededTrx = Math.max(
+    Number(estimate.estimatedTrx) || 0,
+    Number(minEstimatedTrx) || 0
   );
-  return parseFloat(Math.max(0, target - estimate.trxBalance).toFixed(6));
+  const targetTrx = parseFloat(
+    (neededTrx * TRX_TOPUP_BUFFER_RATIO).toFixed(6)
+  );
+  let amountTrx = parseFloat(
+    Math.max(0, targetTrx - (Number(estimate.trxBalance) || 0)).toFixed(6)
+  );
+
+  const hasResourceShortfall =
+    estimate.canTransferZeroBurn === false ||
+    (Number(estimate.energyShortfall) || 0) > 0 ||
+    (Number(estimate.bandwidthShortfall) || 0) > 0;
+
+  if (amountTrx <= 0 && hasResourceShortfall) {
+    amountTrx = MIN_TOPUP_WHEN_RESOURCE_SHORTFALL_TRX;
+  }
+
+  return { amountTrx, targetTrx, neededTrx };
 }
 
 /** Admin-facing message when treasury cannot fund a TRX top-up. */
@@ -129,6 +160,7 @@ async function applyTrxTopUp({
   estimate,
   existingSponsoredTrx,
   existingTopUpTxIds,
+  minEstimatedTrx = 0,
 }: {
   orderKind: SponsorshipOrderKind;
   orderId: string;
@@ -137,17 +169,18 @@ async function applyTrxTopUp({
   estimate: UsdtTransferEstimate;
   existingSponsoredTrx: number;
   existingTopUpTxIds: string[];
+  minEstimatedTrx?: number;
 }): Promise<SponsorTransferResourcesResult> {
   const treasuryPk = getEnv().treasuryPrivateKey?.trim();
   if (!treasuryPk) {
     throw new Error("Treasury private key is not configured");
   }
 
-  const amountTrx = computeTrxTopUpAmount(estimate);
-  const shortfall = feeSponsorship.computeSponsorShortfall(estimate);
-  const targetTrx = parseFloat(
-    (estimate.estimatedTrx * TRX_TOPUP_BUFFER_RATIO).toFixed(6)
+  const { amountTrx, targetTrx, neededTrx } = computeTrxTopUpAmount(
+    estimate,
+    minEstimatedTrx
   );
+  const shortfall = feeSponsorship.computeSponsorShortfall(estimate);
   const base = {
     mode: FeeSponsorshipMode.trx_topup,
     estimate,
@@ -166,7 +199,7 @@ async function applyTrxTopUp({
       "Wallet has enough TRX to burn fees — skipping top-up";
     const persist = {
       sponsorshipMode: FeeSponsorshipMode.trx_topup,
-      estimatedTrx: estimate.estimatedTrx,
+      estimatedTrx: Math.max(estimate.estimatedTrx, neededTrx),
       trxBefore: estimate.trxBalance,
     };
     if (orderKind === "purchase") {
@@ -192,7 +225,7 @@ async function applyTrxTopUp({
       "Sender is treasury — skipping self TRX top-up; treasury will burn own TRX";
     const persist = {
       sponsorshipMode: FeeSponsorshipMode.trx_topup,
-      estimatedTrx: estimate.estimatedTrx,
+      estimatedTrx: Math.max(estimate.estimatedTrx, neededTrx),
       trxBefore: estimate.trxBalance,
     };
     if (orderKind === "purchase") {
@@ -256,7 +289,7 @@ async function applyTrxTopUp({
   const topUpTxIds = [...existingTopUpTxIds, txId];
   const persist = {
     sponsorshipMode: FeeSponsorshipMode.trx_topup,
-    estimatedTrx: estimate.estimatedTrx,
+    estimatedTrx: Math.max(estimate.estimatedTrx, neededTrx),
     trxBefore: estimate.trxBalance,
     topUpTxId: txId,
     adminTrxTopUpTxId: txId,
@@ -291,6 +324,7 @@ export async function sponsorTransferResources({
   userId,
   existingSponsoredTrx = 0,
   existingTopUpTxIds = [],
+  minEstimatedTrx = 0,
 }: {
   orderKind: SponsorshipOrderKind;
   orderId: string;
@@ -300,19 +334,23 @@ export async function sponsorTransferResources({
   userId: string;
   existingSponsoredTrx?: number;
   existingTopUpTxIds?: string[];
+  minEstimatedTrx?: number;
 }): Promise<SponsorTransferResourcesResult> {
-  logSponsor(orderKind, orderId, "start", { fromAddress, toAddress, amountUsdt });
+  logSponsor(orderKind, orderId, "start", {
+    fromAddress,
+    toAddress,
+    amountUsdt,
+    minEstimatedTrx,
+  });
 
   const estimate = await tron.estimateUsdtTransfer({
     fromAddress,
     toAddress,
     amount: amountUsdt,
   });
-  const targetTrx = parseFloat(
-    (estimate.estimatedTrx * TRX_TOPUP_BUFFER_RATIO).toFixed(6)
-  );
+  const { targetTrx } = computeTrxTopUpAmount(estimate, minEstimatedTrx);
 
-  if (estimate.canTransferZeroBurn) {
+  if (estimate.canTransferZeroBurn && !(Number(minEstimatedTrx) > 0)) {
     const detail =
       "User has enough Energy/Bandwidth — free transfer (no sponsorship)";
     logSponsor(orderKind, orderId, "user_resources", {
@@ -350,6 +388,7 @@ export async function sponsorTransferResources({
   logSponsor(orderKind, orderId, "trx_topup", {
     energyShortfall: estimate.energyShortfall,
     bandwidthShortfall: estimate.bandwidthShortfall,
+    minEstimatedTrx,
   });
 
   return applyTrxTopUp({
@@ -360,6 +399,7 @@ export async function sponsorTransferResources({
     estimate,
     existingSponsoredTrx,
     existingTopUpTxIds,
+    minEstimatedTrx,
   });
 }
 

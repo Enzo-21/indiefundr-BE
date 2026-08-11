@@ -4,7 +4,10 @@ import {
   getInvestmentAmountUsdtForLevel,
   isValidFundId,
 } from "@/lib/config/pricing";
-import { formatTronTransferError } from "@/lib/utils/tronErrors";
+import {
+  formatTronTransferError,
+  isSponsorshipCoverableFeeError,
+} from "@/lib/utils/tronErrors";
 import { getMainWallet } from "@/lib/wallets/helpers";
 import { getEnv } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
@@ -18,6 +21,9 @@ import {
 } from "@/services/wallets/walletBalance";
 import { logFundsEvent, logFundsRejected } from "./logging";
 import { formatOrderResponse } from "./orders";
+
+/** Conservative fee placeholder when simulation fails but sponsorship will top up. */
+export const SPONSORED_FEE_ESTIMATE_FALLBACK_TRX = 30;
 
 export type FundsServiceResult<T> =
   | { ok: true; data: T; status?: number }
@@ -161,6 +167,71 @@ export async function getSubscribeFeeEstimate(
               note: feesCoveredByApp
                 ? `You only need USDT in your main wallet. ${APP_NAME} covers Tron network fees for investments.`
                 : "USDT is the investment amount. TRX covers Tron network fees separately.",
+            },
+          },
+        };
+      }
+
+      // With sponsorship, TRX/activation/energy simulation failures must not block invest.
+      if (
+        feesCoveredByApp &&
+        isSponsorshipCoverableFeeError(estimateOutcome.error, {
+          fromAddress: sender.address,
+          usdtBalance: availability.availableUsdt,
+          amountUsdt: cost,
+        })
+      ) {
+        logFundsEvent(
+          "estimate",
+          "info",
+          "estimate soft-ok: sponsorship covers fee error",
+          {
+            ...baseFields,
+            cost,
+            estimateError:
+              estimateOutcome.error instanceof Error
+                ? estimateOutcome.error.message
+                : String(estimateOutcome.error),
+          }
+        );
+        return {
+          ok: true,
+          data: {
+            fromAddress: sender.address,
+            toAddress: receiver,
+            amountUsdt: cost,
+            estimatedTrx: SPONSORED_FEE_ESTIMATE_FALLBACK_TRX,
+            trxBalance: 0,
+            usdtBalance: availability.onChainUsdt,
+            hasEnoughTrx: false,
+            hasEnoughEnergy: false,
+            hasEnoughBandwidth: false,
+            canTransferZeroBurn: false,
+            onChainUsdt: availability.onChainUsdt,
+            reservedUsdt: availability.reservedUsdt,
+            availableUsdt: availability.availableUsdt,
+            pendingOrdersCount: availability.pendingOrdersCount,
+            hasEnoughUsdt: true,
+            canTransfer: true,
+            fundId,
+            fund: getFundById(fundId),
+            activeOrder: activeOrder ? formatOrderResponse(activeOrder) : null,
+            activeOrders: activeOrders.map((order) => formatOrderResponse(order)),
+            openCount: slotUsage.openCount,
+            maxOpenInvestments: slotUsage.maxOpenInvestments,
+            slotsAvailable: slotUsage.slotsAvailable,
+            totalOpenCount: slotUsage.totalOpenCount,
+            maxTotalOpenInvestments: slotUsage.maxTotalOpenInvestments,
+            totalSlotsAvailable: slotUsage.totalSlotsAvailable,
+            walletId: sender.id,
+            isMainWallet: sender.isMainWallet,
+            feesCoveredByApp: true,
+            costBreakdown: {
+              productUsdt: cost,
+              networkFeeTrxEstimate: undefined,
+              usdtPaidTo: "treasury",
+              trxPaidTo: "covered_by_indiefundr",
+              note: `You only need USDT in your main wallet. ${APP_NAME} covers Tron network fees for investments.`,
             },
           },
         };
