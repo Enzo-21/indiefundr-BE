@@ -95,9 +95,12 @@ export async function classifyChainRowFromMemo(
       settlement,
       linkedInvestment
     );
-    const label = displayStatus === "failed"
-      ? `Failed investment order (${fundName})`
-      : `Investment order (${fundName})`;
+    const label =
+      displayStatus === "cancelled"
+        ? `Cancelled investment order (${fundName})`
+        : displayStatus === "failed"
+          ? `Failed investment order (${fundName})`
+          : `Investment order (${fundName})`;
     const pendingTapInfo = shouldShowPendingPurchaseOrderTapInfo(
       order,
       displayStatus,

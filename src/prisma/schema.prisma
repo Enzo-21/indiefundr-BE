@@ -47,6 +47,7 @@ enum PurchaseOrderStatus {
   processing
   completed
   failed
+  cancelled
 }
 
 enum PurchaseOrderFulfillmentMode {

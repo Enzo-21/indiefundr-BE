@@ -1,12 +1,14 @@
 export type FundsLogScope =
   | "subscribe"
   | "estimate"
+  | "cancel"
   | "api_subscribe"
   | "api_estimate";
 
 const PREFIX: Record<FundsLogScope, string> = {
   subscribe: "[subscribeToFund]",
   estimate: "[subscribeEstimate]",
+  cancel: "[cancelPurchaseOrder]",
   api_subscribe: "[api/funds/subscribe]",
   api_estimate: "[api/funds/estimate]",
 };
@@ -35,7 +37,7 @@ export function logFundsEvent(
 }
 
 export function logFundsRejected(
-  scope: "subscribe" | "estimate",
+  scope: "subscribe" | "estimate" | "cancel",
   reason: string,
   fields: Record<string, unknown>
 ): void {

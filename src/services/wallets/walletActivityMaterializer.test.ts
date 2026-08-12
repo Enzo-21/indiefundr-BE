@@ -5,6 +5,7 @@ import {
   appendUsdtPurchaseActivityRow,
   orphanWalletActivityDeleteWhere,
   shouldShowPurchaseOrderAsFailed,
+  shouldShowPurchaseOrderAsCancelled,
   walletActivityRecordToTx,
 } from "./walletActivityMaterializer";
 import { REFERRAL_WALLET_ACTIVITY_KINDS } from "@/services/referrals/referralWalletActivity";
@@ -74,6 +75,29 @@ describe("shouldShowPurchaseOrderAsFailed", () => {
         paymentChainOutcome: "failed",
       } as Parameters<typeof shouldShowPurchaseOrderAsFailed>[0]),
       true
+    );
+  });
+});
+
+describe("shouldShowPurchaseOrderAsCancelled", () => {
+  it("returns true only for cancelled status", () => {
+    assert.equal(
+      shouldShowPurchaseOrderAsCancelled({
+        status: PurchaseOrderStatus.cancelled,
+      }),
+      true
+    );
+    assert.equal(
+      shouldShowPurchaseOrderAsCancelled({
+        status: PurchaseOrderStatus.failed,
+      }),
+      false
+    );
+    assert.equal(
+      shouldShowPurchaseOrderAsCancelled({
+        status: PurchaseOrderStatus.queued,
+      }),
+      false
     );
   });
 });

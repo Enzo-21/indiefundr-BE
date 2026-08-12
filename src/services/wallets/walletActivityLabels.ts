@@ -42,7 +42,8 @@ export function isManualOrderAwaitingAdminReview(
     isManualFulfillmentOrder(order) &&
     order.step === PurchaseOrderStep.awaiting_review &&
     order.status !== PurchaseOrderStatus.completed &&
-    order.status !== PurchaseOrderStatus.failed
+    order.status !== PurchaseOrderStatus.failed &&
+    order.status !== PurchaseOrderStatus.cancelled
   );
 }
 

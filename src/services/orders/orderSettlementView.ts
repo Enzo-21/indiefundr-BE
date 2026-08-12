@@ -16,9 +16,14 @@ export type OrderSettlementPhase =
   | "paying"
   | "confirming"
   | "succeeded"
-  | "failed";
+  | "failed"
+  | "cancelled";
 
-export type OrderDisplayStatus = "pending" | "confirmed" | "failed";
+export type OrderDisplayStatus =
+  | "pending"
+  | "confirmed"
+  | "failed"
+  | "cancelled";
 
 export type OrderSettlementView = {
   phase: OrderSettlementPhase;
@@ -51,6 +56,10 @@ export function deriveOrderSettlementPhaseFromDb(
 ): OrderSettlementPhase {
   if (order.status === PurchaseOrderStatus.completed) {
     return "succeeded";
+  }
+
+  if (order.status === PurchaseOrderStatus.cancelled) {
+    return "cancelled";
   }
 
   if (isManualFulfillmentOrder(order)) {
@@ -111,6 +120,9 @@ export function settlementPhaseToDisplayStatus(
   if (phase === "failed") {
     return "failed";
   }
+  if (phase === "cancelled") {
+    return "cancelled";
+  }
   if (phase === "confirming" && chainOutcome === "failed") {
     return "failed";
   }
@@ -125,6 +137,9 @@ export function settlementLabelForOrder(
 ): string {
   if (phase === "failed") {
     return "Failed";
+  }
+  if (phase === "cancelled") {
+    return "Cancelled";
   }
   if (isManualFulfillmentOrder(order)) {
     switch (order.step) {
@@ -174,6 +189,13 @@ export function resolvePurchaseOrderActivityDisplayStatus(
   settlement: OrderSettlementView,
   linkedInvestment: LinkedInvestmentForDisplay = null
 ): OrderDisplayStatus {
+  if (
+    order.status === PurchaseOrderStatus.cancelled ||
+    settlement.displayStatus === "cancelled"
+  ) {
+    return "cancelled";
+  }
+
   if (settlement.displayStatus === "failed") {
     return "failed";
   }
@@ -286,6 +308,8 @@ export function settlementPhaseLabel(phase: OrderSettlementPhase): string {
       return "Active investment";
     case "failed":
       return "Failed";
+    case "cancelled":
+      return "Cancelled";
     default:
       return "Processing";
   }

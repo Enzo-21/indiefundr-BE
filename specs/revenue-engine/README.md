@@ -144,7 +144,10 @@ Reference CSVs under [`simulations/`](simulations/) (columns: `event`, `fund`, `
 | [balanced-growth-100-investments-simulation.csv](simulations/balanced-growth-100-investments-simulation.csv) | 100 Balanced Growth only |
 | [stable-yield-100-investments-simulation.csv](simulations/stable-yield-100-investments-simulation.csv) | 100 Stable Yield only |
 | [capital-shield-100-investments-simulation.csv](simulations/capital-shield-100-investments-simulation.csv) | 100 Capital Shield only |
-| [mixed-funds-200-investments-simulation.csv](simulations/mixed-funds-200-investments-simulation.csv) | 200 subs, 40 per fund, shuffled order |
+| [mixed-funds-200-investments-simulation.csv](simulations/mixed-funds-200-investments-simulation.csv) | 200 subs @ **25** USDT, 40 per fund, shuffled order |
+| [mixed-funds-200-ticket50-with-trx-simulation.csv](simulations/mixed-funds-200-ticket50-with-trx-simulation.csv) | 200 subs @ **50** USDT (no level-ups), mixed funds + cumulative TRX burn (10 TRX/transfer @ \$0.25); regenerate via `node --import tsx scripts/simulate-mixed-funds-50-trx.ts` |
+| [mixed-funds-200-ticket100k-mp-ars-simulation.csv](simulations/mixed-funds-200-ticket100k-mp-ars-simulation.csv) | 200 subs @ **100k ARS**, 3 unlockers, platform absorbs MP in + estimated IIBB/Ganancias; regenerate via `node --import tsx scripts/simulate-mixed-funds-mp-ars.ts` |
+| [mixed-funds-200-ticket100k-mp-marketplace-waterfall-10pct.csv](simulations/mixed-funds-200-ticket100k-mp-marketplace-waterfall-10pct.csv) | Marketplace waterfall @ **100k ARS**, app keeps **10%** per charge, net FIFO-splits to earlier unpaid heads; regenerate via `node --import tsx scripts/simulate-marketplace-waterfall-mp-ars.ts` |
 
 **Related:** Referral recovery draws invitee bonuses from `treasurySurplus` and principal recovery from `poolAvailable`. See the [Referral recovery & Invite & Earn spec](../referral-recovery/README.md) and [`referral-recovery-2-invitees.csv`](../referral-recovery/simulations/referral-recovery-2-invitees.csv).
 

@@ -294,6 +294,13 @@ export function shouldShowPurchaseOrderAsFailed(order: PurchaseOrder): boolean {
   return order.paymentChainOutcome === "failed";
 }
 
+/** Cancelled orders stay visible in activity (unlike some failed rows). */
+export function shouldShowPurchaseOrderAsCancelled(
+  order: Pick<PurchaseOrder, "status">
+): boolean {
+  return order.status === "cancelled";
+}
+
 function shouldShowFailedInvestment(
   item: FailedInvestment,
   orders: PurchaseOrder[],
@@ -590,7 +597,8 @@ export async function buildMaterializedActivityRows(
       }
     }
 
-    const isFailed = shouldShowPurchaseOrderAsFailed(order);
+    const isCancelled = shouldShowPurchaseOrderAsCancelled(order);
+    const isFailed = !isCancelled && shouldShowPurchaseOrderAsFailed(order);
     const isRetryPendingFailure =
       isFailed && (order.failureReason || "").startsWith(RETRY_PENDING_PREFIX);
     if (isRetryPendingFailure) {
@@ -606,13 +614,16 @@ export async function buildMaterializedActivityRows(
       }
     }
 
-    const label = isFailed
-      ? `Failed investment order (${fundName})`
-      : `Investment order (${fundName})`;
+    const label = isCancelled
+      ? `Cancelled investment order (${fundName})`
+      : isFailed
+        ? `Failed investment order (${fundName})`
+        : `Investment order (${fundName})`;
     const { txId, tronscanUrl } = getPurchaseOrderActivityLink(order);
-    const pendingTapInfo = !isFailed
-      ? getPendingPurchaseOrderTapInfo(order, fundName)
-      : null;
+    const pendingTapInfo =
+      !isFailed && !isCancelled
+        ? getPendingPurchaseOrderTapInfo(order, fundName)
+        : null;
 
     rows.push({
       kind: "purchase_order",
@@ -620,7 +631,7 @@ export async function buildMaterializedActivityRows(
       txId,
       type: "out",
       amountUsdt: order.costUsdt,
-      status: isFailed ? "failed" : "pending",
+      status: isCancelled ? "cancelled" : isFailed ? "failed" : "pending",
       label,
       detail: isFailed ? getFailedPurchaseOrderDetail(order) : null,
       occurredAt: order.updatedAt || order.date,

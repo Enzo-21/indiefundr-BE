@@ -506,7 +506,9 @@ export async function buildAppTransactions(
       settlement,
       linkedInvestment
     );
+    const isCancelled = displayStatus === "cancelled";
     const isFailed =
+      !isCancelled &&
       displayStatus === "failed" &&
       (await shouldShowPurchaseOrderAsFailed(order));
     const isRetryPendingFailure =
@@ -532,18 +534,22 @@ export async function buildAppTransactions(
       isManualFulfillmentOrder(order) &&
       settlement.phase === "reserved" &&
       !txId;
-    const activityLabel = isFailed
-      ? `Failed investment order (${fundName})`
-      : inFlightPending && !isManualReserved
-        ? `Investment order (${fundName}) — ${settlementLabel}`
-        : `Investment order (${fundName})`;
-    const pendingTapInfo = shouldShowPendingPurchaseOrderTapInfo(
-      order,
-      displayStatus,
-      settlement.phase
-    )
-      ? getPendingPurchaseOrderTapInfo(order, fundName)
-      : null;
+    const activityLabel = isCancelled
+      ? `Cancelled investment order (${fundName})`
+      : isFailed
+        ? `Failed investment order (${fundName})`
+        : inFlightPending && !isManualReserved
+          ? `Investment order (${fundName}) — ${settlementLabel}`
+          : `Investment order (${fundName})`;
+    const pendingTapInfo =
+      !isCancelled &&
+      shouldShowPendingPurchaseOrderTapInfo(
+        order,
+        displayStatus,
+        settlement.phase
+      )
+        ? getPendingPurchaseOrderTapInfo(order, fundName)
+        : null;
 
     transactions.push({
       id: `purchase-order-${order.id}`,

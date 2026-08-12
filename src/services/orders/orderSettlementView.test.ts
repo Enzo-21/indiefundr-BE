@@ -288,4 +288,16 @@ describe("resolvePurchaseOrderActivityDisplayStatus", () => {
       "confirmed"
     );
   });
+
+  it("shows cancelled for cancelled orders", () => {
+    const order = mockOrder({ status: PurchaseOrderStatus.cancelled });
+    assert.equal(deriveOrderSettlementPhaseFromDb(order), "cancelled");
+    const settlement = buildOrderSettlementView(order);
+    assert.equal(settlement.displayStatus, "cancelled");
+    assert.equal(settlement.settlementLabel, "Cancelled");
+    assert.equal(
+      resolvePurchaseOrderActivityDisplayStatus(order, settlement, null),
+      "cancelled"
+    );
+  });
 });
