@@ -149,7 +149,7 @@ export default async function AdminSubscriptionsPage() {
                         ? "USDT purchase"
                         : "Investment"}
                   </TableCell>
-                  <TableCell className="max-w-[200px]">
+                  <TableCell className="max-w-50">
                     {row.orderType === "withdraw" ? (
                       <span className="break-all font-mono text-xs">
                         {row.destinationAddress}
@@ -182,7 +182,7 @@ export default async function AdminSubscriptionsPage() {
                   <TableCell>
                     {formatUsdtDisplay(row.costUsdt)} USDT
                   </TableCell>
-                  <TableCell className="max-w-[140px] truncate font-mono text-xs">
+                  <TableCell className="max-w-35 truncate font-mono text-xs">
                     {row.walletAddress}
                   </TableCell>
                   <TableCell>
