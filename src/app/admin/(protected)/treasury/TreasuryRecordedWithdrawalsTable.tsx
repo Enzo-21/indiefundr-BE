@@ -88,7 +88,7 @@ export function TreasuryRecordedWithdrawalsTable({
                     )}
                   </TableCell>
                   <TableCell className="text-xs">{row.createdBy}</TableCell>
-                  <TableCell className="max-w-[200px] truncate text-xs">
+                  <TableCell className="max-w-50 truncate text-xs">
                     {row.note ?? "—"}
                   </TableCell>
                 </TableRow>

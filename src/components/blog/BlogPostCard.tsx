@@ -23,7 +23,7 @@ export function BlogPostCard({ post }: BlogPostCardProps) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group block cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="group block cursor-pointer rounded-xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Card className="overflow-hidden pt-0 transition-shadow duration-300 group-hover:shadow-md">
         <div className="bg-muted aspect-video w-full overflow-hidden">

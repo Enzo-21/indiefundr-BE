@@ -42,12 +42,12 @@ export function SubscriptionRowActions({ row }: { row: AdminQueueRow }) {
   };
 
   return (
-    <div className="flex min-w-[280px] flex-col gap-2">
+    <div className="flex min-w-70 flex-col gap-2">
       <CompleteOrderDialog row={row} />
 
       <div className="flex flex-wrap gap-1">
         <Input
-          className="h-8 flex-1 min-w-[120px] text-xs"
+          className="h-8 flex-1 min-w-30 text-xs"
           placeholder="TRX top-up tx id"
           value={trxTxId}
           onChange={(e) => setTrxTxId(e.target.value)}
@@ -65,7 +65,7 @@ export function SubscriptionRowActions({ row }: { row: AdminQueueRow }) {
       </div>
       <div className="flex flex-wrap gap-1">
         <Input
-          className="h-8 flex-1 min-w-[120px] text-xs"
+          className="h-8 flex-1 min-w-30 text-xs"
           placeholder="USDT payment tx id"
           value={usdtTxId}
           onChange={(e) => setUsdtTxId(e.target.value)}
@@ -83,7 +83,7 @@ export function SubscriptionRowActions({ row }: { row: AdminQueueRow }) {
       </div>
       <div className="flex flex-wrap gap-1">
         <Input
-          className="h-8 flex-1 min-w-[100px] text-xs"
+          className="h-8 flex-1 min-w-25 text-xs"
           placeholder="Failure reason"
           value={failReason}
           onChange={(e) => setFailReason(e.target.value)}

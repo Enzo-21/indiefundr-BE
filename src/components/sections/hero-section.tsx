@@ -113,7 +113,7 @@ export function HeroSection() {
             floatIndex={1}
             className="top-[16.4%] left-3 flex -rotate-3 items-center gap-1.5 rounded-full px-3 py-2"
           >
-            <span className="grid size-10 place-content-center rounded-full border bg-green-600/10 shadow-sm dark:bg-green-400/10">
+            <span className="grid size-10 place-content-center rounded-full border bg-green-600/10 shadow-xs dark:bg-green-400/10">
               <TrendingUp className="size-5 text-green-600 dark:text-green-400" aria-hidden />
             </span>
             <div className="flex flex-col text-left">

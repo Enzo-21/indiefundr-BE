@@ -64,7 +64,7 @@ export function TreasuryAppWithdrawalsTable({ transactions }: Props) {
             <TableCell>{formatDate(tx.date)}</TableCell>
             <TableCell>−{formatUsdtDisplay(tx.amount)} USDT</TableCell>
             <TableCell
-              className="max-w-[140px] cursor-pointer truncate font-mono text-xs"
+              className="max-w-35 cursor-pointer truncate font-mono text-xs"
               title={tx.counterparty}
               onClick={() =>
                 setExpandedTx(expandedTx === tx.txId ? null : tx.txId)

@@ -224,7 +224,7 @@ export function HistoryTable({
                     {directionPrefix(row.direction)}
                     {formatUsdtDisplay(row.amountUsdt)} USDT
                   </TableCell>
-                  <TableCell className="max-w-[260px]">
+                  <TableCell className="max-w-65">
                     {row.userEmail ? (
                       <div className="truncate font-medium">{row.userEmail}</div>
                     ) : null}

@@ -147,7 +147,7 @@ export function TreasuryExternalInflowButtons({
         {treatmentLabel(inflowTreatment)}
       </span>
       {error ? (
-        <span className="max-w-[180px] text-right text-[10px] text-destructive">
+        <span className="max-w-45 text-right text-[10px] text-destructive">
           {error}
         </span>
       ) : null}

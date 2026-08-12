@@ -60,14 +60,14 @@ export function Header() {
               <NavigationMenuItem>
                 <NavigationMenuTrigger>Features</NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <div className="grid w-[560px] gap-3 p-4 md:grid-cols-2">
+                  <div className="grid w-140 gap-3 p-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <p className="text-muted-foreground text-xs font-medium uppercase">Core Features</p>
                       {featuresNav.items?.map((item) => (
                         <NavigationMenuLink
                           key={item.href}
                           href={item.href}
-                          className="hover:bg-accent block space-y-1 rounded-md p-3 no-underline outline-none transition-colors"
+                          className="hover:bg-accent block space-y-1 rounded-md p-3 no-underline outline-hidden transition-colors"
                         >
                           <div className="text-sm font-medium">{item.title}</div>
                           <p className="text-muted-foreground text-sm">{item.description}</p>

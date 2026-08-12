@@ -24,12 +24,12 @@ export function ReferralPayoutRowActions({ row }: { row: AdminReferralPayoutRow 
   };
 
   return (
-    <div className="flex min-w-[280px] flex-col gap-2">
+    <div className="flex min-w-70 flex-col gap-2">
       <CompleteReferralPayoutDialog row={row} />
 
       <div className="flex flex-wrap gap-1">
         <Input
-          className="h-8 flex-1 min-w-[100px] text-xs"
+          className="h-8 flex-1 min-w-25 text-xs"
           placeholder="Failure reason"
           value={failReason}
           onChange={(e) => setFailReason(e.target.value)}

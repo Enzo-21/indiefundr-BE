@@ -79,7 +79,7 @@ export function TreasuryChainTxClassifyButtons({ tx }: Props) {
         <span className="text-[10px] text-muted-foreground">Admin override</span>
       ) : null}
       {error ? (
-        <span className="max-w-[180px] text-right text-[10px] text-destructive">
+        <span className="max-w-45 text-right text-[10px] text-destructive">
           {error}
         </span>
       ) : null}

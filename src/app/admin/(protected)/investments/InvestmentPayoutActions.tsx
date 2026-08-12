@@ -136,7 +136,7 @@ export function InvestmentPayoutActions({ row }: { row: InvestmentPayoutRow }) {
 
   if (row.status === "redeeming") {
     return (
-      <div className="flex min-w-[200px] flex-col gap-2">
+      <div className="flex min-w-50 flex-col gap-2">
         {row.payoutFailureReason ? (
           <Badge variant={badgeVariantForPayoutStatus("failed")}>
             Payout failed
@@ -181,7 +181,7 @@ export function InvestmentPayoutActions({ row }: { row: InvestmentPayoutRow }) {
   }
 
   return (
-    <div className="flex min-w-[200px] flex-col gap-2">
+    <div className="flex min-w-50 flex-col gap-2">
       <PayoutActionButtons row={row} />
     </div>
   );

@@ -75,8 +75,8 @@ export function FaqSection() {
                 >
                   <AccordionTrigger
                     className={cn(
-                      "flex flex-1 items-center justify-between gap-4 rounded-md px-5 py-4 text-left text-base font-medium transition-all outline-none hover:no-underline",
-                      "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+                      "flex flex-1 items-center justify-between gap-4 rounded-md px-5 py-4 text-left text-base font-medium transition-all outline-hidden hover:no-underline",
+                      "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-3",
                       "*:data-[slot=accordion-trigger-icon]:hidden",
                       "[&[data-panel-open]>svg.faq-chevron]:text-primary-foreground",
                       "[&[data-panel-open]>svg.faq-chevron]:bg-primary",

@@ -27,7 +27,7 @@ type BlogRichTextEditorProps = {
 };
 
 const EDITOR_CONTENT_CLASS =
-  "blog-prose max-w-none min-h-[280px] px-4 py-3 focus:outline-none";
+  "blog-prose max-w-none min-h-70 px-4 py-3 focus:outline-hidden";
 
 export function BlogRichTextEditor({
   value,

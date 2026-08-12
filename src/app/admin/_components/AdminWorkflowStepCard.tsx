@@ -90,7 +90,7 @@ export function AdminWorkflowStepCard({
           : undefined
       }
       className={cn(
-        "flex min-h-[120px] min-w-0 flex-1 flex-col rounded-xl border p-4 transition-colors",
+        "flex min-h-30 min-w-0 flex-1 flex-col rounded-xl border p-4 transition-colors",
         stepBoxClass(step.state, step.manualSkip, toggleable)
       )}
     >

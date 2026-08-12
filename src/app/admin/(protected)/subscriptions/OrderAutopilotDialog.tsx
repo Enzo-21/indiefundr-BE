@@ -50,7 +50,7 @@ function ModeCard({
       className={cn(
         "flex min-h-35 flex-1 flex-col rounded-xl border p-4 text-left transition-colors",
         selected
-          ? "border-primary bg-primary/5 shadow-sm"
+          ? "border-primary bg-primary/5 shadow-xs"
           : "border-border/80 bg-muted/20 hover:bg-muted/40"
       )}
     >

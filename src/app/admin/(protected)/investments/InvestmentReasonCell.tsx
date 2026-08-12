@@ -36,7 +36,7 @@ export function InvestmentReasonCell({ detail, investmentId }: Props) {
 
   return (
     <>
-      <div className="max-w-[200px] space-y-1">
+      <div className="max-w-50 space-y-1">
         {summary ? (
           <p
             className="line-clamp-3 wrap-break-word text-xs leading-relaxed text-muted-foreground"
